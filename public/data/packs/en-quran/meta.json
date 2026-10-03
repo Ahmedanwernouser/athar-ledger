@@ -1,0 +1,33 @@
+{
+ "id": "en-quran",
+ "title": "English: 5 translations of the Qur'an",
+ "domain": "english",
+ "domain_ar": "ترجمات القرآن بالإنجليزية",
+ "lang": "en",
+ "books": {},
+ "passages": 31180,
+ "words": 838640,
+ "shards": 3,
+ "bytes": 11046884,
+ "index": {
+  "idx2": {
+   "keys": 132402,
+   "postings": 605735,
+   "bytes": 1873492,
+   "sha256": "44aea0c425b9b73ba4b9c53fd2908f512ec437b01b22303de694229712ad5e62"
+  },
+  "idx3": {
+   "keys": 332063,
+   "postings": 752816,
+   "bytes": 3165960,
+   "sha256": "f74588f4174d039e2d94a946b40ab1ddefbe2eeeb8de06be4888735bb05f366d"
+  }
+ },
+ "editions": {
+  "ummmuhammad": "Saheeh International",
+  "muhammadtaqiudd": "Hilali & Khan",
+  "abdullahyusufal": "Yusuf Ali",
+  "mohammedmarmadu": "Pickthall",
+  "mustafakhattaba": "Mustafa Khattab (The Clear Quran)"
+ }
+}
