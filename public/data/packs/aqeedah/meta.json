@@ -1,0 +1,41 @@
+{
+ "id": "aqeedah",
+ "title": "عقيدة: الطحاوية والواسطية",
+ "domain": "aqeedah",
+ "domain_ar": "عقيدة",
+ "books": {
+  "tahawiyya": {
+   "title": "متن العقيدة الطحاوية",
+   "author": "الطحاوي (ت ٣٢١هـ)"
+  },
+  "wasitiyya": {
+   "title": "العقيدة الواسطية",
+   "author": "ابن تيمية (ت ٧٢٨هـ)"
+  }
+ },
+ "passages": 129,
+ "words": 7177,
+ "shards": 1,
+ "bytes": 170028,
+ "chunk_words": 110,
+ "overlap_words": 20,
+ "index": {
+  "idx2": {
+   "keys": 5801,
+   "postings": 6758,
+   "bytes": 42536,
+   "sha256": "f03d913bd13c1c14b744b648eceda54b5c2ad1f287460773d3666a62101fb0b0"
+  },
+  "idx3": {
+   "keys": 6405,
+   "postings": 6810,
+   "bytes": 45660,
+   "sha256": "62b1e70525369b113448bac2b149ab87505dff6b42f6ac0b0be9f1150175d4cd"
+  }
+ },
+ "page_refs": {
+  "tahawiyya": true,
+  "wasitiyya": true
+ },
+ "editorial_words_left_out": 0
+}

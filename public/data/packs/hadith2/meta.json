@@ -1,0 +1,41 @@
+{
+ "id": "hadith2",
+ "title": "حديث: رياض الصالحين وبلوغ المرام",
+ "domain": "hadith",
+ "domain_ar": "حديث",
+ "books": {
+  "riyad": {
+   "title": "رياض الصالحين",
+   "author": "النووي (ت ٦٧٦هـ)"
+  },
+  "bulugh": {
+   "title": "بلوغ المرام من أدلة الأحكام",
+   "author": "ابن حجر العسقلاني (ت ٨٥٢هـ)"
+  }
+ },
+ "passages": 2106,
+ "words": 173515,
+ "shards": 1,
+ "bytes": 3194353,
+ "chunk_words": 110,
+ "overlap_words": 20,
+ "index": {
+  "idx2": {
+   "keys": 73759,
+   "postings": 127969,
+   "bytes": 624748,
+   "sha256": "76f7cd58023c7781967dfb1f1d63e325d778ea6e512e669a6f323fac11ff3181"
+  },
+  "idx3": {
+   "keys": 99551,
+   "postings": 139752,
+   "bytes": 777272,
+   "sha256": "ead69616a617e9eef6837effa524a9a01e8093f6101dbcca76710d7c8bf84a33"
+  }
+ },
+ "page_refs": {
+  "riyad": true,
+  "bulugh": false
+ },
+ "editorial_words_left_out": 25
+}
