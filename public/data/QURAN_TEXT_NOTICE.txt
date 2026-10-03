@@ -1,0 +1,18 @@
+Quran text: Tanzil Project — https://tanzil.net   (obtained through api.alquran.cloud "quran-simple", via fawazahmed0/quran-api)
+Copyright (C) 2007-2021 Tanzil Project
+License: Creative Commons Attribution 3.0
+
+Terms of use, as published at https://tanzil.net/docs/text_license (read 2 Oct 2026; that page is authoritative):
+ - Permission is granted to copy and distribute verbatim copies of this text, but CHANGING IT IS NOT ALLOWED.
+ - This Quran text can be used in any website or application, provided that its source (Tanzil Project) is clearly
+   indicated, and a link is made to tanzil.net to enable users to keep track of changes.
+ - This copyright notice shall be included in all verbatim copies of the text, and shall be reproduced appropriately
+   in all files derived from or containing substantial portion of this text.
+
+In this project:
+ - quran_display.json holds the text verbatim, as received, and is the ONLY Quran text shown to users, including the
+   "in the source" line of a word-by-word comparison and every suggestion. The basmala that the file attaches to the
+   first verse of a sura is shown on its own line, with no character changed.
+ - passages_*.json and idx*.bin hold a normalised SEARCH INDEX derived from it (diacritics removed, letter forms
+   unified, the basmala detached from the first verse of each sura). It is used for matching only and is never
+   presented as the text of the Quran.

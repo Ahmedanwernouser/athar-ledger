@@ -1,0 +1,12 @@
+data/raw/
+node_modules/
+__pycache__/
+*.pyc
+.dev.vars
+.wrangler/
+*.log
+.DS_Store
+
+# team voice recordings stay local unless the team decides to publish them
+eval/recordings/*
+!eval/recordings/.gitkeep

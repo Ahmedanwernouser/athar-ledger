@@ -1,0 +1,69 @@
+name = "athar-asr"
+main = "src.js"
+compatibility_date = "2025-09-01"
+
+# This file is the single source of truth for the Worker's settings: deploy with `npx wrangler deploy`
+# from this folder. `keep_vars = true` stops a deploy from deleting variables that were added by hand in
+# the Cloudflare dashboard — but a variable that is ALSO written below is still overwritten by this file.
+keep_vars = true
+
+[vars]
+# >>> REPLACE THIS PLACEHOLDER <<<  The exact address(es) of your site, comma-separated, no trailing slash.
+# Until you replace it, every request from your site is answered with 403.
+#   - Pages preview addresses (https://<hash>.<project>.pages.dev) and custom domains are DIFFERENT origins:
+#     add each one you really use.
+#   - Add http://localhost:8788 only while testing on your own computer, then remove it.
+#   - Never use "*".
+ALLOWED_ORIGINS = "https://REPLACE-WITH-YOUR-PROJECT.pages.dev"
+
+# ---- /asr caps. One unit = one request of up to 10 minutes of audio (longer audio is charged more units).
+# Groq free tier for Whisper: 28,800 audio-seconds per day and 7,200 per hour.
+#   28,800 / 600 = 48 per day        7,200 / 600 = 12 per hour
+DAILY_CAP = "48"
+HOURLY_CAP = "12"
+IP_DAILY_CAP = "24"        # one IP address may use at most this much of the day (set it equal to DAILY_CAP to switch it off)
+MAX_BYTES = "25000000"     # Groq free tier upload limit (25 MB)
+ASR_MODEL = "whisper-large-v3"
+
+# ---- OPTIONAL "by meaning" helper (off unless LLM_PROVIDER is set). Use a model that is in YOUR free tier today.
+# LLM_PROVIDER = "groq"            # or "gemini" (needs the secret GEMINI_API_KEY)
+# LLM_MODEL = "openai/gpt-oss-20b" # groq example;  gemini example: "gemini-2.5-flash"
+# Groq free tier for openai/gpt-oss-20b is about 200,000 tokens per day; one call costs roughly 1,000–1,500
+# tokens, so 150 calls ≈ the whole day.
+LLM_DAILY_CAP = "150"
+LLM_IP_DAILY_CAP = "75"
+
+# ---- MANDATORY: storage for the caps. Without it the Worker answers 500 server_not_configured (on purpose).
+# Create it once:   npx wrangler kv namespace create CAP
+# then paste the id that the command prints in place of the placeholder. The deploy fails until you do.
+# KV free plan = 1,000 writes per day; with the caps above the Worker uses at most about 450
+# (keep 3 × DAILY_CAP + 2 × LLM_DAILY_CAP well below 1,000 if you raise them).
+[[kv_namespaces]]
+binding = "CAP"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Lets you see requests and errors in the dashboard (Workers → athar-asr → Logs). The Worker itself logs
+# nothing, so only Cloudflare's standard request records appear there (no audio, no text, no keys).
+[observability]
+enabled = true
+
+# ---- OPTIONAL: per-IP burst limit (Workers Rate Limiting binding; needs wrangler 4.36 or newer).
+# We could not confirm that this binding is available on the free plan. The Worker works without it.
+# If you want to try it, uncomment BOTH blocks; if the deploy is refused, comment them again.
+# namespace_id is any number you choose, different for each block. period must be 10 or 60.
+# [[ratelimits]]
+# name = "RL"            # /asr: 6 requests per minute per IP
+# namespace_id = "1001"
+#   [ratelimits.simple]
+#   limit = 6
+#   period = 60
+#
+# [[ratelimits]]
+# name = "RL_LLM"        # /llm: the site makes many short calls in a row, so the limit is higher
+# namespace_id = "1002"
+#   [ratelimits.simple]
+#   limit = 30
+#   period = 60
+
+# SECRETS are never written in this file:
+#   npx wrangler secret put GROQ_API_KEY        (and, only for gemini:  npx wrangler secret put GEMINI_API_KEY)

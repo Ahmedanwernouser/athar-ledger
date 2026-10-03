@@ -1,0 +1,725 @@
+{
+ "meta": {
+  "simulated": true,
+  "passages": 82855,
+  "cue": "قال المؤلف رحمه الله",
+  "noiseRates": [
+   0,
+   0.15
+  ],
+  "packs": [
+   {
+    "id": "hadith2",
+    "title": "حديث: رياض الصالحين وبلوغ المرام"
+   },
+   {
+    "id": "tafsir",
+    "title": "تفسير: ابن كثير والجلالين"
+   },
+   {
+    "id": "fiqh",
+    "title": "فقه: بداية المجتهد وعمدة الفقه"
+   },
+   {
+    "id": "seerah",
+    "title": "سيرة: سيرة ابن هشام وزاد المعاد"
+   },
+   {
+    "id": "aqeedah",
+    "title": "عقيدة: الطحاوية والواسطية"
+   }
+  ]
+ },
+ "sets": [
+  {
+   "set": "long",
+   "rate": 0,
+   "words": 8162,
+   "lenMin": 20,
+   "lenMax": 39,
+   "books": [
+    "bidaya",
+    "bulugh",
+    "ibnhisham",
+    "ibnkathir",
+    "riyad",
+    "tahawiyya",
+    "umda",
+    "wasitiyya",
+    "zadmaad"
+   ],
+   "byPack": [
+    {
+     "pack": "hadith2",
+     "title": "حديث: رياض الصالحين وبلوغ المرام",
+     "n": 30,
+     "det": 30,
+     "first": 24,
+     "any": 30,
+     "prim": 6
+    },
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 30,
+     "first": 28,
+     "any": 30,
+     "prim": 2
+    },
+    {
+     "pack": "fiqh",
+     "title": "فقه: بداية المجتهد وعمدة الفقه",
+     "n": 30,
+     "det": 30,
+     "first": 30,
+     "any": 30,
+     "prim": 0
+    },
+    {
+     "pack": "seerah",
+     "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+     "n": 30,
+     "det": 30,
+     "first": 30,
+     "any": 30,
+     "prim": 0
+    },
+    {
+     "pack": "aqeedah",
+     "title": "عقيدة: الطحاوية والواسطية",
+     "n": 15,
+     "det": 15,
+     "first": 14,
+     "any": 15,
+     "prim": 1
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 135,
+    "det": 135,
+    "first": 126,
+    "any": 135,
+    "prim": 9,
+    "ci": [
+     97,
+     100
+    ]
+   }
+  },
+  {
+   "set": "long",
+   "rate": 0.15,
+   "words": 7978,
+   "lenMin": 20,
+   "lenMax": 39,
+   "books": [
+    "bidaya",
+    "bulugh",
+    "ibnhisham",
+    "ibnkathir",
+    "riyad",
+    "tahawiyya",
+    "umda",
+    "wasitiyya",
+    "zadmaad"
+   ],
+   "byPack": [
+    {
+     "pack": "hadith2",
+     "title": "حديث: رياض الصالحين وبلوغ المرام",
+     "n": 30,
+     "det": 30,
+     "first": 16,
+     "any": 30,
+     "prim": 14
+    },
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 30,
+     "first": 28,
+     "any": 30,
+     "prim": 2
+    },
+    {
+     "pack": "fiqh",
+     "title": "فقه: بداية المجتهد وعمدة الفقه",
+     "n": 30,
+     "det": 30,
+     "first": 30,
+     "any": 30,
+     "prim": 0
+    },
+    {
+     "pack": "seerah",
+     "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+     "n": 30,
+     "det": 30,
+     "first": 30,
+     "any": 30,
+     "prim": 0
+    },
+    {
+     "pack": "aqeedah",
+     "title": "عقيدة: الطحاوية والواسطية",
+     "n": 15,
+     "det": 15,
+     "first": 14,
+     "any": 15,
+     "prim": 1
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 135,
+    "det": 135,
+    "first": 118,
+    "any": 135,
+    "prim": 17,
+    "ci": [
+     97,
+     100
+    ]
+   }
+  },
+  {
+   "set": "medium",
+   "rate": 0,
+   "words": 5735,
+   "lenMin": 8,
+   "lenMax": 12,
+   "books": [
+    "bidaya",
+    "bulugh",
+    "ibnhisham",
+    "ibnkathir",
+    "riyad",
+    "tahawiyya",
+    "umda",
+    "wasitiyya",
+    "zadmaad"
+   ],
+   "byPack": [
+    {
+     "pack": "hadith2",
+     "title": "حديث: رياض الصالحين وبلوغ المرام",
+     "n": 30,
+     "det": 24,
+     "first": 11,
+     "any": 24,
+     "prim": 13
+    },
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 30,
+     "first": 27,
+     "any": 30,
+     "prim": 3
+    },
+    {
+     "pack": "fiqh",
+     "title": "فقه: بداية المجتهد وعمدة الفقه",
+     "n": 30,
+     "det": 29,
+     "first": 29,
+     "any": 29,
+     "prim": 0
+    },
+    {
+     "pack": "seerah",
+     "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+     "n": 30,
+     "det": 27,
+     "first": 25,
+     "any": 27,
+     "prim": 2
+    },
+    {
+     "pack": "aqeedah",
+     "title": "عقيدة: الطحاوية والواسطية",
+     "n": 15,
+     "det": 14,
+     "first": 12,
+     "any": 14,
+     "prim": 2
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 135,
+    "det": 124,
+    "first": 104,
+    "any": 124,
+    "prim": 20,
+    "ci": [
+     86,
+     95
+    ]
+   }
+  },
+  {
+   "set": "medium",
+   "rate": 0.15,
+   "words": 5588,
+   "lenMin": 8,
+   "lenMax": 12,
+   "books": [
+    "bidaya",
+    "bulugh",
+    "ibnhisham",
+    "ibnkathir",
+    "riyad",
+    "tahawiyya",
+    "umda",
+    "wasitiyya",
+    "zadmaad"
+   ],
+   "byPack": [
+    {
+     "pack": "hadith2",
+     "title": "حديث: رياض الصالحين وبلوغ المرام",
+     "n": 30,
+     "det": 21,
+     "first": 9,
+     "any": 21,
+     "prim": 12
+    },
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 28,
+     "first": 26,
+     "any": 28,
+     "prim": 2
+    },
+    {
+     "pack": "fiqh",
+     "title": "فقه: بداية المجتهد وعمدة الفقه",
+     "n": 30,
+     "det": 28,
+     "first": 28,
+     "any": 28,
+     "prim": 0
+    },
+    {
+     "pack": "seerah",
+     "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+     "n": 30,
+     "det": 27,
+     "first": 25,
+     "any": 27,
+     "prim": 2
+    },
+    {
+     "pack": "aqeedah",
+     "title": "عقيدة: الطحاوية والواسطية",
+     "n": 15,
+     "det": 12,
+     "first": 11,
+     "any": 12,
+     "prim": 1
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 135,
+    "det": 116,
+    "first": 99,
+    "any": 116,
+    "prim": 17,
+    "ci": [
+     79,
+     91
+    ]
+   }
+  },
+  {
+   "set": "short",
+   "rate": 0,
+   "words": 5189,
+   "lenMin": 5,
+   "lenMax": 7,
+   "books": [
+    "bidaya",
+    "bulugh",
+    "ibnhisham",
+    "ibnkathir",
+    "riyad",
+    "tahawiyya",
+    "umda",
+    "wasitiyya",
+    "zadmaad"
+   ],
+   "byPack": [
+    {
+     "pack": "hadith2",
+     "title": "حديث: رياض الصالحين وبلوغ المرام",
+     "n": 30,
+     "det": 16,
+     "first": 6,
+     "any": 16,
+     "prim": 10
+    },
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 22,
+     "first": 17,
+     "any": 22,
+     "prim": 5
+    },
+    {
+     "pack": "fiqh",
+     "title": "فقه: بداية المجتهد وعمدة الفقه",
+     "n": 30,
+     "det": 21,
+     "first": 19,
+     "any": 21,
+     "prim": 2
+    },
+    {
+     "pack": "seerah",
+     "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+     "n": 30,
+     "det": 18,
+     "first": 17,
+     "any": 18,
+     "prim": 1
+    },
+    {
+     "pack": "aqeedah",
+     "title": "عقيدة: الطحاوية والواسطية",
+     "n": 15,
+     "det": 11,
+     "first": 8,
+     "any": 10,
+     "prim": 3
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 135,
+    "det": 88,
+    "first": 67,
+    "any": 87,
+    "prim": 21,
+    "ci": [
+     57,
+     73
+    ]
+   }
+  },
+  {
+   "set": "short",
+   "rate": 0.15,
+   "words": 5073,
+   "lenMin": 5,
+   "lenMax": 7,
+   "books": [
+    "bidaya",
+    "bulugh",
+    "ibnhisham",
+    "ibnkathir",
+    "riyad",
+    "tahawiyya",
+    "umda",
+    "wasitiyya",
+    "zadmaad"
+   ],
+   "byPack": [
+    {
+     "pack": "hadith2",
+     "title": "حديث: رياض الصالحين وبلوغ المرام",
+     "n": 30,
+     "det": 10,
+     "first": 5,
+     "any": 10,
+     "prim": 5
+    },
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 16,
+     "first": 12,
+     "any": 16,
+     "prim": 4
+    },
+    {
+     "pack": "fiqh",
+     "title": "فقه: بداية المجتهد وعمدة الفقه",
+     "n": 30,
+     "det": 14,
+     "first": 13,
+     "any": 14,
+     "prim": 1
+    },
+    {
+     "pack": "seerah",
+     "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+     "n": 30,
+     "det": 12,
+     "first": 12,
+     "any": 12,
+     "prim": 0
+    },
+    {
+     "pack": "aqeedah",
+     "title": "عقيدة: الطحاوية والواسطية",
+     "n": 15,
+     "det": 8,
+     "first": 7,
+     "any": 8,
+     "prim": 1
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 135,
+    "det": 60,
+    "first": 49,
+    "any": 60,
+    "prim": 11,
+    "ci": [
+     36,
+     53
+    ]
+   }
+  },
+  {
+   "set": "core",
+   "rate": 0,
+   "words": 6189,
+   "lenMin": 10,
+   "lenMax": 19,
+   "books": [
+    "bidaya",
+    "bulugh",
+    "ibnhisham",
+    "ibnkathir",
+    "riyad",
+    "umda",
+    "wasitiyya",
+    "zadmaad"
+   ],
+   "byPack": [
+    {
+     "pack": "hadith2",
+     "title": "حديث: رياض الصالحين وبلوغ المرام",
+     "n": 30,
+     "det": 30,
+     "first": 0,
+     "any": 30,
+     "prim": 30
+    },
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 29,
+     "first": 0,
+     "any": 29,
+     "prim": 29
+    },
+    {
+     "pack": "fiqh",
+     "title": "فقه: بداية المجتهد وعمدة الفقه",
+     "n": 30,
+     "det": 25,
+     "first": 0,
+     "any": 24,
+     "prim": 25
+    },
+    {
+     "pack": "seerah",
+     "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+     "n": 30,
+     "det": 30,
+     "first": 0,
+     "any": 29,
+     "prim": 29
+    },
+    {
+     "pack": "aqeedah",
+     "title": "عقيدة: الطحاوية والواسطية",
+     "n": 15,
+     "det": 15,
+     "first": 0,
+     "any": 15,
+     "prim": 15
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 135,
+    "det": 129,
+    "first": 0,
+    "any": 127,
+    "prim": 128,
+    "ci": [
+     91,
+     98
+    ]
+   }
+  },
+  {
+   "set": "core",
+   "rate": 0.15,
+   "words": 6070,
+   "lenMin": 10,
+   "lenMax": 19,
+   "books": [
+    "bidaya",
+    "bulugh",
+    "ibnhisham",
+    "ibnkathir",
+    "riyad",
+    "umda",
+    "wasitiyya",
+    "zadmaad"
+   ],
+   "byPack": [
+    {
+     "pack": "hadith2",
+     "title": "حديث: رياض الصالحين وبلوغ المرام",
+     "n": 30,
+     "det": 29,
+     "first": 0,
+     "any": 29,
+     "prim": 29
+    },
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 29,
+     "first": 1,
+     "any": 29,
+     "prim": 28
+    },
+    {
+     "pack": "fiqh",
+     "title": "فقه: بداية المجتهد وعمدة الفقه",
+     "n": 30,
+     "det": 26,
+     "first": 0,
+     "any": 25,
+     "prim": 26
+    },
+    {
+     "pack": "seerah",
+     "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+     "n": 30,
+     "det": 27,
+     "first": 0,
+     "any": 27,
+     "prim": 26
+    },
+    {
+     "pack": "aqeedah",
+     "title": "عقيدة: الطحاوية والواسطية",
+     "n": 15,
+     "det": 15,
+     "first": 0,
+     "any": 15,
+     "prim": 15
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 135,
+    "det": 126,
+    "first": 1,
+    "any": 125,
+    "prim": 124,
+    "ci": [
+     88,
+     96
+    ]
+   }
+  },
+  {
+   "set": "jalalayn",
+   "rate": 0,
+   "words": 1811,
+   "lenMin": 21,
+   "lenMax": 38,
+   "books": [
+    "jalalayn"
+   ],
+   "byPack": [
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 30,
+     "first": 30,
+     "any": 30,
+     "prim": 0
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 30,
+    "det": 30,
+    "first": 30,
+    "any": 30,
+    "prim": 0,
+    "ci": [
+     89,
+     100
+    ]
+   }
+  },
+  {
+   "set": "jalalayn",
+   "rate": 0.15,
+   "words": 1769,
+   "lenMin": 21,
+   "lenMax": 38,
+   "books": [
+    "jalalayn"
+   ],
+   "byPack": [
+    {
+     "pack": "tafsir",
+     "title": "تفسير: ابن كثير والجلالين",
+     "n": 30,
+     "det": 30,
+     "first": 30,
+     "any": 30,
+     "prim": 0
+    }
+   ],
+   "fillerTextual": 0,
+   "fillerExamples": [],
+   "total": {
+    "n": 30,
+    "det": 30,
+    "first": 30,
+    "any": 30,
+    "prim": 0,
+    "ci": [
+     89,
+     100
+    ]
+   }
+  }
+ ]
+}

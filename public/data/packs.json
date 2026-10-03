@@ -1,0 +1,119 @@
+[
+ {
+  "id": "hadith2",
+  "title": "حديث: رياض الصالحين وبلوغ المرام",
+  "domain": "hadith",
+  "domain_ar": "حديث",
+  "books": {
+   "riyad": {
+    "title": "رياض الصالحين",
+    "author": "النووي (ت ٦٧٦هـ)"
+   },
+   "bulugh": {
+    "title": "بلوغ المرام من أدلة الأحكام",
+    "author": "ابن حجر العسقلاني (ت ٨٥٢هـ)"
+   }
+  },
+  "passages": 2106,
+  "words": 173515,
+  "bytes": 3194353
+ },
+ {
+  "id": "tafsir",
+  "title": "تفسير: ابن كثير والجلالين",
+  "domain": "tafsir",
+  "domain_ar": "تفسير",
+  "books": {
+   "ibnkathir": {
+    "title": "تفسير القرآن العظيم",
+    "author": "ابن كثير (ت ٧٧٤هـ)"
+   },
+   "jalalayn": {
+    "title": "تفسير الجلالين",
+    "author": "المحلي (ت ٨٦٤هـ) والسيوطي (ت ٩١١هـ)"
+   }
+  },
+  "passages": 25078,
+  "words": 1742152,
+  "bytes": 32581211
+ },
+ {
+  "id": "fiqh",
+  "title": "فقه: بداية المجتهد وعمدة الفقه",
+  "domain": "fiqh",
+  "domain_ar": "فقه",
+  "books": {
+   "bidaya": {
+    "title": "بداية المجتهد ونهاية المقتصد",
+    "author": "ابن رشد الحفيد (ت ٥٩٥هـ)"
+   },
+   "umda": {
+    "title": "عمدة الفقه",
+    "author": "ابن قدامة المقدسي (ت ٦٢٠هـ)"
+   }
+  },
+  "passages": 4214,
+  "words": 340924,
+  "bytes": 7018800
+ },
+ {
+  "id": "seerah",
+  "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+  "domain": "seerah",
+  "domain_ar": "سيرة",
+  "books": {
+   "ibnhisham": {
+    "title": "السيرة النبوية",
+    "author": "ابن هشام (ت ٢١٣هـ)"
+   },
+   "zadmaad": {
+    "title": "زاد المعاد في هدي خير العباد",
+    "author": "ابن قيم الجوزية (ت ٧٥١هـ)"
+   }
+  },
+  "passages": 9029,
+  "words": 722447,
+  "bytes": 14690048
+ },
+ {
+  "id": "aqeedah",
+  "title": "عقيدة: الطحاوية والواسطية",
+  "domain": "aqeedah",
+  "domain_ar": "عقيدة",
+  "books": {
+   "tahawiyya": {
+    "title": "متن العقيدة الطحاوية",
+    "author": "الطحاوي (ت ٣٢١هـ)"
+   },
+   "wasitiyya": {
+    "title": "العقيدة الواسطية",
+    "author": "ابن تيمية (ت ٧٢٨هـ)"
+   }
+  },
+  "passages": 129,
+  "words": 7177,
+  "bytes": 170028
+ },
+ {
+  "id": "en-quran",
+  "title": "English: 5 translations of the Qur'an",
+  "domain": "english",
+  "domain_ar": "ترجمات القرآن بالإنجليزية",
+  "lang": "en",
+  "books": {},
+  "passages": 31180,
+  "words": 838640,
+  "bytes": 11046884
+ },
+ {
+  "id": "en-hadith",
+  "title": "English: the nine hadith collections",
+  "domain": "english",
+  "domain_ar": "ترجمة كتب الحديث بالإنجليزية",
+  "lang": "en",
+  "books": {},
+  "passages": 36015,
+  "words": 2911592,
+  "bytes": 31650989
+ }
+]
