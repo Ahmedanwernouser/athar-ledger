@@ -1,0 +1,92 @@
+{
+ "dim": 64,
+ "win": 40,
+ "stride": 20,
+ "vocab": 31317,
+ "epochs": 15,
+ "min_count": 4,
+ "sif_a": 0.001,
+ "model": "word2vec skip-gram on light stems, trained on this corpus",
+ "files": {
+  "wv.bin": {
+   "bytes": 2004288,
+   "sha256": "e40eb6bc90eef1fda6d4f2f5ea83a4228ef789e1994e2e240c310f55f7265df6"
+  },
+  "sif.bin": {
+   "bytes": 125268,
+   "sha256": "367165d5b4634136876fc48b948eeb2ede3ef42b0d8c05d6092347b9dbccf5d3"
+  },
+  "pc.bin": {
+   "bytes": 256,
+   "sha256": "d7c71837564c05e951b7aa1695b76a5dd95208fab48fc8eba91145cf1f2c03f3"
+  },
+  "pc_en.bin": {
+   "bytes": 256,
+   "sha256": "642dc8857925b14d39fc8b602fee20ddfb1e7ce57938408e423dcc278494c4c4"
+  },
+  "vec_core.bin": {
+   "bytes": 5182656,
+   "sha256": "a7b34b052deaba97a73b5c5d13ec8f9e39a833edc80f758f8b2cc212304c0720"
+  },
+  "map_core.bin": {
+   "bytes": 161958,
+   "sha256": "3547a2ef945a9325814072734b6c26e36396738b42a12cf10685becc7ec75b0c"
+  },
+  "vec_hadith2.bin": {
+   "bytes": 489984,
+   "sha256": "9fe31014fa5a6126cc4c86ee40f0161978d4da636d8b2c8c481fd38a3cd242dd"
+  },
+  "map_hadith2.bin": {
+   "bytes": 15312,
+   "sha256": "6930c8aacb8738357145bd36aeaecea2c120151029f6524defe251d94c81d22e"
+  },
+  "vec_tafsir.bin": {
+   "bytes": 4951168,
+   "sha256": "e5fc26fb68dabfc00554d04b602ee6aeb33f15030c1b275baf328edae54d0687"
+  },
+  "map_tafsir.bin": {
+   "bytes": 154724,
+   "sha256": "62698203980a16f8f0eb45c66749e5f0a55d8bce27bc057cdcce18aa505df501"
+  },
+  "vec_fiqh.bin": {
+   "bytes": 960192,
+   "sha256": "238bfe544ca7855f00ded4b3a64fdd8799d253c9ad0661f035e9c3daf4b5a43e"
+  },
+  "map_fiqh.bin": {
+   "bytes": 30006,
+   "sha256": "4545952347f003a5d7020b3a48804a3e5db5561477767e3be11a67a6f9092dd0"
+  },
+  "vec_seerah.bin": {
+   "bytes": 2032704,
+   "sha256": "4fec5e86f53af53e28e94e280242985a6e937b8f45e07a3fd86a8f415c61b62d"
+  },
+  "map_seerah.bin": {
+   "bytes": 63522,
+   "sha256": "5e5c5428d8b963075b20055d6d65a63e1424943ff348a11f1e0b17d91f15bbac"
+  },
+  "vec_aqeedah.bin": {
+   "bytes": 20480,
+   "sha256": "9a00eed4828c955fc7ddb5dcc682bac4cddc61d7e54526808a93fe9a1ef73f09"
+  },
+  "map_aqeedah.bin": {
+   "bytes": 640,
+   "sha256": "37bb5c93850bafdf31b0c5c0173d34e6aa1086aec86178e31e4bcd9fed15636f"
+  },
+  "vec_en-quran.bin": {
+   "bytes": 2559744,
+   "sha256": "5b5fd5fd3868aa0d8242e72931c9d38f6e65f03d3c44471f4f7d844c98c8df97"
+  },
+  "map_en-quran.bin": {
+   "bytes": 79992,
+   "sha256": "f518c2776bc5c969e5a8887a0127be4ad0dad9ee449ed4ac9e1ed1df903587e7"
+  },
+  "vec_en-hadith.bin": {
+   "bytes": 8269952,
+   "sha256": "e40279ad7d178d807218f9126e656ece9b9f726d4e651fe5d7bd1a9a581b456a"
+  },
+  "map_en-hadith.bin": {
+   "bytes": 258436,
+   "sha256": "bb7270dd6ba5a93311fb87a74ea14708e0b6fbfb2b1a77f041622ca664d56ae7"
+  }
+ }
+}
