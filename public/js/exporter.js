@@ -2,8 +2,17 @@
 import { fmtTime } from "./text.js";
 import { t, tOpt, srcLabel } from "./i18n.js";
 
-const COLS = ["id", "start", "end", "word", "kind", "status", "fidelity", "agreement", "spoken", "source", "ref", "url", "parallels", "attr", "review", "note", "origin"];
+const COLS = ["id", "start", "end", "word", "kind", "status", "fidelity", "agreement", "spoken", "source", "ref", "url", "sourceText", "parallels", "attr", "review", "note", "origin"];
 
+/**
+ * The original text of the source where the match is, when the worker attached it: the verse(s) as the Mushaf writes them,
+ * the matched words of a hadith in the dataset's own wording (diacritics kept). "" otherwise.
+ */
+export function sourceTextOf(e) {
+  const s = e && e.source;
+  if (!s || typeof s.display !== "string" || !["verbatim", "partial"].includes(e.status)) return "";
+  return s.type === "q" || s.type === "h" ? s.display : "";
+}
 /** review: key -> {v, note} holding only verdicts that belong to the finding as it is now (stale ones are left out by the caller) */
 export function toRows(ledger, review = {}) {
   return ledger.map(e => {
@@ -13,7 +22,7 @@ export function toRows(ledger, review = {}) {
       kind: tOpt("kind." + (e.source && e.source.type === "b" ? "b" : e.type)), status: tOpt("status." + e.status) || e.statusAr || "", fidelity: tOpt("fid." + e.status) || e.fidelity || "",
       agreement: e.agreement == null ? "" : Math.round(e.agreement * 100) + "%",
       spoken: e.spoken, source: e.source ? srcLabel(e.source) : "", ref: e.source ? e.source.ref : "",
-      url: e.source ? e.source.url || "" : "", parallels: (e.parallels || []).map(p => srcLabel(p, true)).join("؛ "),
+      url: e.source ? e.source.url || "" : "", sourceText: sourceTextOf(e), parallels: (e.parallels || []).map(p => srcLabel(p, true)).join("؛ "),
       attr: e.attribution ? tOpt("attr." + e.attribution.code) || e.attribution.text || "" : "",
       review: rv.v ? tOpt("rv." + rv.v) : "", note: rv.note || "", origin: e.manual ? t("csv.origin.manual") : "",
     };
@@ -31,7 +40,7 @@ export function toCsv(ledger, review) {
 }
 export function toJson(ledger, review, meta) {
   return JSON.stringify({ tool: t("export.tool"), ...meta, disclaimer: t("export.disclaimer"),
-    ledger: ledger.map(e => ({ ...e, diff: undefined, review: review[e.key] || null })) }, null, 1);
+    ledger: ledger.map(e => ({ ...e, diff: undefined, sourceText: sourceTextOf(e) || undefined, review: review[e.key] || null })) }, null, 1);
 }
 export function download(name, text, type) {
   const a = document.createElement("a");

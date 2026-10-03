@@ -21,7 +21,8 @@ export function footnoteFor(e, verdict) {
     const others = (e.parallels || []).filter(p => p.type !== "b").slice(0, 3).map(p => srcLabel(p, true));
     if (s.type !== "q" && others.length) x += t("doc.fn.also", others.join(t("doc.sep"))) + ((e.parallels || []).filter(p => p.type !== "b").length > 3 ? t("doc.fn.more") : "");
     x += ".";
-    if (e.status === "partial") x += " " + t(s.type === "q" ? "doc.fn.partial.q" : "doc.fn.partial.h");
+    const wording = e.status === "partial" && s.type === "h" && s.via !== "en" ? sourceWording(s.display) : "";      // the source's own words, when the worker has them
+    if (e.status === "partial") x += " " + (wording ? t("doc.fn.partial.h.text", wording) : t(s.type === "q" ? "doc.fn.partial.q" : "doc.fn.partial.h"));
     if (e.status === "partial" && s.type === "q" && s.display && s.via !== "en") x += " " + s.display;
     if (s.via === "en") x += " " + t("doc.fn.viaen");
     if (e.attribution && e.attribution.agrees === false) x += " " + t("doc.fn.attr");
@@ -33,6 +34,29 @@ export function footnoteFor(e, verdict) {
   if (e.status === "meaning" && s) return { text: t("doc.fn.meaning", srcLabel(s)) + star, quote: false, kind: s.type };
   if (e.status === "notfound" && ["quran", "hadith"].includes(e.cue)) return { text: t("doc.fn.notfound") + star, quote: false, kind: e.cue === "quran" ? "q" : "h" };
   return null;
+}
+
+export const FN_SOURCE_WORDS = 60;
+const EDGE_PUNCT = /^[\s"«»“”.,،؛:]+|[\s"«»“”.,،؛:]+$/g;
+/** the original text of a hadith's matched range as a footnote quotes it: at most FN_SOURCE_WORDS words, then "…"; "" when there is none */
+export function sourceWording(text, max = FN_SOURCE_WORDS) {
+  const ws = String(text || "").split(/\s+/).filter(Boolean);
+  if (!ws.length) return "";
+  const cut = ws.length > max;
+  const body = (cut ? ws.slice(0, max) : ws).join(" ").replace(EDGE_PUNCT, "");
+  return body ? body + (cut ? " …" : "") : "";
+}
+/**
+ * The source's original words that replace the transcribed words of a VERBATIM hadith quotation in the document, or null.
+ * The same rule as mushafText: only when the worker tied every spoken word to one word of the source (entry.sourceRun)
+ * and the words standing in the document are the compared words. A partial match is never rewritten.
+ */
+export function sourceRunText(e, said) {
+  if (!e || e.status !== "verbatim" || !e.sourceRun || !e.diff || !e.source || e.source.type !== "h" || e.source.via === "en") return null;
+  const compared = e.diff.filter(d => d.spoken).map(d => d.spokenDisplay || "").join(" ");
+  if (!compared || compared !== said.join(" ")) return null;
+  // the document puts its own quotation marks around the words and keeps the transcript's closing punctuation after them
+  return e.sourceRun.replace(EDGE_PUNCT, "") || null;
 }
 
 const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
@@ -56,15 +80,16 @@ export function mushafText(e, said) {
  * ledger:  entries with wordStart / wordEnd (inclusive), status, source …
  * reviews: key -> {v, note} verdicts that belong to the findings as they are now
  * mushaf:  write verbatim Qur'an matches in Mushaf spelling (see mushafText)
+ * hadithText: write verbatim hadith matches with the source's original (diacritised) words (see sourceRunText)
  * fixed:   how many transcript words the reviewer corrected (said in the closing note)
  * summary: put the committee summary after the subtitle
  * -> { title, rtl, paragraphs, footnotes, counts }
  */
-export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = "", mushaf = false, fixed = 0, summary = true }) {
+export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = "", mushaf = false, hadithText = false, fixed = 0, summary = true }) {
   const n = words.length, rtl = isArabic(words.slice(0, 60).map(w => w.w).join(" "));
   const owner = new Array(n).fill(null);
   const notes = new Map();      // entry -> footnote
-  const counts = { total: 0, confirmed: 0, verbatim: 0, partial: 0, meaning: 0, notfound: 0, manual: 0, mushaf: 0 };
+  const counts = { total: 0, confirmed: 0, verbatim: 0, partial: 0, meaning: 0, notfound: 0, manual: 0, mushaf: 0, hadithText: 0 };
   // what a person placed keeps its place; then the tool's findings in transcript order
   for (const e of [...ledger].sort((a, b) => (b.manual ? 1 : 0) - (a.manual ? 1 : 0) || a.wordStart - b.wordStart)) {
     const v = (reviews[e.key] || {}).v || null, fn = footnoteFor(e, v);
@@ -107,6 +132,8 @@ export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = 
       const m = text.match(/[.,،؛:!?؟…]+$/); if (m) { tail = m[0]; text = text.slice(0, -tail.length); }
       const written = mushaf ? mushafText(e, part) : null;
       if (written) { text = written; counts.mushaf++; }
+      const original = !written && hadithText ? sourceRunText(e, part) : null;
+      if (original) { text = original; counts.hadithText++; }
       text = open(fn.kind) + text + close(fn.kind);
     }
     runs.push({ text, quote: fn.quote, note: idx });
@@ -116,7 +143,8 @@ export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = 
   const closing = [t("doc.note.notes", String(counts.total), String(counts.confirmed))];
   if (counts.manual) closing.push(t("doc.note.manual", String(counts.manual)));
   if (counts.mushaf) closing.push(t("doc.note.mushaf"));
-  closing.push(fixed ? t("doc.note.fixed", String(fixed)) : counts.mushaf ? "" : t("doc.note.raw"));
+  if (counts.hadithText) closing.push(t("doc.note.hadithtext"));
+  closing.push(fixed ? t("doc.note.fixed", String(fixed)) : counts.mushaf || counts.hadithText ? "" : t("doc.note.raw"));
   closing.push(t("doc.note.judge"));
   paragraphs.push({ style: "Note", runs: [{ text: closing.filter(Boolean).join(" ") }] });
   return { title: title || t("doc.untitled"), rtl, paragraphs, footnotes, counts };

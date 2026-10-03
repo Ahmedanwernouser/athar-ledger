@@ -171,10 +171,12 @@ function boot() {
   $("btnDocx").onclick = () => {
     const { bytes } = citedDocx({ words: shownWords(), ledger: S.ledger, reviews: activeReviews(), title: titleNow(), fixed: fixCount(),
       mushaf: !$("optMushafWrap").hidden && $("optMushaf").checked,
+      hadithText: !$("optHadithWrap").hidden && $("optHadith").checked,
       date: new Date().toLocaleDateString(getLang() === "ar" ? "ar-EG" : "en-GB", { year: "numeric", month: "long", day: "numeric" }) });
     download("athar-cited.docx", bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
   };
   $("optMushaf").onchange = () => store.set("athar:mushaf", $("optMushaf").checked);
+  $("optHadith").onchange = () => store.set("athar:hadithtext", $("optHadith").checked);
   $("btnSave").onclick = () => download("athar-session.json", toSession({ words: S.words, title: titleNow(), review: S.review, manual: S.manual, fixes: S.fixes,
     packs: [...packs.values()].filter(p => p.state === "loaded").map(p => p.id), video: S.video ? "https://youtu.be/" + S.video : null }), "application/json");
   $("btnIndex").onclick = openIndex;
@@ -397,7 +399,7 @@ function mergeSecondPass(main, second, words) {
     if (!textual(e) || e.start == null || !HAS_AR.test(e.spoken)) continue;
     if (main.some(m => textual(m) && m.start != null && m.start < e.end + 1.5 && m.end > e.start - 1.5 && m.source && e.source && m.source.ref === e.source.ref)) continue;
     if (e.diff) for (const d of e.diff) delete d.wordIdx;       // these point into the second transcription, not into the words on screen
-    out.push({ ...e, wordStart: at(e.start), wordEnd: Math.max(at(e.start), at(e.end)), pass: "ar", mushaf: undefined });
+    out.push({ ...e, wordStart: at(e.start), wordEnd: Math.max(at(e.start), at(e.end)), pass: "ar", mushaf: undefined, sourceRun: undefined });
   }
   out.sort((a, b) => (a.start ?? a.wordStart) - (b.start ?? b.wordStart));
   out.forEach((e, i) => { e.id = i + 1; });
@@ -469,6 +471,13 @@ function setLedger(engine, added) {
   all.sort((a, b) => a.wordStart - b.wordStart || a.wordEnd - b.wordEnd || (a.manual ? 1 : 0) - (b.manual ? 1 : 0));
   all.forEach((e, i) => { e.id = i + 1; });
   S.ledger = all;
+  hadithOption();
+}
+/** the Word option "verbatim hadith in the source's wording": offered for Arabic speech when some hadith can be written that way (the display text is optional data); off unless chosen */
+function hadithOption() {
+  const w = $("optHadithWrap"); if (!w) return;
+  w.hidden = $("optMushafWrap").hidden || !S.ledger.some(e => e.sourceRun);
+  $("optHadith").checked = !w.hidden && store.get("athar:hadithtext", false) === true;
 }
 const textual = e => e.status === "verbatim" || e.status === "partial";
 
@@ -561,6 +570,7 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
   if (review) { S.review = { ...S.review, ...review }; store.set(S.reviewKey, S.review); }      // verdicts that came with a saved session
   const arabic = dirOf(words.slice(0, 40).map(w => w.w).join(" ")) === "rtl";
   $("optMushafWrap").hidden = !arabic; $("optMushaf").checked = arabic && store.get("athar:mushaf", true) !== false;
+  hadithOption();
   $("indexIntro").checked = store.get("athar:idxintro", false) === true;
   S.warnings = [...warnings];
   for (const id of packFail.keys()) S.warnings.push(msg("warn.pack", () => packName(id)));
@@ -795,6 +805,18 @@ function sourceLine(s, main) {
   return p;
 }
 const textBlock = (text, cls = "") => { const p = el("p", cls, text); const d = dirOf(text); p.classList.add(d); p.dir = d; p.lang = scriptOf(text); return p; };
+/** hadith text in its original wording (diacritics, spelling as in the dataset): always Arabic, right to left, in the reading font */
+const origBlock = (text, cls = "") => { const p = el("p", cls, text); p.classList.add("rtl", "orig"); p.dir = "rtl"; p.lang = "ar"; return p; };
+/** a text shown up to `limit` words, with a control that shows all of it (nothing is cut in the data) */
+function longBlock(text, limit, cls = "", orig = false) {
+  const ws = String(text || "").split(" "), mk = x => (orig ? origBlock(x, cls) : textBlock(x, cls));
+  if (ws.length <= limit) return mk(ws.join(" "));
+  const f = el("div", "long"), p = mk(ws.slice(0, limit).join(" ") + " …"), b = el("button", "link more", t("e.more")); b.type = "button";
+  b.onclick = () => { p.textContent = ws.join(" "); b.remove(); };
+  f.append(p, b); return f;
+}
+/** the excerpt of a candidate source: the original wording of a hadith when the worker attached it, the stored text otherwise */
+const excerptBlock = (k, cls = "") => (k.type === "h" && k.excerptDisplay ? origBlock(k.excerptDisplay, cls) : textBlock(k.excerpt || "", cls));
 /** Qur'an text, verbatim: an opening basmala is a line of its own above verse 1 (unnumbered), then the verses with their numbers */
 function quranBlock(s, cls = "", limitWords = 0) {
   const f = document.createDocumentFragment();
@@ -807,7 +829,7 @@ function quranBlock(s, cls = "", limitWords = 0) {
 const isQuran = s => !!(s && s.type === "q" && s.display);
 function candBlock(k) {
   const c = el("div", "cand"); c.append(sourceLine(k, false));
-  c.append(isQuran(k) ? quranBlock(k) : textBlock(k.excerpt || ""));        // a verse is always shown as it is written, never as search words
+  c.append(isQuran(k) ? quranBlock(k) : excerptBlock(k));        // a verse is always shown as it is written, never as search words
   if (k.translation && getLang() === "en" && (isQuran(k) || dirOf(k.excerpt) === "rtl")) c.append(textBlock(k.translation.text));
   return c;
 }
@@ -837,6 +859,7 @@ function drawEntry(e) {
   li.append(head);
 
   const src = e.source, viaEn = src && src.via === "en", srcQ = isQuran(src) && !viaEn;
+  const srcH = !!(src && src.type === "h" && !viaEn && e.diffDisplay);      // a hadith whose compared words the worker tied to the original text
   const hasDiff = e.diff && e.diff.some(d => d.kind !== "exact");
   // part of a verse recited without any difference: shown as said, next to the words of the verse it matches (never the whole verse as if it had been said)
   const partQ = srcQ && e.diff && !hasDiff && e.diffWhole === false;
@@ -849,9 +872,9 @@ function drawEntry(e) {
       pair.append(el("span", null, t("e.source.full")), quranBlock(src, "source-text"));
     } else {
       if (srcQ && src.basmala && e.diffFromStart) { const b = el("p", "basmala", src.basmala); b.dir = "rtl"; b.lang = "ar"; pair.append(el("span", null, t("e.source")), b); }
-      const so = el("p", "source-text " + dir); so.dir = dir; so.lang = lang;
+      const so = srcH ? origBlock("", "source-text") : el("p", "source-text " + dir); if (!srcH) { so.dir = dir; so.lang = lang; }
       for (const d of e.diff) {
-        const n = sourceSpan(d, srcQ ? d.sourceDisplay : d.source); if (n) so.append(n);
+        const n = sourceSpan(d, srcQ || srcH ? d.sourceDisplay : d.source); if (n) so.append(n);
         if (srcQ && d.ayahEnd) so.append(el("span", "ayah-no", `﴿${d.ayahEnd}﴾`), " ");
       }
       if (srcQ && src.basmala && e.diffFromStart) pair.append(so); else pair.append(el("span", null, t("e.source")), so);
@@ -868,15 +891,16 @@ function drawEntry(e) {
   if (e.status === "meaning" && e.meaningVia === "llm" && src) {
     li.append(sourceLine(src, true));
     const c = el("div", "cand"), strength = tOpt("strength." + e.meaningStrengthCode) || e.meaningStrength || "";
-    c.append(el("span", null, t("e.incorpus", strength)), isQuran(src) ? quranBlock(src) : textBlock(e.meaningText || "")); li.append(c);
+    c.append(el("span", null, t("e.incorpus", strength)), isQuran(src) ? quranBlock(src) : src.type === "h" && e.meaningDisplay ? origBlock(e.meaningDisplay) : textBlock(e.meaningText || "")); li.append(c);
   } else if (e.status === "meaning" && e.candidates) {
     li.append(el("p", "note", t("note.meaning_lex")));
     e.candidates.slice(0, 3).forEach(k => li.append(candBlock(k)));
   } else if (src) li.append(sourceLine(src, true));
   if (e.manual) {       // a person chose this source: say so, and show the corpus text unless it is already compared word by word above
     if (src && !(e.diff && (hasDiff || partQ))) {
-      const c = el("div", "cand"), text = src.excerpt || (src.arabic ? src.arabic.split(" ").slice(0, 80).join(" ") + (src.arabic.split(" ").length > 80 ? " …" : "") : "");
-      if (isQuran(src) || text) { c.append(el("span", null, t("e.manual.text")), isQuran(src) ? quranBlock(src) : textBlock(text)); li.append(c); }
+      const c = el("div", "cand"), origText = src.type === "h" ? (srcH && src.display) || src.excerptDisplay || (src.original && !src.excerpt ? src.arabic : "") : "";
+      const text = origText || src.excerpt || src.arabic || "";
+      if (isQuran(src) || text) { c.append(el("span", null, t("e.manual.text")), isQuran(src) ? quranBlock(src) : longBlock(text, 80, "", !!origText)); li.append(c); }
     }
     li.append(el("p", "note", t("e.manual.note")));
   }
@@ -885,13 +909,15 @@ function drawEntry(e) {
     const ed = edition(src.edition, src.type === "h");
     li.append(el("p", "note", ed ? t("e.via", ed) : t("e.via.h")));
     if (isQuran(src)) li.append(details(e, "arabic", t("e.arabic"), quranBlock(src, "cand-text", 120)));
-    else if (src.arabic) li.append(details(e, "arabic", t("e.arabic"), textBlock(src.arabic.split(" ").length > 120 ? src.arabic.split(" ").slice(0, 120).join(" ") + " …" : src.arabic, "cand-text")));
+    else if (src.arabic) li.append(details(e, "arabic", t("e.arabic"), longBlock(src.arabic, 120, "cand-text", !!src.original)));
   } else if (src && src.translation && e.status !== "notfound") {
     const ed = edition(src.translation.edition, src.type === "h");
     const d = details(e, "translation", ed ? t("e.translation", ed) : t("e.translation.h"), textBlock(src.translation.text));
     if (getLang() === "en" && !S.openState.has(e.key + "/translation")) d.open = true;
     li.append(d);
   }
+  // the hadith as the source writes it (after the chain of narrators), for a textual match made in Arabic
+  if (src && src.type === "h" && !viaEn && src.displayFull && textual(e)) li.append(details(e, "hadith", t("e.hadith.text"), longBlock(src.displayFull, 150, "cand-text", true)));
   const note = e.noteCode ? tOpt("note." + e.noteCode) : "";
   if (e.status === "notfound") {
     li.append(el("p", "note", note || t("note.notfound")));
@@ -1263,8 +1289,10 @@ function lookupCandidate(c, canAdd) {
   li.append(el("span", "status", t("lk.st." + c.status)), sourceLine(s, true));
   const matched = c.entry && c.entry.diff ? c.entry.diff.filter(d => d.source).map(d => d.source).join(" ") : "";
   const cut = x => { const ws = String(x || "").split(" "); return ws.length > 70 ? ws.slice(0, 70).join(" ") + " …" : ws.join(" "); };
-  const text = cut(matched || s.excerpt || s.arabic || "");
-  if (isQuran(s)) li.append(quranBlock(s, "cand-text", 70)); else if (text) li.append(textBlock(text, "cand-text"));
+  // a hadith is shown in its original wording when the worker attached it: the matched words, else the excerpt, else the text
+  const orig = s.type === "h" && s.via !== "en" ? (matched ? (c.entry.diffDisplay && s.display) || "" : s.excerptDisplay || (s.original && !s.excerpt ? s.arabic : "")) : "";
+  const text = cut(orig || matched || s.excerpt || s.arabic || "");
+  if (isQuran(s)) li.append(quranBlock(s, "cand-text", 70)); else if (text) li.append(orig ? origBlock(text, "cand-text") : textBlock(text, "cand-text"));
   if (s.translation && getLang() === "en") li.append(textBlock(cut(s.translation.text), "cand-text"));
   if (canAdd) { const b = el("button", "btn small", t("lk.add")); b.type = "button"; b.onclick = () => addManual(c); li.append(b); }
   return li;

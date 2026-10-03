@@ -128,3 +128,109 @@ test("fetch failure or absent folder -> null, never throws; a later attempt can 
   fail = false; flaky._shards.get(0).at = 0;                                   // as if the retry delay had passed
   assert.equal((await flaky.get("bukhari:1")).ref, "bukhari:1");
 });
+
+// ---------------- the pure functions the worker uses to show the original text (no data files needed) ----------------
+import { originalOf, originalRange, originalFull, hadithDiffDisplay, excerptOriginal, sourceRun, retryingFetcher } from "../public/js/worker.js";
+
+// a small hadith: chain, then a matn in which one stretch is repeated ("من كان يؤمن بالله")
+const ORIG = 'حَدَّثَنَا زَيْدٌ قَالَ قَالَ رَسُولُ اللَّهِ صلى الله عليه وسلم " مَنْ كَانَ يُؤْمِنُ بِاللَّهِ فَلْيَقُلْ خَيْرًا، وَمَنْ كَانَ يُؤْمِنُ بِاللَّهِ فَلْيُكْرِمْ جَارَهُ " .';
+const entryOf = (text, start = 0, exact = true) => ({ ref: "x:1", text, start, exact });
+const toksOf = (text, start = 0) => norm(text.slice(start)).split(" ");
+
+test("originalOf: one original word per indexed word; ranges are cut on word boundaries; the chain is left out of the full text", () => {
+  const toks = toksOf(ORIG), o = originalOf(entryOf(ORIG), toks, 3);
+  assert.ok(o, "mapped");
+  assert.equal(o.words.length, toks.length);
+  assert.deepEqual(o.words.map(norm), toks);
+  assert.equal(o.words[toks.indexOf("خيرا")], "خَيْرًا،", "punctuation stays attached to its word");
+  const a = toks.indexOf("من"), b = toks.indexOf("خيرا");
+  assert.equal(originalRange(o, a, b), "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ فَلْيَقُلْ خَيْرًا،");
+  // the punctuation that stands alone between two words is kept; a quotation mark without its partner is not
+  assert.equal(originalRange(o, a - 1, a), "وسلم مَنْ");
+  assert.equal(originalRange(o, a - 1, toks.length - 1).split('"').length, 1, "an unpaired quotation mark is dropped");
+  assert.ok(originalFull(originalOf(entryOf(ORIG), toks, 0)).includes('" مَنْ كَانَ'), "the full text is the dataset's text, quotation marks included");
+  assert.ok(originalFull(o).startsWith("قَالَ رَسُولُ اللَّهِ"), "the first 3 words (the chain) are left out");
+  assert.equal(originalFull(originalOf(entryOf(ORIG), toks, 0)), ORIG);
+  assert.equal(originalRange(o, 5, 2), "");
+  assert.equal(originalRange(o, 0, toks.length), "");
+  // start > 0: only the text after the chain was indexed
+  const start = ORIG.indexOf("قَالَ رَسُولُ");
+  const o2 = originalOf(entryOf(ORIG, start), toksOf(ORIG, start));
+  assert.equal(originalFull(o2), ORIG.slice(start));
+  // not exact, another word count, a word that is not the indexed word at its position: no mapping at all
+  assert.equal(originalOf(entryOf(ORIG, 0, false), toks), null);
+  assert.equal(originalOf(entryOf(ORIG), toks.slice(1)), null);
+  assert.equal(originalOf(entryOf(ORIG), toks.map((w, i) => (i === 4 ? "اخر" : w))), null);
+  assert.equal(originalOf(null, toks), null);
+});
+
+test("hadithDiffDisplay: each source word of the comparison gets the original word AT ITS POSITION", () => {
+  const toks = toksOf(ORIG), o = originalOf(entryOf(ORIG), toks, 3);
+  const at = toks.indexOf("فليقل") - 4;       // "من كان يؤمن بالله فليقل خيرا"
+  const diff = [
+    { kind: "exact", spoken: "من", source: "من" }, { kind: "exact", spoken: "كان", source: "كان" }, { kind: "exact", spoken: "يؤمن", source: "يؤمن" },
+    { kind: "exact", spoken: "بالله", source: "بالله" }, { kind: "exact", spoken: "فليقل", source: "فليقل" }, { kind: "ins", spoken: "كلاما", source: "" },
+    { kind: "diff", spoken: "طيبا", source: "خيرا" }, { kind: "del", spoken: "", source: "ومن" }, { kind: "asr", spoken: "كانيؤمن", source: "كان يؤمن" },
+  ];
+  const r = hadithDiffDisplay(diff, toks, o.words);
+  assert.deepEqual(r, { at, len: 9, unique: true });
+  assert.deepEqual(diff.map(d => d.sourceDisplay), ["مَنْ", "كَانَ", "يُؤْمِنُ", "بِاللَّهِ", "فَلْيَقُلْ", undefined, "خَيْرًا،", "وَمَنْ", "كَانَ يُؤْمِنُ"]);
+  for (const d of diff) if (d.source) assert.equal(norm(d.sourceDisplay), d.source, "the shown word is the compared word");
+  assert.equal(originalRange(o, r.at, r.at + r.len - 1), "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ فَلْيَقُلْ خَيْرًا، وَمَنْ كَانَ يُؤْمِنُ");
+  // a stretch that stands twice with the same original words: shown (the words are the same wherever it is), flagged not unique
+  const twice = [{ kind: "exact", spoken: "كان", source: "كان" }, { kind: "exact", spoken: "يؤمن", source: "يؤمن" }, { kind: "exact", spoken: "بالله", source: "بالله" }];
+  assert.equal(hadithDiffDisplay(twice, toks, o.words).unique, false);
+  assert.deepEqual(twice.map(d => d.sourceDisplay), ["كَانَ", "يُؤْمِنُ", "بِاللَّهِ"]);
+  // … with different original words in the two places ("من" / "ومن" normalise apart, so use a doctored text): nothing is shown
+  const two = "قَالَ الرَّجُلُ خَيْرًا ثُمَّ قَالَ الرَّجُلَ شَرًّا", t2 = toksOf(two), o2 = originalOf(entryOf(two), t2);
+  const amb = [{ kind: "exact", spoken: "قال", source: "قال" }, { kind: "exact", spoken: "الرجل", source: "الرجل" }];
+  assert.equal(hadithDiffDisplay(amb, t2, o2.words), false);
+  assert.ok(amb.every(d => d.sourceDisplay === undefined), "no word is attached when its place is not certain");
+  // words that are not in the passage, an empty comparison, a word list of another length
+  assert.equal(hadithDiffDisplay([{ kind: "exact", spoken: "صدقه", source: "صدقه" }], toks, o.words), false);
+  assert.equal(hadithDiffDisplay([{ kind: "ins", spoken: "قال", source: "" }], toks, o.words), false);
+  assert.equal(hadithDiffDisplay(twice.map(d => ({ ...d })), toks, o.words.slice(1)), false);
+  assert.equal(hadithDiffDisplay(null, toks, o.words), false);
+});
+
+test("excerptOriginal: the engine's excerpt in the original wording, cut at the same words, the chain left out", () => {
+  const toks = toksOf(ORIG), o = originalOf(entryOf(ORIG), toks, 3), N = toks.length;
+  const mid = toks.slice(12, 16).join(" ");
+  assert.equal(excerptOriginal(`… ${mid} …`, toks, o), `… ${originalRange(o, 12, 15)} …`);
+  // from the first word: the chain is not shown, and the text then starts at the matn without "…"
+  assert.equal(excerptOriginal(toks.slice(0, 9).join(" ") + " …", toks, o), originalRange(o, 3, 8) + " …");
+  assert.equal(excerptOriginal(toks.join(" "), toks, o), originalRange(o, 3, N - 1));
+  assert.equal(excerptOriginal("… " + toks.slice(N - 3).join(" "), toks, o), "… " + originalRange(o, N - 3, N - 1));
+  // an excerpt whose words stand twice with the same wording is placed by where it was cut
+  assert.ok(excerptOriginal("… كان يؤمن بالله …", toks, o).includes("كَانَ يُؤْمِنُ بِاللَّهِ"));
+  // not placed: null, and the caller keeps the stored excerpt
+  assert.equal(excerptOriginal("… كلمات ليست في النص …", toks, o), null);
+  assert.equal(excerptOriginal("", toks, o), null);
+  assert.equal(excerptOriginal(undefined, toks, o), null);
+  assert.equal(excerptOriginal(mid, toks, null), null);
+  // a text that may stand anywhere (not anchored): found in the middle without "…" marks around it
+  assert.equal(excerptOriginal(mid, toks, o, false), `… ${originalRange(o, 12, 15)} …`);
+});
+
+test("sourceRun: only a verbatim hadith whose every word is tied one to one; retryingFetcher repeats a failed request once", async () => {
+  const d = (kind, spoken, source, sd = source && source + "ٌ") => ({ kind, spoken, source, sourceDisplay: sd, spokenDisplay: spoken });
+  const e = { status: "verbatim", diffDisplay: true, source: { type: "h", ref: "x:1" }, diff: [d("exact", "تبسمك", "تبسمك"), d("asr", "في", "في"), d("near", "وجه", "وجه")] };
+  assert.equal(sourceRun(e), "تبسمكٌ فيٌ وجهٌ");
+  assert.equal(sourceRun({ ...e, status: "partial" }), null);
+  assert.equal(sourceRun({ ...e, diffDisplay: false }), null);
+  assert.equal(sourceRun({ ...e, source: { type: "q", ref: "1:1" } }), null);
+  assert.equal(sourceRun({ ...e, source: { type: "h", ref: "x:1", via: "en" } }), null);
+  assert.equal(sourceRun({ ...e, diff: [...e.diff, d("ins", "يا", "")] }), null, "an added word");
+  assert.equal(sourceRun({ ...e, diff: [...e.diff, d("del", "", "صدقه")] }), null, "an omitted word");
+  assert.equal(sourceRun({ ...e, diff: [...e.diff, d("diff", "حسنه", "صدقه")] }), null, "a changed word");
+  assert.equal(sourceRun({ ...e, diff: e.diff.map((x, i) => (i ? x : { ...x, spokenDisplay: undefined })) }), null, "a word not tied to the transcript");
+  assert.equal(sourceRun({ ...e, diff: e.diff.map((x, i) => (i ? x : { ...x, sourceDisplay: undefined })) }), null, "a word without its original");
+  let calls = 0;
+  const f = retryingFetcher(async name => { calls++; if (calls === 1) throw new Error("network"); return { name }; }, 1);
+  assert.deepEqual(await f("a.json", "json"), { name: "a.json" });
+  assert.equal(calls, 2);
+  calls = 0;
+  const dead = retryingFetcher(async () => { calls++; throw new Error("404"); }, 1);
+  await assert.rejects(() => dead("a.json", "json"));
+  assert.equal(calls, 2, "one retry, not more");
+});

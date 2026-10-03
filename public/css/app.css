@@ -451,3 +451,8 @@ kbd { display: inline-block; min-width: 1.7em; text-align: center; direction: lt
   .lookup-said { font-size: 1.15rem; }
   .keys { gap: 4px 14px; }
 }
+
+/* hadith text in its original wording (diacritics): the reading font, with room for the marks above and below the line */
+.orig { font-family: var(--quote); }
+.cand p.orig, .cand-text.orig, .lk .cand-text.orig { line-height: 2.1; }
+.long .more { font-size: .84rem; margin-top: 2px; }
