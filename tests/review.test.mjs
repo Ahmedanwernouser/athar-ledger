@@ -177,9 +177,12 @@ test("H7 a quotation repeated shortly after itself gives one entry per repetitio
 
 // ------------------------------------------------------------------ MEDIUM
 
-test("M a Qur'anic phrase is credited to the ayah, hadith that contain it are parallels", () => {
-  const e = one("فقلنا إنا لله وإنا إليه راجعون");
+// (changed with tests/four.test.mjs, defect 2: this test used to require the citation for the bare words "فقلنا إنا لله
+// وإنا إليه راجعون". Everyday dhikr without a Qur'an cue, reference or brackets is no longer a citation.)
+test("M a Qur'anic phrase announced as Qur'an is credited to the ayah, hadith that contain it are parallels", () => {
+  const e = one("قال الله تعالى إنا لله وإنا إليه راجعون");
   assert.equal(e.source.ref, "2:156"); assert.ok(e.parallels.some(p => p.collection === "muslim"));
+  assert.equal(textual(run("فقلنا إنا لله وإنا إليه راجعون")).length, 0);
 });
 
 test("M pasted ayah markers do not count as added words", () => {

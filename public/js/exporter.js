@@ -2,7 +2,7 @@
 import { fmtTime } from "./text.js";
 import { t, tOpt, srcLabel } from "./i18n.js";
 
-const COLS = ["id", "start", "end", "word", "kind", "status", "fidelity", "agreement", "spoken", "source", "ref", "url", "parallels", "attr", "review", "note"];
+const COLS = ["id", "start", "end", "word", "kind", "status", "fidelity", "agreement", "spoken", "source", "ref", "url", "parallels", "attr", "review", "note", "origin"];
 
 /** review: key -> {v, note} holding only verdicts that belong to the finding as it is now (stale ones are left out by the caller) */
 export function toRows(ledger, review = {}) {
@@ -15,7 +15,7 @@ export function toRows(ledger, review = {}) {
       spoken: e.spoken, source: e.source ? srcLabel(e.source) : "", ref: e.source ? e.source.ref : "",
       url: e.source ? e.source.url || "" : "", parallels: (e.parallels || []).map(p => srcLabel(p, true)).join("؛ "),
       attr: e.attribution ? tOpt("attr." + e.attribution.code) || e.attribution.text || "" : "",
-      review: rv.v ? tOpt("rv." + rv.v) : "", note: rv.note || "",
+      review: rv.v ? tOpt("rv." + rv.v) : "", note: rv.note || "", origin: e.manual ? t("csv.origin.manual") : "",
     };
   });
 }

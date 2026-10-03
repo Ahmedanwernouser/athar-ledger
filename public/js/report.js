@@ -2,8 +2,10 @@
 // The words stay exactly as transcribed; every textual citation is set off as a quotation and gets a footnote with its source.
 // Footnotes are an automatic draft: one a person has confirmed ("صحيح") is printed plain, every other one carries a "*".
 // An entry a person marked "غير صحيح" gets no footnote at all.
-import { t, srcLabel } from "./i18n.js";
+// An entry the reviewer added by hand ("manual") is a person's choice: its footnote has no "*" and says who added it.
+import { t, srcLabel, num, getLang, collectionName } from "./i18n.js";
 import { buildDocx } from "./docx.js";
+import { fmtTime } from "./text.js";
 
 const SENTENCE_END = /[.!?؟…]["'»”)]*$/;
 const PARA_MAX = 180, PARA_MIN = 70;
@@ -12,7 +14,8 @@ const isArabic = s => /[؀-ۿ]/.test(s);
 /** what the footnote of one ledger entry says, or null when the entry gets none */
 export function footnoteFor(e, verdict) {
   if (verdict === "no") return null;
-  const s = e.source, star = verdict === "yes" ? "" : " *";
+  const s = e.source, star = verdict === "yes" || e.manual ? "" : " *";
+  if (e.manual && s && e.status === "meaning") return { text: t("doc.fn.manual.meaning", srcLabel(s)) + (verdict === "unsure" ? " " + t("doc.fn.unsure") : "") + " " + t("doc.fn.manual"), quote: false, kind: s.type };
   if ((e.status === "verbatim" || e.status === "partial") && s) {
     let x = srcLabel(s);
     const others = (e.parallels || []).filter(p => p.type !== "b").slice(0, 3).map(p => srcLabel(p, true));
@@ -24,6 +27,7 @@ export function footnoteFor(e, verdict) {
     if (e.attribution && e.attribution.agrees === false) x += " " + t("doc.fn.attr");
     if (e.tailUnmatched) x += " " + t("doc.fn.tail");
     if (verdict === "unsure") x += " " + t("doc.fn.unsure");
+    if (e.manual) x += " " + t("doc.fn.manual");
     return { text: x + star, quote: true, kind: s.type };
   }
   if (e.status === "meaning" && s) return { text: t("doc.fn.meaning", srcLabel(s)) + star, quote: false, kind: s.type };
@@ -31,18 +35,38 @@ export function footnoteFor(e, verdict) {
   return null;
 }
 
+const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+const arDigits = s => String(s).replace(/\d/g, d => AR_DIGITS[+d]);
 /**
- * words:   [{w}]            the transcript as shown
+ * The Mushaf text that replaces the transcribed words of one entry in the document, or null (the words stay as transcribed).
+ * Only for a verbatim Qur'an match made directly in Arabic whose every word the worker tied to one word of the verse
+ * (entry.mushaf), and only when the words standing in the document ARE the compared words — never a guess.
+ * `said` is the entry's stretch of the document, word by word.
+ */
+export function mushafText(e, said) {
+  if (!e || e.status !== "verbatim" || !e.mushaf || !e.diff || !e.source || e.source.type !== "q" || e.source.via === "en") return null;
+  const compared = e.diff.filter(d => d.spoken).map(d => d.spokenDisplay || "").join(" ");
+  if (!compared || compared !== said.join(" ")) return null;
+  // verse numbers go inside the quotation marks ﴿ … ﴾ as (٤); the hizb ornament that opens an ayah is a page mark, not a word
+  return e.mushaf.replace(/^۞\s*/, "").replace(/﴿(\d+)﴾/g, (_, k) => `(${arDigits(k)})`);
+}
+
+/**
+ * words:   [{w}]            the transcript as shown (a word the reviewer corrected carries the corrected text; "" = removed)
  * ledger:  entries with wordStart / wordEnd (inclusive), status, source …
  * reviews: key -> {v, note} verdicts that belong to the findings as they are now
+ * mushaf:  write verbatim Qur'an matches in Mushaf spelling (see mushafText)
+ * fixed:   how many transcript words the reviewer corrected (said in the closing note)
+ * summary: put the committee summary after the subtitle
  * -> { title, rtl, paragraphs, footnotes, counts }
  */
-export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = "" }) {
+export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = "", mushaf = false, fixed = 0, summary = true }) {
   const n = words.length, rtl = isArabic(words.slice(0, 60).map(w => w.w).join(" "));
   const owner = new Array(n).fill(null);
   const notes = new Map();      // entry -> footnote
-  const counts = { total: 0, confirmed: 0, verbatim: 0, partial: 0, meaning: 0, notfound: 0 };
-  for (const e of [...ledger].sort((a, b) => a.wordStart - b.wordStart)) {
+  const counts = { total: 0, confirmed: 0, verbatim: 0, partial: 0, meaning: 0, notfound: 0, manual: 0, mushaf: 0 };
+  // what a person placed keeps its place; then the tool's findings in transcript order
+  for (const e of [...ledger].sort((a, b) => (b.manual ? 1 : 0) - (a.manual ? 1 : 0) || a.wordStart - b.wordStart)) {
     const v = (reviews[e.key] || {}).v || null, fn = footnoteFor(e, v);
     if (!fn) continue;
     const a = Math.max(0, e.wordStart), b = Math.min(n - 1, e.wordEnd);
@@ -50,11 +74,17 @@ export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = 
     let free = true; for (let i = a; i <= b; i++) if (owner[i]) { free = false; break; }
     if (!free) continue;      // overlapping entries: the first one keeps the place
     for (let i = a; i <= b; i++) owner[i] = e;
-    notes.set(e, fn); counts.total++; counts[e.status]++; if (v === "yes") counts.confirmed++;
+    notes.set(e, fn); counts.total++; counts[e.status]++; if (v === "yes") counts.confirmed++; if (e.manual) counts.manual++;
   }
   const footnotes = [], paragraphs = [];
   paragraphs.push({ style: "Title", runs: [{ text: title || t("doc.untitled") }] });
   paragraphs.push({ style: "Subtitle", rtl: undefined, runs: [{ text: t("doc.subtitle", date) }] });
+  if (summary) {
+    const lines = summaryLines(committeeSummary(ledger, reviews));
+    paragraphs.push({ style: "SummaryHead", rtl: undefined, runs: [{ text: t("sumry.title") }] });
+    for (const l of lines) paragraphs.push(l.value == null ? { style: "SummaryNote", rtl: undefined, runs: [{ text: l.label }] }
+      : { style: "Summary", rtl: undefined, runs: [{ text: l.label + t("sumry.colon"), bold: true }, { text: l.value }] });
+  }
   const open = k => (rtl ? (k === "q" ? "﴿" : "«") : "“"), close = k => (rtl ? (k === "q" ? "﴾" : "»") : "”");
   let runs = [], plain = [], inPara = 0;
   const flushPlain = () => { if (plain.length) { runs.push({ text: plain.join(" ") + " " }); plain = []; } };
@@ -62,22 +92,33 @@ export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = 
   for (let i = 0; i < n;) {
     const e = owner[i];
     if (!e) {
+      if (!words[i].w) { i++; continue; }      // a word the reviewer removed
       plain.push(words[i].w); inPara++; i++;
       if (inPara >= PARA_MAX || (inPara >= PARA_MIN && SENTENCE_END.test(words[i - 1].w))) flushPara();
       continue;
     }
     flushPlain();
     const fn = notes.get(e), from = i, part = [];
-    while (i < n && owner[i] === e) part.push(words[i++].w);
+    while (i < n && owner[i] === e) { if (words[i].w) part.push(words[i].w); i++; }
     inPara += i - from;
     const idx = footnotes.push({ runs: [{ text: fn.text }] }) - 1;
     let text = part.join(" "), tail = "";
-    if (fn.quote) { const m = text.match(/[.,،؛:!?؟…]+$/); if (m) { tail = m[0]; text = text.slice(0, -tail.length); } text = open(fn.kind) + text + close(fn.kind); }
+    if (fn.quote) {
+      const m = text.match(/[.,،؛:!?؟…]+$/); if (m) { tail = m[0]; text = text.slice(0, -tail.length); }
+      const written = mushaf ? mushafText(e, part) : null;
+      if (written) { text = written; counts.mushaf++; }
+      text = open(fn.kind) + text + close(fn.kind);
+    }
     runs.push({ text, quote: fn.quote, note: idx });
     runs.push({ text: tail + " " });
   }
   flushPara();
-  paragraphs.push({ style: "Note", runs: [{ text: t("doc.note", String(counts.total), String(counts.confirmed)) }] });
+  const closing = [t("doc.note.notes", String(counts.total), String(counts.confirmed))];
+  if (counts.manual) closing.push(t("doc.note.manual", String(counts.manual)));
+  if (counts.mushaf) closing.push(t("doc.note.mushaf"));
+  closing.push(fixed ? t("doc.note.fixed", String(fixed)) : counts.mushaf ? "" : t("doc.note.raw"));
+  closing.push(t("doc.note.judge"));
+  paragraphs.push({ style: "Note", runs: [{ text: closing.filter(Boolean).join(" ") }] });
   return { title: title || t("doc.untitled"), rtl, paragraphs, footnotes, counts };
 }
 
@@ -87,12 +128,47 @@ export function citedDocx(args) {
 }
 
 // ---------------- saved sessions ----------------
-/** everything needed to come back to a review later: the words, the title, the verdicts, the packs in use */
-export function toSession({ words, title, review, packs = [], video = null }) {
+/**
+ * everything needed to come back to a review later: the words (as transcribed), the title, the verdicts, the packs in use,
+ * `manual` — the citations the reviewer added: [{a, b, ref, status, src}] (word range, stable source reference, status, a
+ *            small description of the source for when it cannot be described again), and
+ * `fixes`  — the transcript words the reviewer corrected: {word index: corrected text} ("" = the word was removed)
+ */
+export function toSession({ words, title, review, packs = [], video = null, manual = [], fixes = {} }) {
   return JSON.stringify({ athar_session: 1, title, packs, video,
-    words: words.map(w => (w.start != null ? [w.w, Math.round(w.start * 100) / 100, Math.round((w.end ?? w.start) * 100) / 100] : [w.w])), review }, null, 0);
+    words: words.map(w => (w.start != null ? [w.w, Math.round(w.start * 100) / 100, Math.round((w.end ?? w.start) * 100) / 100] : [w.w])), review,
+    manual: cleanManual(manual, words.length), fixes: cleanFixes(fixes, words.length) }, null, 0);
 }
-/** -> { words, title, review, packs, video } or null when the object is not a saved session */
+const MANUAL_STATUS = ["verbatim", "partial", "meaning"], SRC_TEXT = ["type", "label", "short", "url", "collection", "ref"], SRC_NUM = ["surah", "ayah", "ayahEnd"];
+/** the reviewer's own additions, cleaned: anything that is not a word range inside the transcript with a source reference is dropped */
+export function cleanManual(list, n) {
+  const out = [];
+  for (const m of Array.isArray(list) ? list : []) {
+    if (!m || typeof m !== "object" || !Number.isInteger(m.a) || !Number.isInteger(m.b) || m.a < 0 || m.b < m.a || m.b >= n) continue;
+    if (typeof m.ref !== "string" || !m.ref || m.ref.length > 200 || out.some(x => x.a <= m.b && m.a <= x.b)) continue;
+    const src = { ref: m.ref };
+    if (m.src && typeof m.src === "object") {
+      for (const k of SRC_TEXT) if (typeof m.src[k] === "string" && k !== "ref") src[k] = m.src[k].slice(0, 400);
+      for (const k of SRC_NUM) if (Number.isInteger(m.src[k])) src[k] = m.src[k];
+      if (typeof m.src.number === "string" || Number.isFinite(m.src.number)) src.number = String(m.src.number).slice(0, 40);
+      if (src.url && !/^https:\/\//.test(src.url)) delete src.url;
+    }
+    if (!["q", "h", "b"].includes(src.type)) src.type = /^\d+:\d+/.test(m.ref) ? "q" : "h";
+    out.push({ a: m.a, b: m.b, ref: m.ref, status: MANUAL_STATUS.includes(m.status) ? m.status : "meaning", src });
+  }
+  return out.sort((x, y) => x.a - y.a);
+}
+/** the reviewer's corrections, cleaned: {index inside the transcript: text of at most 200 characters, on one line} */
+export function cleanFixes(fixes, n) {
+  const out = {};
+  if (fixes && typeof fixes === "object") for (const [k, v] of Object.entries(fixes)) {
+    const i = Number(k);
+    if (!/^\d+$/.test(k) || !Number.isInteger(i) || i >= n || typeof v !== "string") continue;
+    out[i] = v.replace(/\s+/g, " ").trim().slice(0, 200);
+  }
+  return out;
+}
+/** -> { words, title, review, packs, video, manual, fixes } or null when the object is not a saved session */
 export function fromSession(j) {
   if (!j || typeof j !== "object" || j.athar_session !== 1 || !Array.isArray(j.words)) return null;
   const words = [];
@@ -107,7 +183,74 @@ export function fromSession(j) {
     review[k] = { v: ["yes", "no", "unsure"].includes(r.v) ? r.v : null, note: typeof r.note === "string" ? r.note.slice(0, 2000) : "", sig: typeof r.sig === "string" ? r.sig : "" };
   }
   return { words, title: typeof j.title === "string" ? j.title.slice(0, 300) : "", review, packs: Array.isArray(j.packs) ? j.packs.filter(x => typeof x === "string") : [],
-    video: typeof j.video === "string" ? j.video : null };
+    video: typeof j.video === "string" ? j.video : null, manual: cleanManual(j.manual, words.length), fixes: cleanFixes(j.fixes, words.length) };
+}
+
+// ---------------- summary for the review committee ----------------
+const TEXTUAL = ["verbatim", "partial"], STATUSES = ["verbatim", "partial", "meaning", "lead", "notfound"];
+/**
+ * Counts taken from the ledger as it is now and the verdicts that belong to it.
+ * A "citation" in quran / hadith / books is a textual match (verbatim or partial) or an entry the reviewer added,
+ * unless the reviewer marked it incorrect.
+ */
+export function committeeSummary(ledger, reviews = {}) {
+  const s = { total: ledger.length, quran: 0, hadith: 0, books: 0, collections: {}, notfound: 0, attribution: 0, manual: 0,
+    status: Object.fromEntries(STATUSES.map(k => [k, 0])), review: { yes: 0, no: 0, unsure: 0, none: 0 } };
+  for (const e of ledger) {
+    const v = (reviews[e.key] || {}).v || null;
+    s.review[["yes", "no", "unsure"].includes(v) ? v : "none"]++;
+    if (s.status[e.status] != null) s.status[e.status]++;
+    if (e.manual) s.manual++;
+    if (e.status === "notfound" && e.cue) s.notfound++;
+    if (e.attribution && e.attribution.agrees === false) s.attribution++;
+    if (v === "no" || !e.source || !(e.manual || TEXTUAL.includes(e.status))) continue;
+    if (e.source.type === "q") s.quran++;
+    else if (e.source.type === "b") s.books++;
+    else { s.hadith++; const c = e.source.collection || "?"; s.collections[c] = (s.collections[c] || 0) + 1; }
+  }
+  return s;
+}
+/** the summary as lines in the interface language: [{label, value}] (value null = a remark) */
+export function summaryLines(s) {
+  const sep = t("sumry.sep"), pair = (label, k) => `${label} ${num(k)}`;
+  const cols = Object.entries(s.collections).sort((a, b) => b[1] - a[1]).map(([c, k]) => pair(collectionName(c), k)).join(sep);
+  return [
+    { label: t("sumry.quran"), value: num(s.quran) },
+    { label: t("sumry.hadith"), value: num(s.hadith) + (cols ? ` (${cols})` : "") },
+    { label: t("sumry.books"), value: num(s.books) },
+    { label: t("sumry.notfound"), value: num(s.notfound) },
+    { label: t("sumry.attr"), value: num(s.attribution) },
+    { label: t("sumry.status"), value: STATUSES.map(k => pair(t("short." + k), s.status[k])).join(sep) },
+    { label: t("sumry.review"), value: [["yes", "rv.yes"], ["no", "rv.no"], ["unsure", "rv.unsure"], ["none", "sumry.none"]].map(([k, key]) => pair(t(key), s.review[k])).join(sep) },
+    { label: t("sumry.manual"), value: num(s.manual) },
+    { label: t("sumry.rule"), value: null },
+  ];
+}
+
+// ---------------- citation index for a video description ----------------
+const QUOTE_WORDS = 8;
+/**
+ * One line per textual citation that has a time (verbatim, partial, or added by the reviewer), without those marked incorrect:
+ *   0:17 آية — سورة القلم ٤
+ *   0:46 حديث — صحيح مسلم 47a: من كان يؤمن بالله واليوم الآخر…
+ * intro: put "0:00 المقدمة" first when no citation starts at 0:00 (video sites want chapter lists to begin at 0:00).
+ */
+export function descriptionIndex(ledger, reviews = {}, { intro = false } = {}) {
+  const ar = getLang() === "ar", lines = [];
+  const list = ledger.filter(e => e.source && (e.manual || TEXTUAL.includes(e.status)) && Number.isFinite(e.start) && (reviews[e.key] || {}).v !== "no")
+    .sort((a, b) => a.start - b.start || a.wordStart - b.wordStart);
+  for (const e of list) {
+    const s = e.source, time = fmtTime(e.start);
+    if (s.type === "q") {
+      const many = (s.ayahEnd || s.ayah) !== s.ayah, label = srcLabel(s, true);
+      lines.push(`${time} ${t(many ? "idx.verses" : "idx.verse")} — ${ar ? t("idx.surah", arDigits(label)) : label}`);
+    } else {
+      const ws = String(e.spoken || "").split(/\s+/).filter(Boolean), said = ws.slice(0, QUOTE_WORDS).join(" ").replace(/[.,،؛:!?؟…]+$/, "") + (ws.length > QUOTE_WORDS ? "…" : "");
+      lines.push(`${time} ${t(s.type === "b" ? "idx.book" : "idx.hadith")} — ${srcLabel(s, true)}${said ? ": " + said : ""}`);
+    }
+  }
+  if (intro && lines.length && fmtTime(list[0].start) !== "0:00") lines.unshift(`0:00 ${t("idx.intro")}`);
+  return lines.join("\n");
 }
 
 // ---------------- pasted video transcripts ----------------

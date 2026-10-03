@@ -120,11 +120,48 @@ export function within1(a, b) {
   return x === la;
 }
 
+// ---- the same word in another grammatical form ----
+// "أعنّا" for "أعنّي", "كتابهم" for "كتابه", "يعلمون" for "تعلمون", "والصلاة" for "الصلاة": one letter apart, yet a real
+// difference of wording — never a transcription slip. No vocabulary can list every inflected form, so the forms are
+// compared directly: when both words are the SAME stem with different affixes (pronoun suffix, verb person / number /
+// gender marker, article, conjunction or preposition prefix), the pair is a grammatical variant.
+const INFL_PRE = ["", "و", "ف", "ب", "ل", "ك", "س", "ال", "وال", "فال", "بال", "كال", "لل", "ولل", "فلل", "ي", "ت", "ن", "ا",
+  "وي", "وت", "ون", "وا", "في", "فت", "فن", "فا", "لي", "لت", "لن", "سي", "ست", "سن", "سا", "وب", "ول", "فب", "فل"];
+const INFL_SUF = ["", "ي", "ني", "نا", "ه", "ها", "هم", "هن", "هما", "ك", "كم", "كن", "كما", "ت", "تم", "تن", "تما", "وا", "ون", "ين", "ان", "ات", "ا"];
+const PRONOUN_SUF = new Set(["ي", "ني", "نا", "ه", "ها", "هم", "هن", "هما", "ك", "كم", "كن", "كما"]);
+const ARTICLE = /^[وفبك]?(?:ال|لل)/;
+function inflSplits(w) {
+  const out = [], art = ARTICLE.test(w);
+  for (const p of INFL_PRE) {
+    if (p && !w.startsWith(p)) continue;
+    for (const s of INFL_SUF) {
+      if (s && !w.endsWith(s)) continue;
+      if (w.length - p.length - s.length < 2) continue;
+      // a noun with the article takes no pronoun ("الصلاه" does not end in a pronoun: that ه is the ta marbuta)
+      if (art && PRONOUN_SUF.has(s)) continue;
+      out.push(w.slice(p.length, w.length - s.length), p, s);
+    }
+  }
+  return out;
+}
+/**
+ * true when a and b (normalised, different) are one stem with different affixes. A final "وا" written "و" ("قالو") is
+ * spelling, not grammar.
+ */
+export function inflectionOf(a, b) {
+  if (a === b || isLatin(a) || isLatin(b)) return false;
+  if ((a.endsWith("و") && b === a + "ا") || (b.endsWith("و") && a === b + "ا")) return false;
+  const A = inflSplits(a), B = inflSplits(b);
+  for (let i = 0; i < A.length; i += 3) for (let j = 0; j < B.length; j += 3)
+    if (A[i] === B[j] && (A[i + 1] !== B[j + 1] || A[i + 2] !== B[j + 2])) return true;
+  return false;
+}
+
 /**
  * Compare a spoken word (from the transcript) with a source word. Both are already normalised.
  *   "exact" — identical after normalisation
  *   "asr"   — identical after phonetic folding (ص/س, ذ/ز, ق/ك ...): almost certainly a transcription artefact
- *   "near"  — one letter apart (two for long words): may be transcription or a small wording variant
+ *   "near"  — one letter apart (two for long words) and not a grammatical variant of the source word: a mis-heard non-word
  *   "diff"  — a different word
  * isWord(a): optional test "is this spoken form a word of the corpus vocabulary?" (see Corpus.isWord)
  */
@@ -139,7 +176,8 @@ export function wordSim(a, b, fa = fold(a), fb = fold(b), isWord = null) {
   }
   // Real-word rule: a spoken form that is itself a word of the corpus is a WORDING difference (يكفر / يغفر, كفور / غفور),
   // never a transcription artefact — only a non-word may be excused as mis-heard.
-  if (k !== "diff" && isWord && isWord(a)) return "diff";
+  // ... and so is the same word in another grammatical form, whether or not the corpus happens to contain that form.
+  if (k !== "diff" && isWord && (isWord(a) || (k === "near" && inflectionOf(a, b)))) return "diff";
   return k;
 }
 

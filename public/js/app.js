@@ -2,7 +2,7 @@
 import { fmtTime, fnv1a, wordsFromText } from "./text.js";
 import { prepare, transcribePrepared, wordsFromWhisper, AsrError, llmStops } from "./asr.js";
 import { toCsv, toJson, download } from "./exporter.js";
-import { citedDocx, toSession, fromSession, parseStampedText, youtubeId } from "./report.js";
+import { citedDocx, toSession, fromSession, parseStampedText, youtubeId, cleanManual, cleanFixes, committeeSummary, summaryLines, descriptionIndex } from "./report.js";
 import { t, tOpt, has, num, setLang, getLang, srcLabel, LANGS } from "./i18n.js";
 
 const CFG = window.ATHAR_CONFIG || {};
@@ -43,6 +43,12 @@ const S = {
   info: null, corpus: "loading", corpusErr: "", samplesFailed: false,
   err: null, busy: null, packNote: null,
   meaning: { state: "idle", done: 0, total: 0, hit: 0 },
+  // the reviewer's own work on this transcript (kept in localStorage next to the verdicts, and in a saved session)
+  fixes: {},            // word index -> corrected text ("" = the word is removed). S.words always holds the words as transcribed
+  manual: [],           // citations the reviewer added: {a, b, ref, status, src}
+  extra: null,          // the words of the second (Arabic) transcription pass, kept for analysing again after a correction
+  onlyOpen: false, keepOpen: new Set(),      // "not reviewed yet" filter; entries reviewed while it is on stay until it is toggled
+  fixKey: "", manualKey: "", reworking: false, focusAfter: null,
 };
 let corpusReady = null;
 
@@ -88,7 +94,7 @@ function stopAudio() {
   $("videoFrame").removeAttribute("src"); $("video").hidden = true; S.video = null;
 }
 function goStart() {
-  cancelRun(); stopAudio(); clearError(); screen("start"); window.scrollTo(0, 0);
+  cancelRun(); stopAudio(); clearError(); screen("start"); window.scrollTo(0, 0); $("selAct").hidden = true;
   $("startTitle").focus({ preventScroll: true });
 }
 
@@ -156,17 +162,34 @@ function boot() {
   };
   const dlg = $("limits");
   $("btnLimits").onclick = () => dlg.showModal();
-  dlg.onclick = e => { if (e.target !== dlg) return; const r = dlg.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dlg.close(); };
+  dlg.onclick = function (e) { if (e.target !== this) return; const r = this.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) this.close(); };
   $("btnNew").onclick = goStart;
+  for (const d of document.querySelectorAll("dialog")) if (d !== dlg) d.onclick = dlg.onclick;       // a click on the backdrop closes
   $("btnCsv").onclick = () => download("athar-ledger.csv", toCsv(S.ledger, activeReviews()), "text/csv;charset=utf-8");
-  $("btnJson").onclick = () => download("athar-ledger.json", toJson(S.ledger, activeReviews(), { source: titleNow(), words: S.words.length }), "application/json");
+  $("btnJson").onclick = () => download("athar-ledger.json", toJson(S.ledger, activeReviews(), { source: titleNow(), words: S.words.length, corrections: fixCount() ? { ...S.fixes } : undefined }), "application/json");
   $("btnPrint").onclick = () => window.print();
   $("btnDocx").onclick = () => {
-    const { bytes } = citedDocx({ words: S.words, ledger: S.ledger, reviews: activeReviews(), title: titleNow(), date: new Date().toLocaleDateString(getLang() === "ar" ? "ar-EG" : "en-GB", { year: "numeric", month: "long", day: "numeric" }) });
+    const { bytes } = citedDocx({ words: shownWords(), ledger: S.ledger, reviews: activeReviews(), title: titleNow(), fixed: fixCount(),
+      mushaf: !$("optMushafWrap").hidden && $("optMushaf").checked,
+      date: new Date().toLocaleDateString(getLang() === "ar" ? "ar-EG" : "en-GB", { year: "numeric", month: "long", day: "numeric" }) });
     download("athar-cited.docx", bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
   };
-  $("btnSave").onclick = () => download("athar-session.json", toSession({ words: S.words, title: titleNow(), review: S.review,
+  $("optMushaf").onchange = () => store.set("athar:mushaf", $("optMushaf").checked);
+  $("btnSave").onclick = () => download("athar-session.json", toSession({ words: S.words, title: titleNow(), review: S.review, manual: S.manual, fixes: S.fixes,
     packs: [...packs.values()].filter(p => p.state === "loaded").map(p => p.id), video: S.video ? "https://youtu.be/" + S.video : null }), "application/json");
+  $("btnIndex").onclick = openIndex;
+  $("indexIntro").onchange = () => { store.set("athar:idxintro", $("indexIntro").checked); drawIndex(); };
+  $("indexCopy").onclick = copyIndex;
+  $("btnKeys").onclick = () => $("keys").showModal();
+  $("chipOpen").onclick = toggleOpen;
+  $("btnSearch").onclick = () => openLookup(null, "");
+  $("csearch").onsubmit = ev => { ev.preventDefault(); openLookup(null, $("csearchQ").value.trim()); };
+  $("lookupForm").onsubmit = ev => { ev.preventDefault(); runLookup(); };
+  $("lookupAdjust").onclick = ev => { const b = ev.target.closest("button[data-edge]"); if (b) adjustLookup(b.dataset.edge, +b.dataset.d); };
+  $("lookupClashOpen").onclick = () => { const e = LK.clash; $("lookup").close(); if (e && S.ledger.includes(e)) selectAndFocus(e); };
+  $("btnUndoFixes").onclick = () => { if (!fixCount() || S.reworking) return; S.fixes = {}; store.set(S.fixKey, S.fixes); S.focusAfter = { origin: "bar" }; reanalyse(); };
+  document.addEventListener("keydown", onShortcut);
+  wireSelection(); wireLedger();
   $("btnMeaning").onclick = runMeaning;
   const a = $("audio");
   a.ontimeupdate = onTime;
@@ -358,7 +381,7 @@ async function runTranscriptFile(file) {
     if (!sess || sess.words.length < 4) return fail(run, msg("err.session"));
     await corpusReady; if (!live(run)) return;
     for (const id of sess.packs) if (packs.has(id) && packs.get(id).state === "none") loadPack(id);
-    return runWords(run, sess.words, { title: sess.title || file.name, review: sess.review, video: youtubeId(sess.video) });
+    return runWords(run, sess.words, { title: sess.title || file.name, review: sess.review, video: youtubeId(sess.video), manual: sess.manual, fixes: sess.fixes });
   }
   try { words = parseTimed(text, file.name); }
   catch (e) { return fail(run, msg(e instanceof InputError ? e.key : "err.transcript")); }
@@ -373,19 +396,129 @@ function mergeSecondPass(main, second, words) {
   for (const e of second) {
     if (!textual(e) || e.start == null || !HAS_AR.test(e.spoken)) continue;
     if (main.some(m => textual(m) && m.start != null && m.start < e.end + 1.5 && m.end > e.start - 1.5 && m.source && e.source && m.source.ref === e.source.ref)) continue;
-    out.push({ ...e, wordStart: at(e.start), wordEnd: Math.max(at(e.start), at(e.end)), pass: "ar" });
+    if (e.diff) for (const d of e.diff) delete d.wordIdx;       // these point into the second transcription, not into the words on screen
+    out.push({ ...e, wordStart: at(e.start), wordEnd: Math.max(at(e.start), at(e.end)), pass: "ar", mushaf: undefined });
   }
   out.sort((a, b) => (a.start ?? a.wordStart) - (b.start ?? b.wordStart));
   out.forEach((e, i) => { e.id = i + 1; });
   return out;
 }
 
+// ---------------- the reviewer's corrections and additions ----------------
+const isFixed = (i, fixes = S.fixes) => Object.prototype.hasOwnProperty.call(fixes, i);
+/** the word as it stands now: corrected when the reviewer corrected it ("" = removed), as transcribed otherwise */
+const wordAt = (i, words = S.words, fixes = S.fixes) => (isFixed(i, fixes) ? fixes[i] : words[i].w);
+const fixCount = () => Object.keys(S.fixes).length;
+/** the transcript with the corrections in place, one item per transcribed word (for the Word document) */
+const shownWords = () => (fixCount() ? S.words.map((w, i) => (isFixed(i) ? { ...w, w: S.fixes[i] } : w)) : S.words);
+/** the words of a stretch as they stand now, each with the index of the transcribed word it belongs to */
+function rangeWords(a, b, words = S.words, fixes = S.fixes) {
+  const out = [], idx = [];
+  for (let i = Math.max(0, a); i <= Math.min(b, words.length - 1); i++) for (const x of wordAt(i, words, fixes).split(" ")) if (x) { out.push({ w: x }); idx.push(i); }
+  return { words: out, idx };
+}
+/** what the engine is given: removed words left out, a correction of several words as several words; back[k] = transcribed word of item k */
+function engineWords(words, fixes) {
+  if (!Object.keys(fixes).length) return { run: words, back: null };
+  const run = [], back = [];
+  words.forEach((w, i) => {
+    if (!isFixed(i, fixes)) { run.push(w); back.push(i); return; }
+    const parts = fixes[i].split(" ").filter(Boolean), timed = w.start != null, d = timed ? ((w.end ?? w.start) - w.start) / Math.max(1, parts.length) : 0;
+    parts.forEach((x, k) => { run.push(timed ? { w: x, start: w.start + k * d, end: w.start + (k + 1) * d } : { w: x }); back.push(i); });
+  });
+  return { run, back };
+}
+/** the engine's ledger for the transcript as it stands now, with every position given as an index of the transcribed words */
+async function analyse(words, fixes, extra) {
+  const { run, back } = engineWords(words, fixes);
+  let ledger = (await call("analyze", { words: run })).ledger;
+  if (back) for (const e of ledger) {
+    e.wordStart = back[e.wordStart] ?? e.wordStart; e.wordEnd = back[e.wordEnd] ?? e.wordEnd;
+    if (e.diff) for (const d of e.diff) if (d.wordIdx) d.wordIdx = d.wordIdx.map(k => back[k]);
+  }
+  if (extra && extra.length) ledger = mergeSecondPass(ledger, (await call("analyze", { words: extra })).ledger, words);
+  return ledger;
+}
+const SRC_KEEP = ["type", "label", "short", "url", "collection", "ref", "surah", "ayah", "ayahEnd", "number"];
+/** a ledger entry for a citation the reviewer added. `cand` is what the corpus lookup says about these words and this source (may be null). */
+function manualEntry(m, cand, words = S.words, fixes = S.fixes) {
+  const { words: said, idx } = rangeWords(m.a, m.b, words, fixes);
+  const base = cand && cand.entry ? { ...cand.entry } : { diff: null, agreement: null, counts: null, parallels: [], inBooks: [], evidence: 0 };
+  if (base.diff) {       // the lookup numbered the words of the stretch from 0
+    const ok = base.diff.every(d => !d.wordIdx || d.wordIdx.every(k => idx[k] != null));
+    for (const d of base.diff) if (d.wordIdx) { if (ok) d.wordIdx = d.wordIdx.map(k => idx[k]); else delete d.wordIdx; }
+  }
+  if (cand && cand.status) m.status = cand.status;
+  if (cand && cand.source) { m.src = {}; for (const k of SRC_KEEP) if (cand.source[k] != null) m.src[k] = cand.source[k]; }
+  return { ...base, manual: true, pass: "u", key: `u:${m.a}-${m.b}`, wordStart: m.a, wordEnd: m.b,
+    start: words[m.a].start ?? null, end: words[m.b].end ?? words[m.b].start ?? null, spoken: said.map(w => w.w).join(" "),
+    type: (cand && cand.source ? cand.source : m.src).type === "q" ? "q" : "h", status: m.status, source: cand && cand.source ? cand.source : m.src,
+    cue: null, attribution: null, tailUnmatched: false, noteCode: null, note: null, reference: null, candidates: null, suggestions: null, meaningVia: null };
+}
+/** the reviewer's additions as ledger entries: each source is described again by the worker from its stable reference */
+async function resolveManual(manual, words, fixes) {
+  if (!manual.length) return [];
+  let res = [];
+  try { res = await call("resolve", { items: manual.map(m => ({ ref: m.ref, words: rangeWords(m.a, m.b, words, fixes).words })) }); } catch { res = []; }
+  return manual.map((m, i) => manualEntry(m, res[i] || null, words, fixes));
+}
+/** the ledger on screen = the engine's entries and the reviewer's, in transcript order */
+function setLedger(engine, added) {
+  const all = [...engine, ...added];
+  for (const e of all) if (!e.key) e.key = `${e.pass || "m"}:${e.wordStart}-${e.wordEnd}`;
+  all.sort((a, b) => a.wordStart - b.wordStart || a.wordEnd - b.wordEnd || (a.manual ? 1 : 0) - (b.manual ? 1 : 0));
+  all.forEach((e, i) => { e.id = i + 1; });
+  S.ledger = all;
+}
+const textual = e => e.status === "verbatim" || e.status === "partial";
+
+/**
+ * After a correction: the whole transcript is analysed again with the corrected words. The screen stays where it is —
+ * verdicts (they re-attach by place and result; one whose result changed shows as an earlier review), additions, filters,
+ * what was opened, the selection and the scroll position are kept.
+ */
+let reJob = 0;
+async function reanalyse() {
+  const run = S.cur; if (!run) return;
+  const job = ++reJob;
+  S.reworking = true; drawFixBar();
+  let engine, added;
+  try { engine = await analyse(S.words, S.fixes, S.extra); added = await resolveManual(S.manual, S.words, S.fixes); }
+  catch (e) { if (live(run) && job === reJob) { S.reworking = false; S.warnings.push(msg("err.analysis", () => detail(e))); render(); } return; }
+  if (!live(run) || job !== reJob) return;
+  S.reworking = false;
+  // a source a language model helped find stays with its words as long as they were not touched
+  const kept = new Map(S.ledger.filter(e => e.meaningVia === "llm").map(e => [e.key + "|" + e.spoken, e]));
+  engine = engine.map(e => { const k = `${e.pass || "m"}:${e.wordStart}-${e.wordEnd}|${e.spoken}`; return kept.has(k) && ["notfound", "meaning"].includes(e.status) ? kept.get(k) : e; });
+  const was = S.sel ? S.ledger[S.sel - 1] : null;
+  setLedger(engine, added);
+  store.set(S.manualKey, S.manual);
+  const now = was ? S.ledger.find(e => e.key === was.key) || S.ledger.find(e => !!e.manual === !!was.manual && e.wordStart <= was.wordEnd && e.wordEnd >= was.wordStart) : null;
+  S.sel = now ? now.id : null;
+  redrawInPlace();
+}
+/** draw everything again without moving the reader */
+function redrawInPlace() {
+  const y = window.scrollY, T = $("transcript"), ty = T.scrollTop, f = S.focusAfter; S.focusAfter = null;
+  render(); flushLedger();
+  window.scrollTo(0, y); T.scrollTop = ty;
+  let to = null;
+  if (f && f.origin === "ledger") to = $("ledger").querySelector(`.fw[data-i="${f.i}"]`);
+  if (f && !to && f.i != null) { const w = T.querySelector(`[data-i="${f.i}"]`); to = w && w.closest(".c"); }
+  if (f && !to) to = S.sel ? $("e" + S.sel) : $("summaryLine");
+  if (to) { if (to.tabIndex < 0 && !to.hasAttribute("tabindex")) to.tabIndex = -1; to.focus({ preventScroll: true }); }
+}
+
 /** the common path of every input. `run` was started (and the busy screen shown) before the first await. */
-async function runWords(run, words, { title = "", titleKey = null, audioFile = null, estimated = false, extra = null, warnings = [], review = null, video = null }) {
+async function runWords(run, words, { title = "", titleKey = null, audioFile = null, estimated = false, extra = null, warnings = [], review = null, video = null, manual = null, fixes = null }) {
   words = (Array.isArray(words) ? words : []).map(cleanWord).filter(Boolean);
   if (words.length < 4) return fail(run, msg("err.tooshort"));
   if (extra) extra = extra.map(cleanWord).filter(Boolean);
-  let ledger;
+  // what the reviewer did to this transcript before (in this browser, or in the saved session being opened)
+  const base = fnv1a(words.map(w => w.w).join(" ")), fixKey = "athar:fixes:" + base, manualKey = "athar:manual:" + base;
+  fixes = cleanFixes({ ...store.get(fixKey, {}), ...(fixes || {}) }, words.length);
+  manual = cleanManual([...(manual || []), ...(Array.isArray(store.get(manualKey, [])) ? store.get(manualKey, []) : [])], words.length);
+  let ledger, added;
   try {
     if (S.corpus !== "ready") busy(0.3, msg("busy.corpus"));
     const info = await corpusReady;
@@ -406,13 +539,10 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
       if (bad) return fail(run, msg("err.pack.required", () => packName(bad), () => detail(packFail.get(bad))));
     }
     busy(0.85, msg("busy.search"));
-    ledger = (await call("analyze", { words })).ledger;
+    ledger = await analyse(words, fixes, extra);
     if (!live(run)) return;
-    if (extra && extra.length) {
-      const second = (await call("analyze", { words: extra })).ledger;
-      if (!live(run)) return;
-      ledger = mergeSecondPass(ledger, second, words);
-    }
+    added = await resolveManual(manual, words, fixes);
+    if (!live(run)) return;
   } catch (e) { return fail(run, msg("err.analysis", () => detail(e))); }
 
   // ---- from here on this run owns the screen
@@ -421,10 +551,17 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
   S.hasTimes = words.some(w => w.start != null);
   let dur = 0; if (S.hasTimes) for (const w of words) { const x = w.end ?? w.start; if (x > dur) dur = x; }      // (no spread: transcripts can be very long)
   S.duration = S.hasTimes ? dur : words.length;
-  S.ledger = ledger.map(e => ({ ...e, key: `${e.pass || "m"}:${e.wordStart}-${e.wordEnd}` }));
-  S.reviewKey = "athar:review:" + fnv1a(words.map(w => w.w).join(" "));
+  S.fixes = fixes; S.manual = manual; S.extra = extra; S.fixKey = fixKey; S.manualKey = manualKey;
+  S.onlyOpen = false; S.keepOpen = new Set(); S.reworking = false; S.focusAfter = null;
+  if (fixCount()) store.set(fixKey, fixes);
+  if (manual.length) store.set(manualKey, manual);
+  setLedger(ledger, added);
+  S.reviewKey = "athar:review:" + base;       // (the words as transcribed: corrections do not move the reviewer's work to another key)
   S.review = store.get(S.reviewKey, {}); if (!S.review || typeof S.review !== "object") S.review = {};
   if (review) { S.review = { ...S.review, ...review }; store.set(S.reviewKey, S.review); }      // verdicts that came with a saved session
+  const arabic = dirOf(words.slice(0, 40).map(w => w.w).join(" ")) === "rtl";
+  $("optMushafWrap").hidden = !arabic; $("optMushaf").checked = arabic && store.get("athar:mushaf", true) !== false;
+  $("indexIntro").checked = store.get("athar:idxintro", false) === true;
   S.warnings = [...warnings];
   for (const id of packFail.keys()) S.warnings.push(msg("warn.pack", () => packName(id)));
   S.meaning = { state: "idle", done: 0, total: 0, hit: 0 };
@@ -460,6 +597,7 @@ async function runMeaning() {
     let stop = null;
     try { r = await call("meaning", { entry: e, cfg: { asrUrl: CFG.asrUrl } }); } catch (x) { if (llmStops(x)) stop = x; /* otherwise leave the entry as it is */ }
     if (!live(run)) return;                         // "New analysis" (or another analysis) stops the loop; nothing more is asked or drawn
+    if (!S.ledger.includes(e)) continue;            // the transcript was corrected meanwhile and this entry is no longer on screen
     if (stop) {                                     // a limit was reached or the helper is unavailable: say so, ask nothing more
       m.done--; const why = meaningWhy(stop);
       S.warnings.push(msg("warn.meaning", () => num(m.done), () => num(m.total), () => say(why))); drawNotices();
@@ -481,8 +619,12 @@ function saveReview(e, patch) {
   const { cur } = reviewOf(e);
   const r = { v: cur ? cur.v || null : null, note: cur ? cur.note || "" : "", ...patch, sig: sig(e) };
   S.review[e.key] = r; store.set(S.reviewKey, S.review);
+  if (S.onlyOpen) S.keepOpen.add(e.key);      // it does not vanish under the reviewer's hand
   return r;
 }
+const reviewed = e => { const { cur } = reviewOf(e); return !!(cur && cur.v); };
+/** hidden by the filters: its status is switched off, or only unreviewed entries are wanted and this one has a verdict */
+const isOff = e => S.hidden.has(e.status) || (S.onlyOpen && reviewed(e) && !S.keepOpen.has(e.key));
 function activeReviews() {
   const out = {};
   for (const e of S.ledger) { const { cur } = reviewOf(e); if (cur) out[e.key] = { v: cur.v || null, note: cur.note || "" }; }
@@ -495,10 +637,10 @@ const posEnd = e => (S.hasTimes ? e.end ?? e.start ?? 0 : e.wordEnd + 1);
 const kindOf = e => (e.source && e.source.type === "b" ? t("kind.book", getLang() === "ar" ? e.source.domainAr : e.source.domain) : tOpt("kind." + (e.type || "h")));
 const titleNow = () => (S.titleKey ? t(S.titleKey) : S.title);
 const sep = () => (getLang() === "ar" ? "، " : ", ");
-const markTitle = e => `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} — ${t("status." + e.status)}${e.source ? " — " + srcLabel(e.source, true) : ""}`;
+const markTitle = e => `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} — ${t("status." + e.status)}${e.source ? " — " + srcLabel(e.source, true) : ""}${e.manual ? " — " + t("e.manual") : ""}`;
 
 function render() {
-  drawNotices(); drawNoAudio(); drawSummary(); drawMap(); drawLedger(); drawTranscript(); drawMeaningBtn();
+  drawNotices(); drawNoAudio(); drawSummary(); drawMap(); drawLedger(); drawTranscript(); drawMeaningBtn(); drawFixBar(); drawIndexBtn();
 }
 function drawNoAudio() { $("noAudio").hidden = !S.noAudio; $("noAudio").textContent = S.noAudio ? t(S.noAudio) : ""; }
 function drawNotices() {
@@ -520,25 +662,50 @@ function drawSummary() {
       c = el("button", "chip s-" + s); c.type = "button"; c.dataset.s = s; c.style.setProperty("--c", `var(--${s})`);
       c.onclick = () => toggleStatus(s);
       const after = STATUS_ORDER.slice(STATUS_ORDER.indexOf(s) + 1).map(x => f.querySelector(`[data-s="${x}"]`)).find(Boolean);
-      f.insertBefore(c, after || null);
+      f.insertBefore(c, after || $("chipOpen"));
     }
     c.textContent = `${t("status." + s)} (${num(counts[s])})`;
     c.setAttribute("aria-pressed", String(!S.hidden.has(s)));
   }
+  drawProgress();
+}
+/** how far the review is, the "not reviewed yet" chip, and the committee summary: all three follow every verdict */
+function drawProgress() {
+  const n = S.ledger.length, done = S.ledger.filter(reviewed).length, chip = $("chipOpen");
+  $("progress").hidden = !n;
+  $("progressText").textContent = n ? t("pg.line", num(done), num(n)) : "";
+  $("progressBar").style.width = (n ? 100 * done / n : 0) + "%";
+  chip.hidden = !n; chip.textContent = t("pg.open", num(n - done)); chip.title = t("pg.open.title"); chip.setAttribute("aria-pressed", String(S.onlyOpen));
+  drawCommittee();
+}
+function drawCommittee() {
+  const box = $("committee"), list = $("committeeList"); box.hidden = !S.ledger.length; list.textContent = "";
+  const lines = summaryLines(committeeSummary(S.ledger, activeReviews()));
+  for (const l of lines) if (l.value != null) list.append(el("dt", null, l.label), el("dd", null, l.value));
+  $("committeeRule").textContent = lines.filter(l => l.value == null).map(l => l.label).join(" ");
+}
+/** show only what has no verdict yet. Like the status chips: nothing is rebuilt. */
+function toggleOpen() {
+  S.onlyOpen = !S.onlyOpen; S.keepOpen = new Set();
+  $("chipOpen").setAttribute("aria-pressed", String(S.onlyOpen));
+  applyVisibility();
+}
+function applyVisibility() {
+  flushLedger();
+  for (const li of $("ledger").querySelectorAll(".entry")) { const e = S.ledger[li.dataset.id - 1]; if (e) li.hidden = isOff(e); }
+  for (const b of $("map").querySelectorAll(".mark")) { const e = S.ledger[b.dataset.id - 1]; if (e) b.hidden = isOff(e); }
+  for (const c of $("transcript").querySelectorAll(".c")) { const e = S.ledger[c.dataset.id - 1]; if (e) c.toggleAttribute("data-off", isOff(e)); }
+  afterVisibility();
 }
 /** show / hide one status: nothing is rebuilt, so focus, open details, typed notes and the selection all stay */
 function toggleStatus(s) {
   S.hidden.has(s) ? S.hidden.delete(s) : S.hidden.add(s);
-  const off = S.hidden.has(s);
-  $("filters").querySelector(`[data-s="${s}"]`).setAttribute("aria-pressed", String(!off));
-  for (const li of $("ledger").querySelectorAll(`.entry.s-${s}`)) li.hidden = off;
-  for (const b of $("map").querySelectorAll(`.mark.s-${s}`)) b.hidden = off;
-  for (const c of $("transcript").querySelectorAll(`.c.s-${s}`)) c.toggleAttribute("data-off", off);
-  afterVisibility();
+  $("filters").querySelector(`[data-s="${s}"]`).setAttribute("aria-pressed", String(!S.hidden.has(s)));
+  applyVisibility();
 }
 function afterVisibility() {
   const L = $("ledger"), all = $("allHidden");
-  if (all) all.hidden = !(S.ledger.length && S.ledger.every(e => S.hidden.has(e.status)));
+  if (all) all.hidden = !(S.ledger.length && S.ledger.every(isOff));
   const was = L.querySelector(".entry.first"), now = L.querySelector(".entry:not([hidden])");
   if (was && was !== now) was.classList.remove("first");
   if (now) now.classList.add("first");
@@ -549,8 +716,8 @@ function drawMap() {
   const m = $("map"); m.textContent = ""; m.style.direction = "ltr";
   const frag = document.createDocumentFragment();
   for (const e of S.ledger) {
-    const b = el("button", "mark s-" + e.status + (e.id === S.sel ? " on" : "")); b.type = "button"; b.tabIndex = -1;
-    b.dataset.id = e.id; b.hidden = S.hidden.has(e.status);
+    const b = el("button", "mark s-" + e.status + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); b.type = "button"; b.tabIndex = -1;
+    b.dataset.id = e.id; b.hidden = isOff(e);
     b.title = markTitle(e); b.setAttribute("aria-label", b.title);
     frag.append(b);
   }
@@ -578,12 +745,34 @@ function wireMap() {
 }
 
 // ---- pieces of an entry
+/** one word of a "spoken" line that the reviewer can correct: it knows which transcribed word it is */
+function fixable(text, i) {
+  const s = el("span", "fw" + (isFixed(i) ? " fx" : ""), text); s.dataset.i = i; s.tabIndex = -1; s.setAttribute("role", "button");
+  s.title = isFixed(i) ? t("fix.was", S.words[i].w) : t("fix.click");
+  return s;
+}
+/** the words of a spoken stretch, correctable when each is tied to a transcribed word (idx), plain text otherwise */
+function saidWords(text, idx) {
+  const ws = text.split(" "), f = document.createDocumentFragment();
+  if (!idx || idx.length !== ws.length || idx.some(i => !Number.isInteger(i) || !S.words[i])) { f.append(text); return f; }
+  ws.forEach((w, k) => { if (k) f.append(" "); f.append(fixable(w, idx[k])); });
+  return f;
+}
 function wordSpan(d) {
   const said = d.spokenDisplay || d.spoken;      // the word as transcribed when the worker could tie it to the transcript
-  if (d.kind === "exact") return document.createTextNode(said + " ");
+  const f = document.createDocumentFragment(), words = saidWords(said, d.spokenDisplay ? d.wordIdx : null);
+  if (d.kind === "exact") { f.append(words, " "); return f; }
   const cls = { asr: "w-asr", near: "w-near", diff: "w-diff", ins: "w-ins" }[d.kind] || "";
-  const s = el("span", cls, said); if (d.source) s.title = d.sourceDisplay || d.source;
-  const f = document.createDocumentFragment(); f.append(s, " "); return f;
+  const s = el("span", cls); s.append(words); if (d.source) s.title = d.sourceDisplay || d.source;
+  s.querySelectorAll(".fw:not(.fx)").forEach(x => x.removeAttribute("title"));       // the source's word is what the mark's tooltip shows
+  f.append(s, " "); return f;
+}
+/** a spoken stretch that is not compared word by word (not found, by meaning, a candidate, a verbatim hadith): its words can still be corrected */
+function spokenBlock(e) {
+  const p = textBlock("", "spoken"), d = dirOf(e.spoken); p.className = "spoken " + d; p.dir = d; p.lang = scriptOf(e.spoken);
+  const r = e.pass === "ar" ? null : rangeWords(e.wordStart, e.wordEnd);
+  p.append(saidWords(e.spoken, r && r.words.map(w => w.w).join(" ") === e.spoken ? r.idx : null));
+  return p;
 }
 /** the source side of one compared word. `text` is the verbatim display word for the Qur'an, the stored word otherwise. */
 function sourceSpan(d, text) {
@@ -632,11 +821,12 @@ function details(e, name, summary, ...children) {
 const edition = (ed, hadith) => (hadith || !ed || ed === "sunnah.com" ? null : ed);      // hadith translations: the dataset names no translator
 
 function drawEntry(e) {
-  const li = el("li", "entry s-" + e.status + (e.id === S.sel ? " on" : "")); li.id = "e" + e.id; li.dataset.id = e.id; li.hidden = S.hidden.has(e.status);
+  const li = el("li", "entry s-" + e.status + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); li.id = "e" + e.id; li.dataset.id = e.id; li.hidden = isOff(e); li.tabIndex = -1;
   const head = el("div", "entry-head");
   const tb = el("button", "time" + (S.hasTimes ? "" : " none"), S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))); tb.type = "button";
   tb.onclick = () => focusEntry(e, false, true);
   head.append(tb, el("span", "kind", kindOf(e)), el("span", "status", t("status." + e.status)));
+  if (e.manual) head.append(el("span", "hand", t("e.manual")));
   if (e.agreement != null && e.counts) {
     const c = e.counts, n = c.exact + c.asr + c.near + c.diff + c.added + c.omitted;
     const bits = [t("e.agree", num(Math.round(e.agreement * 100)), num(n))];
@@ -667,8 +857,8 @@ function drawEntry(e) {
       if (srcQ && src.basmala && e.diffFromStart) pair.append(so); else pair.append(el("span", null, t("e.source")), so);
     }
     li.append(pair);
-  } else if (srcQ && e.status === "verbatim") li.append(quranBlock(src, "spoken"));
-  else li.append(textBlock(e.spoken, "spoken"));
+  } else if (srcQ && e.status === "verbatim" && !e.manual) li.append(quranBlock(src, "spoken"));
+  else li.append(spokenBlock(e));
   if (e.excerpt && typeof e.excerpt === "object") {
     if (e.excerpt.head) li.append(el("p", "note", t("note.excerpt_head")));
     if (e.excerpt.tail && !e.tailUnmatched) li.append(el("p", "note", t("note.excerpt_tail")));
@@ -683,6 +873,13 @@ function drawEntry(e) {
     li.append(el("p", "note", t("note.meaning_lex")));
     e.candidates.slice(0, 3).forEach(k => li.append(candBlock(k)));
   } else if (src) li.append(sourceLine(src, true));
+  if (e.manual) {       // a person chose this source: say so, and show the corpus text unless it is already compared word by word above
+    if (src && !(e.diff && (hasDiff || partQ))) {
+      const c = el("div", "cand"), text = src.excerpt || (src.arabic ? src.arabic.split(" ").slice(0, 80).join(" ") + (src.arabic.split(" ").length > 80 ? " …" : "") : "");
+      if (isQuran(src) || text) { c.append(el("span", null, t("e.manual.text")), isQuran(src) ? quranBlock(src) : textBlock(text)); li.append(c); }
+    }
+    li.append(el("p", "note", t("e.manual.note")));
+  }
 
   if (viaEn) {
     const ed = edition(src.edition, src.type === "h");
@@ -726,7 +923,10 @@ function drawEntry(e) {
     li.append(details(e, "grades", t("e.grades"), el("p", "note", t("e.grades.note")), ul));
   }
 
+  const firstWord = li.querySelector(".spoken .fw"); if (firstWord) firstWord.tabIndex = 0;      // one tab stop per spoken line; the arrow keys move inside it
   li.append(drawReview(e));
+  if (e.manual) { const b = el("button", "link rm", t("e.manual.remove")); b.type = "button"; b.onclick = () => removeManual(e); li.append(b); }
+  else if (!textual(e) && e.pass !== "ar") { const b = el("button", "link find", t("e.find")); b.type = "button"; b.onclick = () => openLookup({ a: e.wordStart, b: e.wordEnd }); li.append(b); }
   return li;
 }
 function drawReview(e) {
@@ -739,6 +939,7 @@ function drawReview(e) {
     printed.textContent = [v ? t("rv." + v) : "", noteText || ""].filter(Boolean).join(" — ");
     rv.classList.toggle("blank", !v && !noteText);
     const old = rv.querySelector(".rv-stale"); if (old && cur) old.remove();
+    if (rv.isConnected) drawProgress();
   };
   for (const v of ["yes", "no", "unsure"]) {
     const b = el("button", "rv", t("rv." + v)); b.type = "button"; b.dataset.v = v;
@@ -779,8 +980,8 @@ function refreshEntry(e, was) {
     if (idx >= 0) { const x = fresh.querySelectorAll(focusables)[idx]; if (x) x.focus({ preventScroll: true }); }
   }
   const b = $("map").querySelector(`.mark[data-id="${e.id}"]`);
-  if (b) { b.classList.replace("s-" + was, "s-" + e.status); b.title = markTitle(e); b.setAttribute("aria-label", b.title); b.hidden = S.hidden.has(e.status); }
-  for (const c of $("transcript").querySelectorAll(`.c[data-id="${e.id}"]`)) { c.classList.replace("s-" + was, "s-" + e.status); c.setAttribute("aria-label", t("tr.cite", num(e.id), markTitle(e))); c.toggleAttribute("data-off", S.hidden.has(e.status)); }
+  if (b) { b.classList.replace("s-" + was, "s-" + e.status); b.title = markTitle(e); b.setAttribute("aria-label", b.title); b.hidden = isOff(e); }
+  for (const c of $("transcript").querySelectorAll(`.c[data-id="${e.id}"]`)) { c.classList.replace("s-" + was, "s-" + e.status); c.setAttribute("aria-label", t("tr.cite", num(e.id), markTitle(e))); c.toggleAttribute("data-off", isOff(e)); }
   drawSummary(); afterVisibility();
 }
 
@@ -794,8 +995,13 @@ function drawTranscript() {
   const sample = S.words.slice(0, 40).map(w => w.w).join(" "); T.dir = dirOf(sample); T.lang = scriptOf(sample);
   T.classList.toggle("big", n > 3000);
   const owner = new Array(n).fill(null);
-  for (const e of S.ledger) for (let i = Math.max(0, e.wordStart); i <= Math.min(e.wordEnd, n - 1); i++) owner[i] = e;
-  const word = i => { const s = el("span", i === lastNow ? "now" : null, S.words[i].w); s.dataset.i = i; return s; };
+  // where entries overlap, a textual match or the reviewer's own entry is what the words belong to
+  for (const strong of [false, true]) for (const e of S.ledger) if ((textual(e) || !!e.manual) === strong) for (let i = Math.max(0, e.wordStart); i <= Math.min(e.wordEnd, n - 1); i++) owner[i] = e;
+  const word = i => {
+    const s = el("span", i === lastNow ? "now" : null, wordAt(i) || S.words[i].w); s.dataset.i = i;
+    if (isFixed(i)) { s.classList.add("fx"); if (!wordAt(i)) s.classList.add("gone"); s.title = t("fix.was", S.words[i].w); }
+    return s;
+  };
   let i = 0, block = null, inBlock = 0;
   const slice = k => {
     const f = document.createDocumentFragment(), end = Math.min(n, i + k);
@@ -804,9 +1010,9 @@ function drawTranscript() {
       const e = owner[i], from = i;
       if (!e) { block.append(word(i), " "); i++; }
       else {
-        const c = el("span", "c s-" + e.status + (e.id === S.sel ? " on" : "")); c.dataset.id = e.id; c.tabIndex = -1;
+        const c = el("span", "c s-" + e.status + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); c.dataset.id = e.id; c.tabIndex = -1;
         c.setAttribute("role", "button"); c.setAttribute("aria-label", t("tr.cite", num(e.id), markTitle(e)));
-        if (S.hidden.has(e.status)) c.setAttribute("data-off", "");
+        if (isOff(e)) c.setAttribute("data-off", "");
         for (let first = true; i < n && owner[i] === e; i++, first = false) { if (!first) c.append(" "); c.append(word(i)); }
         block.append(c, " ");
       }
@@ -823,10 +1029,15 @@ function wireTranscript() {
   const T = $("transcript");
   const act = (c, w) => {
     const e = c && !c.hasAttribute("data-off") ? S.ledger[c.dataset.id - 1] : null;
+    // a word the reviewer corrected, or a word of the citation that is already selected: correct it here
+    if (w && (w.classList.contains("fx") || (e && c.classList.contains("on") && e.pass !== "ar"))) return editWord(w, +w.dataset.i, "transcript");
     if (e) focusEntry(e, true);
     else if (w && S.hasTimes && !$("audio").hidden) $("audio").currentTime = S.words[w.dataset.i].start || 0;
   };
-  T.addEventListener("click", ev => act(ev.target.closest(".c"), ev.target.closest("[data-i]")));
+  T.addEventListener("click", ev => {
+    if (ev.target.closest(".fix-edit") || selectedStretch()) return;       // typing a correction, or the end of a selection: not a click on a word
+    act(ev.target.closest(".c"), ev.target.closest("[data-i]"));
+  });
   T.addEventListener("keydown", ev => { const c = ev.target.closest(".c"); if (c && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); act(c, null); } });
 }
 
@@ -876,12 +1087,276 @@ function onTime() {
 let printing = false;
 function beforePrint() {
   printing = true; flushLedger();
-  for (const d of document.querySelectorAll("#ledger details:not([open])")) { d.dataset.p = "1"; d.open = true; }
+  for (const d of document.querySelectorAll("#ledger details:not([open]), #committee:not([open])")) { d.dataset.p = "1"; d.open = true; }
 }
 function afterPrint() {
-  for (const d of document.querySelectorAll("#ledger details[data-p]")) d.open = false;
+  for (const d of document.querySelectorAll("#ledger details[data-p], #committee[data-p]")) d.open = false;
   // "toggle" events arrive later: the marks are cleared after them so that this opening and closing is not remembered as the reader's
-  setTimeout(() => { for (const d of document.querySelectorAll("#ledger details[data-p]")) delete d.dataset.p; printing = false; }, 300);
+  setTimeout(() => { for (const d of document.querySelectorAll("#ledger details[data-p], #committee[data-p]")) delete d.dataset.p; printing = false; }, 300);
+}
+
+// ---------------- reviewer: keyboard shortcuts ----------------
+const KEY_BY_CODE = { KeyJ: "j", KeyK: "k", KeyP: "p", KeyN: "n", Digit1: "1", Digit2: "2", Digit3: "3", Numpad1: "1", Numpad2: "2", Numpad3: "3" };
+const KEY_BY_CHAR = { "١": "1", "٢": "2", "٣": "3", "؟": "?", ArrowDown: "j", ArrowUp: "k" };
+function selectAndFocus(e, scroll = true) {
+  focusEntry(e, scroll);
+  const li = $("e" + e.id); if (li) li.focus({ preventScroll: true });
+}
+function onShortcut(ev) {
+  if ($("results").hidden || ev.defaultPrevented || ev.ctrlKey || ev.metaKey || ev.altKey || document.querySelector("dialog[open]")) return;
+  const el0 = ev.target instanceof Element ? ev.target : null;
+  if (el0 && el0.closest("input, textarea, select, [contenteditable], audio, video, iframe")) return;
+  const arrow = ev.key === "ArrowDown" || ev.key === "ArrowUp";
+  if (arrow && (ev.shiftKey || (el0 && el0.closest("#map, #transcript")))) return;      // extending a selection, or moving inside the map / the transcript
+  // a Latin letter or digit is taken as typed; otherwise (an Arabic layout) the position of the key decides
+  const k = /^[a-z0-9?]$/i.test(ev.key) ? ev.key.toLowerCase() : KEY_BY_CHAR[ev.key] || (ev.shiftKey ? "" : KEY_BY_CODE[ev.code]) || "";
+  if (!"jk123pn?".includes(k) || !k) return;
+  if (k === "?") { ev.preventDefault(); $("keys").showModal(); return; }
+  const shown = S.ledger.filter(e => !isOff(e)); if (!shown.length) return;
+  const cur = S.sel ? S.ledger[S.sel - 1] : null, at = cur ? shown.indexOf(cur) : -1;
+  ev.preventDefault();
+  if (k === "j" || k === "k") {
+    // from an entry the filters hide (or none): the nearest shown one in that direction
+    let to;
+    if (at >= 0) to = shown[Math.max(0, Math.min(shown.length - 1, at + (k === "j" ? 1 : -1)))];
+    else if (!cur) to = shown[0];
+    else to = k === "j" ? shown.find(e => e.id > cur.id) || shown[shown.length - 1] : [...shown].reverse().find(e => e.id < cur.id) || shown[0];
+    selectAndFocus(to);
+    return;
+  }
+  if (at < 0) { selectAndFocus(shown[0]); return; }      // nothing selected yet: select first, judge on the next key
+  flushLedger();
+  const li = $("e" + cur.id); if (!li) return;
+  if (k === "p") focusEntry(cur, false, true);
+  else if (k === "n") { const n = li.querySelector(".review input"); if (n) n.focus(); }
+  else { const b = li.querySelector(`.rv[data-v="${{ 1: "yes", 2: "no", 3: "unsure" }[k]}"]`); if (b) b.click(); }
+}
+
+// ---------------- reviewer: correct a mis-transcribed word ----------------
+function drawFixBar() {
+  const n = fixCount();
+  $("fixBar").hidden = !n && !S.reworking;
+  $("fixCount").textContent = S.reworking ? t("fix.busy") : t("fix.count", num(n));
+  $("btnUndoFixes").hidden = !n || S.reworking;
+}
+/** the word becomes a small text field: Enter saves, Esc (or leaving the field) cancels, empty removes the word */
+function editWord(span, i, origin) {
+  if (S.reworking || !S.words[i] || span.querySelector(".fix-edit")) return;
+  const was = wordAt(i), orig = S.words[i].w, box = el("span", "fix-edit"), inp = el("input"), old = [...span.childNodes];
+  inp.type = "text"; inp.value = was; inp.dir = "auto"; inp.size = Math.max(5, was.length + 3); inp.autocomplete = "off"; inp.spellcheck = false;
+  inp.setAttribute("aria-label", t("fix.label", orig) + " — " + t("fix.hint")); inp.title = t("fix.hint");
+  box.append(inp);
+  let done = false;
+  const close = refocus => {
+    if (done) return; done = true;
+    span.textContent = ""; span.append(...old); span.classList.remove("editing");
+    if (refocus) (span.tabIndex >= -1 && span.hasAttribute("tabindex") ? span : span.closest(".c") || span).focus({ preventScroll: true });
+  };
+  const save = v => { done = true; inp.disabled = true; applyFix(i, v, origin); };
+  if (isFixed(i)) {
+    const u = el("button", "fix-undo", "↺"); u.type = "button"; u.title = t("fix.undo1", orig); u.setAttribute("aria-label", u.title);
+    u.onclick = ev => { ev.stopPropagation(); save(null); };
+    u.onkeydown = ev => { ev.stopPropagation(); if (ev.key === "Escape") { ev.preventDefault(); close(true); } };
+    box.append(u);
+  }
+  box.onclick = ev => ev.stopPropagation();
+  inp.onkeydown = ev => {
+    ev.stopPropagation();
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      const v = inp.value.replace(/\s+/g, " ").trim().slice(0, 200);
+      if (v === was) close(true); else save(v === orig ? null : v);
+    } else if (ev.key === "Escape") { ev.preventDefault(); close(true); }
+  };
+  box.addEventListener("focusout", () => setTimeout(() => { if (!box.contains(document.activeElement)) close(false); }, 0));
+  span.textContent = ""; span.append(box); span.classList.add("editing");
+  inp.focus(); inp.select();
+}
+function applyFix(i, v, origin) {
+  if (v == null) delete S.fixes[i]; else S.fixes[i] = v;
+  store.set(S.fixKey, S.fixes);
+  S.focusAfter = { origin, i };
+  reanalyse();
+}
+function wireLedger() {
+  const L = $("ledger");
+  L.addEventListener("click", ev => {
+    const w = ev.target.closest(".fw");
+    if (w && !ev.target.closest(".fix-edit") && window.getSelection().isCollapsed) editWord(w, +w.dataset.i, "ledger");
+  });
+  L.addEventListener("keydown", ev => {
+    const w = ev.target instanceof Element && ev.target.matches(".fw") ? ev.target : null;
+    if (!w || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+    if (ev.key === "Enter" || ev.key === " " || ev.key === "F2") { ev.preventDefault(); editWord(w, +w.dataset.i, "ledger"); return; }
+    const line = w.closest("p"), rtl = line.dir === "rtl", step = ev.key === (rtl ? "ArrowLeft" : "ArrowRight") ? 1 : ev.key === (rtl ? "ArrowRight" : "ArrowLeft") ? -1 : 0;
+    if (!step) return;
+    const all = [...line.querySelectorAll(".fw")], to = all[all.indexOf(w) + step];
+    if (to) { ev.preventDefault(); w.tabIndex = -1; to.tabIndex = 0; to.focus(); }
+  });
+}
+
+// ---------------- reviewer: a stretch of the transcript selected by hand ----------------
+/** the words the current selection touches inside the transcript: {a, b} (indices of transcribed words), or null */
+function selectedStretch() {
+  const sel = window.getSelection(), T = $("transcript");
+  if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+  const r = sel.getRangeAt(0);
+  if (!r.intersectsNode(T) || !T.contains(sel.anchorNode)) return null;      // it must have begun in the transcript; it may run past its end
+  const spans = T.querySelectorAll("span[data-i]"), wr = document.createRange(), n = spans.length;
+  let lo = 0, hi = n;       // first word that ends after the selection begins
+  while (lo < hi) { const m = (lo + hi) >> 1; wr.selectNodeContents(spans[m]); if (r.compareBoundaryPoints(Range.END_TO_START, wr) < 0) hi = m; else lo = m + 1; }
+  const first = lo;
+  lo = first; hi = n;       // first word that begins at or after the selection's end
+  while (lo < hi) { const m = (lo + hi) >> 1; wr.selectNodeContents(spans[m]); if (r.compareBoundaryPoints(Range.START_TO_END, wr) > 0) lo = m + 1; else hi = m; }
+  const last = lo - 1;
+  return first < n && last >= first ? { a: +spans[first].dataset.i, b: +spans[last].dataset.i } : null;
+}
+function wireSelection() {
+  const btn = $("selAct"), T = $("transcript"); let timer = 0, pressing = false, kept = null;
+  const place = () => {
+    if (pressing) return;
+    const st = $("results").hidden || document.querySelector("dialog[open]") || document.activeElement && document.activeElement.closest(".fix-edit") ? null : selectedStretch();
+    kept = st;
+    if (!st) { btn.hidden = true; return; }
+    btn.hidden = false;
+    const r = window.getSelection().getRangeAt(0), rects = r.getClientRects(), end = rects[rects.length - 1] || r.getBoundingClientRect(), box = T.getBoundingClientRect();
+    const w = btn.offsetWidth, h = btn.offsetHeight;
+    let top = Math.min(Math.max(end.bottom, box.top), box.bottom) + 8;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, Math.min(end.top, box.bottom) - h - 8);
+    btn.style.top = Math.round(top) + "px";
+    btn.style.left = Math.round(Math.min(Math.max(8, end.left + end.width / 2 - w / 2), window.innerWidth - w - 8)) + "px";
+  };
+  const soon = () => { clearTimeout(timer); timer = setTimeout(place, 160); };
+  document.addEventListener("selectionchange", soon);
+  window.addEventListener("scroll", () => { if (!btn.hidden) place(); }, { passive: true });
+  window.addEventListener("resize", soon);
+  T.addEventListener("scroll", () => { if (!btn.hidden) place(); }, { passive: true });
+  // pressing the button must not lose the selection it is about (a touch can collapse it before the click arrives)
+  btn.addEventListener("pointerdown", () => { pressing = true; setTimeout(() => { pressing = false; }, 1500); });
+  btn.addEventListener("mousedown", ev => ev.preventDefault());
+  btn.onclick = () => {
+    const st = selectedStretch() || kept; pressing = false; btn.hidden = true;
+    if (!st) return;
+    window.getSelection().removeAllRanges();
+    openLookup(st);
+  };
+}
+
+// ---------------- reviewer: search the corpus; add a citation the tool missed ----------------
+const LK = { range: null, job: 0, clash: null };
+function openLookup(range, query = "") {
+  LK.range = range ? { a: range.a, b: range.b } : null; LK.job++;
+  $("lookupTitle").textContent = t(range ? "lk.title.range" : "lk.title.free");
+  $("lookupForm").hidden = !!range; $("lookupRange").hidden = !range;
+  $("lookupList").textContent = ""; $("lookupScope").textContent = ""; $("lookupClash").hidden = true; $("lookupMsg").textContent = range ? "" : t("lk.type");
+  const dlg = $("lookup"); if (!dlg.open) dlg.showModal();
+  if (range) { runLookup(); $("lkB1").focus(); }
+  else { $("lookupQ").value = query; $("lookupQ").focus(); if (query) runLookup(); }
+}
+function adjustLookup(edge, d) {
+  const r = LK.range, n = S.words.length; if (!r) return;
+  if (edge === "a") r.a = Math.max(0, Math.min(r.b, r.a + d)); else r.b = Math.min(n - 1, Math.max(r.a, r.b + d));
+  runLookup();
+}
+function lookupCandidate(c, canAdd) {
+  const li = el("li", "lk s-" + c.status), s = c.source;
+  li.append(el("span", "status", t("lk.st." + c.status)), sourceLine(s, true));
+  const matched = c.entry && c.entry.diff ? c.entry.diff.filter(d => d.source).map(d => d.source).join(" ") : "";
+  const cut = x => { const ws = String(x || "").split(" "); return ws.length > 70 ? ws.slice(0, 70).join(" ") + " …" : ws.join(" "); };
+  const text = cut(matched || s.excerpt || s.arabic || "");
+  if (isQuran(s)) li.append(quranBlock(s, "cand-text", 70)); else if (text) li.append(textBlock(text, "cand-text"));
+  if (s.translation && getLang() === "en") li.append(textBlock(cut(s.translation.text), "cand-text"));
+  if (canAdd) { const b = el("button", "btn small", t("lk.add")); b.type = "button"; b.onclick = () => addManual(c); li.append(b); }
+  return li;
+}
+async function runLookup() {
+  const job = ++LK.job, range = LK.range, list = $("lookupList"), say1 = m => { $("lookupMsg").textContent = m; };
+  list.textContent = ""; $("lookupScope").textContent = ""; $("lookupClash").hidden = true; LK.clash = null;
+  let words, idx = null;
+  if (range) {
+    ({ words, idx } = rangeWords(range.a, range.b));
+    const said = $("lookupSaid"), text = words.map(w => w.w).join(" ");
+    said.textContent = text; said.dir = dirOf(text); said.lang = scriptOf(text);
+    $("lkA1").disabled = $("lkB1").disabled = range.a >= range.b; $("lkA0").disabled = range.a <= 0; $("lkB0").disabled = range.b >= S.words.length - 1;
+  } else words = wordsFromText($("lookupQ").value.trim());
+  if (!words.length) return say1(range ? t("lk.none") : t("lk.type"));
+  if (S.corpus !== "ready") {
+    say1(S.corpus === "failed" ? t("corpus.fail", detail(S.corpusErr)) : t("lk.wait"));
+    const info = await corpusReady; if (job !== LK.job) return;
+    if (!info) return say1(t("corpus.fail", detail(S.corpusErr)));
+  }
+  say1(t("lk.searching"));
+  await packQueue; if (job !== LK.job) return;      // a book that is still loading is searched too
+  let r;
+  try { r = await call("lookup", { words }); } catch (e) { if (job === LK.job) say1(t("lk.err", detail(e))); return; }
+  if (job !== LK.job) return;
+  let note = "";
+  if (r.truncated) {
+    note = t(range ? "lk.cut" : "lk.cut.free", num(r.searched)) + " ";
+    if (range) { range.b = idx[r.searched - 1]; const text = words.slice(0, r.searched).map(w => w.w).join(" "); $("lookupSaid").textContent = text + " …"; }
+  }
+  // a place that already has a textual citation (or one the reviewer added) is opened, not written over
+  const clash = range ? S.ledger.find(e => (e.manual || textual(e)) && e.wordStart <= range.b && e.wordEnd >= range.a) : null;
+  if (clash) { LK.clash = clash; $("lookupClashMsg").textContent = t("lk.clash", markTitle(clash)); $("lookupClash").hidden = false; }
+  say1(note + (r.candidates.length ? t("lk.found", num(r.candidates.length)) : t("lk.none")));
+  for (const c of r.candidates) list.append(lookupCandidate(c, !!range && !clash));
+  // what was searched, and what was not
+  const loaded = [...packs.values()].filter(p => p.state === "loaded").map(p => packName(p.id)), not = [...packs.values()].filter(p => p.state !== "loaded").map(p => packName(p.id));
+  const scope = $("lookupScope"); scope.textContent = "";
+  if (r.lang === "en" && !r.english) {
+    scope.append(el("span", "warn-text", t("lk.en")), " ");
+    if (EN_PACKS.every(id => packs.has(id))) {
+      const b = el("button", "link", t("lk.en.load")); b.type = "button";
+      b.onclick = async () => { b.disabled = true; say1(t("busy.en")); await Promise.all(EN_PACKS.map(loadPack)); if (job === LK.job) runLookup(); };
+      scope.append(b, " ");
+    }
+  }
+  scope.append(t("lk.scope", [t("lk.scope.core"), ...loaded].join(sep())) + (not.length ? " " + t("lk.scope.not", not.join(sep())) : ""));
+}
+function addManual(c) {
+  const range = LK.range; if (!range || !c || !c.source || !c.source.ref) return;
+  if (S.ledger.some(e => (e.manual || textual(e)) && e.wordStart <= range.b && e.wordEnd >= range.a)) return;
+  const m = { a: range.a, b: range.b, ref: c.source.ref, status: c.status, src: {} };
+  const e = manualEntry(m, c);
+  S.manual = cleanManual([...S.manual, m], S.words.length); store.set(S.manualKey, S.manual);
+  setLedger(S.ledger.filter(x => !x.manual), [...S.ledger.filter(x => x.manual), e]);
+  S.review[e.key] = { v: "yes", note: "", sig: sig(e) }; store.set(S.reviewKey, S.review);      // a person chose it: the verdict starts as "correct"
+  if (S.onlyOpen) S.keepOpen.add(e.key);
+  S.hidden.delete(e.status);
+  $("lookup").close();
+  S.sel = e.id; render(); selectAndFocus(e);
+}
+function removeManual(e) {
+  S.manual = S.manual.filter(m => !(m.a === e.wordStart && m.b === e.wordEnd)); store.set(S.manualKey, S.manual);
+  delete S.review[e.key]; store.set(S.reviewKey, S.review);
+  const next = S.ledger.find(x => x.id > e.id && !isOff(x)) || null;
+  setLedger(S.ledger.filter(x => !x.manual), S.ledger.filter(x => x.manual && x !== e));
+  S.sel = null; S.focusAfter = { origin: "bar" };
+  redrawInPlace();
+  if (next && S.ledger.includes(next)) selectAndFocus(next, false);
+}
+
+// ---------------- reviewer: citation index for a video description ----------------
+function drawIndexBtn() { const b = $("btnIndex"); b.disabled = !S.hasTimes; b.title = t(S.hasTimes ? "idx.title" : "idx.notimes"); }
+function drawIndex() {
+  const text = descriptionIndex(S.ledger, activeReviews(), { intro: $("indexIntro").checked }), box = $("indexText");
+  box.value = text; box.dir = getLang() === "ar" ? "rtl" : "ltr";
+  $("indexCopy").disabled = !text;
+  $("indexMsg").textContent = text ? "" : t("idx.none");
+  return text;
+}
+async function copyIndex() {
+  const text = drawIndex(), box = $("indexText"); if (!text) return;
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = false; }
+  if (!ok) { try { box.focus(); box.select(); ok = document.execCommand("copy"); } catch { ok = false; } }
+  $("indexMsg").textContent = t(ok ? "idx.copied" : "idx.nocopy");
+  if (!ok) { box.focus(); box.select(); }
+}
+function openIndex() {
+  if (!S.hasTimes) return;
+  $("indexDlg").showModal();
+  copyIndex();
 }
 
 boot();

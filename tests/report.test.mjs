@@ -25,7 +25,7 @@ test("cited document: every textual citation is quoted and footnoted with its so
   assert.ok(d.footnotes.some(f => f.runs[0].text.includes("صحيح البخاري")));
   assert.ok(d.footnotes.some(f => f.runs[0].text.includes("سورة")));
   // nothing of the transcript is lost or reordered
-  const body = text({ paragraphs: d.paragraphs.slice(2, -1) }).replace(/[﴿﴾«»]/g, "").replace(/\s+/g, " ").trim();
+  const body = text({ paragraphs: d.paragraphs.filter(p => !p.style) }).replace(/[﴿﴾«»]/g, "").replace(/\s+/g, " ").trim();
   assert.equal(body, words.map(w => w.w).join(" ").replace(/\s+/g, " ").trim());
   // every footnote index is used exactly once, in order
   const refs = d.paragraphs.flatMap(p => p.runs).filter(r => r.note != null).map(r => r.note);

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """selfcheck.py — sanity-checks the *built* data: public/data, or the directory named by $ATHAR_OUT (a staging build).
   1. structure: counts, shards, index and vector files against the metadata that describes them (sizes, SHA-256,
-     owner ids in range), every pack listed in packs.json, raw-input hashes, the Qur'an display text;
+     owner ids in range), every pack listed in packs.json, raw-input hashes, the Qur'an display text, and the
+     hadith display text in display/ (hashes, counts, offsets and word mapping against the passages);
   2. retrieval: reads idx*.bin back and runs simulated-noise retrieval.
 Exits with status 1 if a structural check fails.
 NOTE: noise is SIMULATED (phonetic substitutions/deletions/insertions); it is not real ASR output."""
@@ -71,6 +72,37 @@ if (OUT/"vec"/"meta.json").exists():
         check(max(own) < n and list(own) == sorted(own), f"map_{pid}.bin: owner ids out of range for {n} passages (vectors are stale: rerun train_vectors.py)")
         check(len(set(own)) >= 0.97 * n, f"map_{pid}.bin: only {len(set(own))} of {n} passages have a vector")
 else: print("  (no vec/ directory: vectors not checked)")
+if (OUT/"display"/"meta.json").exists():
+    # original hadith text for display (tools/build_display.py): one entry per core hadith passage, built from THESE passages
+    dd = OUT/"display"; dm = json.load(open(dd/"meta.json", encoding="utf-8")); K = dm["K"]
+    core_sha = hashlib.sha256()
+    for i in range(meta["shards"]): core_sha.update((OUT/f"passages_{i}.json").read_bytes())
+    check(dm.get("core_passages_sha256") == core_sha.hexdigest(), "display: built from other passages_*.json (rerun tools/build_display.py)")
+    check(dm["count"] == len(H) and dm["pid_base"] == meta["quran_passages"] and dm["shards"] == -(-len(H) // K) == len(dm["files"]),
+          "display/meta.json: count, pid_base or number of shards")
+    check({f.name for f in dd.glob("h_*.json")} == set(dm["files"]), "display: files on disk differ from display/meta.json")
+    check(sum(f["bytes"] for f in dm["files"].values()) == dm["bytes"] and max(f["bytes"] for f in dm["files"].values()) < 25 * 2**20,
+          "display: total size, or a file over the 25 MiB limit")
+    u16 = lambda s, o: s.encode("utf-16-le")[2 * o:].decode("utf-16-le", "replace")      # offsets are JavaScript string indices
+    letter = lambda w: any("\u0621" <= c <= "\u063f" or "\u0641" <= c <= "\u064a" or c == "\u0671" for c in w)
+    bad_off = bad_words = inexact = 0
+    for k in range(dm["shards"]):
+        name = f"h_{k}.json"; f = dd/name; st = dm["files"].get(name, {})
+        if not f.exists(): check(False, f"display/{name} is missing"); continue
+        check(f.stat().st_size == st.get("bytes") and sha(f) == st.get("sha256"), f"display/{name} differs from display/meta.json")
+        d = json.load(open(f, encoding="utf-8")); part = H[k * K:(k + 1) * K]
+        check(d["k"] == k and d["r"] == [p["r"] for p in part] and len(d["t"]) == len(d["o"]) == len(part) == st.get("count")
+              and d["r"][0] == dm["first"][k], f"display/{name}: references are not those of hadith passages {k * K}..")
+        x = set(d["x"]); inexact += len(x)
+        for i, p in enumerate(part[:len(d["t"])]):
+            rest = u16(d["t"][i], d["o"][i])
+            if norm(rest) != p["n"] or (p["m"] == 0 and d["o"][i]): bad_off += 1
+            elif i not in x and [norm(w) for w in rest.split(" ") if letter(w)] != p["n"].split(" "): bad_words += 1
+    check(bad_off == 0, f"display: {bad_off} passages whose text after the offset is not the indexed text")
+    check(bad_words == 0, f"display: {bad_words} passages marked word-exact whose words do not map onto the indexed words")
+    check(inexact == dm["stats"]["words_inexact"] and inexact <= 0.01 * len(H), f"display: {inexact} passages without an exact word mapping")
+    print(f"  display: {dm['count']} hadith texts in {dm['shards']} files, {dm['bytes']:,} bytes; word mapping not exact for {inexact}")
+else: print("  (no display/ directory: original hadith text not checked)")
 print(f"structure: core {len(P)} passages, {len(packs)} packs, " + ("OK" if not FAIL else f"{len(FAIL)} FAILED"))
 
 # ---------- 2. retrieval ----------

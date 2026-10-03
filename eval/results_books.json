@@ -383,41 +383,41 @@
      "pack": "fiqh",
      "title": "فقه: بداية المجتهد وعمدة الفقه",
      "n": 30,
-     "det": 21,
-     "first": 19,
-     "any": 21,
+     "det": 19,
+     "first": 17,
+     "any": 19,
      "prim": 2
     },
     {
      "pack": "seerah",
      "title": "سيرة: سيرة ابن هشام وزاد المعاد",
      "n": 30,
-     "det": 18,
-     "first": 17,
-     "any": 18,
+     "det": 16,
+     "first": 15,
+     "any": 16,
      "prim": 1
     },
     {
      "pack": "aqeedah",
      "title": "عقيدة: الطحاوية والواسطية",
      "n": 15,
-     "det": 11,
+     "det": 10,
      "first": 8,
      "any": 10,
-     "prim": 3
+     "prim": 2
     }
    ],
    "fillerTextual": 0,
    "fillerExamples": [],
    "total": {
     "n": 135,
-    "det": 88,
-    "first": 67,
-    "any": 87,
-    "prim": 21,
+    "det": 83,
+    "first": 63,
+    "any": 83,
+    "prim": 20,
     "ci": [
-     57,
-     73
+     53,
+     69
     ]
    }
   },
@@ -461,9 +461,9 @@
      "pack": "fiqh",
      "title": "فقه: بداية المجتهد وعمدة الفقه",
      "n": 30,
-     "det": 14,
-     "first": 13,
-     "any": 14,
+     "det": 13,
+     "first": 12,
+     "any": 13,
      "prim": 1
     },
     {
@@ -479,9 +479,9 @@
      "pack": "aqeedah",
      "title": "عقيدة: الطحاوية والواسطية",
      "n": 15,
-     "det": 8,
-     "first": 7,
-     "any": 8,
+     "det": 7,
+     "first": 6,
+     "any": 7,
      "prim": 1
     }
    ],
@@ -489,13 +489,13 @@
    "fillerExamples": [],
    "total": {
     "n": 135,
-    "det": 60,
-    "first": 49,
-    "any": 60,
+    "det": 58,
+    "first": 47,
+    "any": 58,
     "prim": 11,
     "ci": [
-     36,
-     53
+     35,
+     51
     ]
    }
   },
@@ -547,9 +547,9 @@
      "pack": "seerah",
      "title": "سيرة: سيرة ابن هشام وزاد المعاد",
      "n": 30,
-     "det": 30,
+     "det": 29,
      "first": 0,
-     "any": 29,
+     "any": 28,
      "prim": 29
     },
     {
@@ -566,13 +566,13 @@
    "fillerExamples": [],
    "total": {
     "n": 135,
-    "det": 129,
+    "det": 128,
     "first": 0,
-    "any": 127,
+    "any": 126,
     "prim": 128,
     "ci": [
-     91,
-     98
+     90,
+     97
     ]
    }
   },
@@ -624,9 +624,9 @@
      "pack": "seerah",
      "title": "سيرة: سيرة ابن هشام وزاد المعاد",
      "n": 30,
-     "det": 27,
+     "det": 26,
      "first": 0,
-     "any": 27,
+     "any": 26,
      "prim": 26
     },
     {
@@ -643,12 +643,12 @@
    "fillerExamples": [],
    "total": {
     "n": 135,
-    "det": 126,
+    "det": 125,
     "first": 1,
-    "any": 125,
+    "any": 124,
     "prim": 124,
     "ci": [
-     88,
+     87,
      96
     ]
    }

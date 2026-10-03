@@ -12,7 +12,7 @@
 // still clears the evidence thresholds is "partial", with the differences listed in `diff`.
 import { tokenizeTranscript, stem, isLatin, wordText, fold, normMixed } from "./text.js";
 import { align, summarize } from "./align.js";
-import { findCues, findCollectionSpans, findQuranReferences, formulaMask, dhikrMask, DEVOTIONAL, FUNCTION_WORDS, OPEN_PARTICLES } from "./cues.js";
+import { findCues, findCollectionSpans, findQuranReferences, formulaMask, dhikrMask, DEVOTIONAL, FUNCTION_WORDS, QURAN_HOMOGRAPHS, OPEN_PARTICLES } from "./cues.js";
 
 export const STATUS = {
   verbatim: { ar: "مطابق حرفيًا", fidelity: "حرفي", rank: 4 },
@@ -35,19 +35,25 @@ export const DEFAULTS = {
   perRegionBooks: 14,   // ... and from book packs
   seedShare: 0.3,       // a candidate needs at least this share of the best seed evidence in its stretch
   quranReach: 24,       // ... for an ayah: counted together with the neighbouring ayahs seeded within this many tokens
-  // minimum evidence (summed idf of the matched words) to report a textual match — lower right after a cue phrase
-  eMin: 20, eMinCue: 12, eMinQuran: 14, eMinQuranCue: 7,
+  // minimum evidence (summed idf of the matched words) to report a textual match — lower right after a cue phrase.
+  // For an ayah in plain speech (no cue, reference or brackets) the function words count only funcWeight of theirs.
+  eMin: 20, eMinCue: 12, eMinQuran: 16, eMinQuranCue: 7,
   qVerbatim: 0.86,      // share of aligned words that agree: the bar for a CLOSE match (verbatim if also strict, else partial)
   nearExact: 0.10,      // ... with at most this share of changed words. Detection only: it never makes a match "verbatim"
   maxMisheard: 0.20,    // "verbatim" tolerates at most this share of mis-heard (asr + near) words
   qPartial: 0.55,       // -> "مخلوط"
   minWords: 5,          // minimum informative matched words (cue phrases and devotional formulas do not count)
+  // Function words (particles, prepositions, pronouns) are not content: of the informative words, this many must be
+  // content words — fewer when the quotation is announced (cue / reference / brackets), more in plain speech —
+  minContent: 3, minContentCue: 2,   // (an exact run of an ayah's words in plain speech: minContentCue)
+  minContentChanged: null,   // a number: content words needed by an ayah in plain speech whose wording is NOT exact (null = minContent)
+  funcWeight: 0.5,      // an ayah in plain speech: a function word gives only this share of its evidence (against eMinQuran)
   shortMin: 2,          // a short canonical text right after its cue: informative words needed (exact, from the start of the text)
   shortEvidence: 5,
   // Short EXACT fragments of an ayah (step 3d): three or more words, contiguous, identical in normalised spelling.
   // Qur'an only. Evidence = summed idf of the fragment without the function words at its ends. See eval/README.md.
   fragQuran: true,
-  fragEvCue: 8,         // ... announced (Qur'an cue / reference / brackets): at least 2 content words and this much evidence
+  fragEvCue: 8,         // ... announced (Qur'an cue / reference / brackets): at least 2 content words (1 for a whole ayah) and this much evidence
   fragEvWhole: 12,      // ... a whole ayah in plain speech: at least 3 content words and this much evidence
   fragEvPlain: 19,      // ... part of an ayah in plain speech: at least 3 content words and this much evidence
   fragEvMid: 23,        // ... when it has exactly 3 content words and neither begins nor ends an ayah (idioms: "مشارق الأرض ومغاربها")
@@ -182,7 +188,35 @@ export function analyze(words, corpus, options = {}) {
   let punctuated = false;       // does the transcript carry sentence punctuation at all? (pasted raw text often has none)
   for (let i = 0; i < n; i++) if ((i === n - 1 || src[i + 1] !== src[i]) && /[.؟?!…]["”»)]?$/.test(wOf(src[i]))) { sentenceEnd[i] = 1; punctuated = true; }
 
-  const X = { tok, ftok, corpus, o, wt, idf, n, cueMask, metaMask, formMask, cueLead, cueTrail, cueDirect, cueDirectStrong, sentenceEnd,
+  // punctuation between token s-1 and token s, from the original words (pasted text; a transcript has none)
+  const between = s => {
+    if (s > 0 && s < n && src[s - 1] === src[s]) return wOf(src[s]);
+    let t = s > 0 ? /[^\p{L}\p{N}]*$/u.exec(wOf(src[s - 1]))[0] : "";
+    for (let k = s > 0 ? src[s - 1] + 1 : 0, z = s < n ? src[s] : words.length; k < z; k++) t += " " + wOf(k);
+    return s < n ? t + " " + /^[^\p{L}\p{N}]*/u.exec(wOf(src[s]))[0] : t;
+  };
+  const ORNATE = /[\uFD3E\uFD3F{}]/, Q_OPEN = /[(\[«"“'‘]/, Q_CLOSE = /[)\]»"”'’]/;
+  // How is the stretch [s, e) of speech presented?  2 = announced as Qur'an (a Qur'an cue or a reference directly before
+  // it, "صدق الله العظيم" / a reference directly after it, or ﴿ ﴾ / { } around it), 1 = enclosed in ordinary quotation
+  // marks / brackets, 0 = plain speech.
+  const context = (s, e) => {
+    if (cueDirectStrong[s] === KIND.quran || cueTrail[e - 1] === KIND.quran) return 2;
+    for (const r of refs) if (r.isRef && ((r.end <= s && s - r.end <= 1) || (r.pos >= e && r.pos - e <= 1))) return 2;
+    // brackets count only when they close right after the run (or the text ends there): the quoted string is the run
+    const op = between(s);
+    if (ORNATE.test(op) && (e === n || ORNATE.test(between(e)))) return 2;
+    return Q_OPEN.test(op) && Q_CLOSE.test(between(e)) ? 1 : 0;
+  };
+  // A word spelled like a function word that is a content word at this place of the Qur'an ("وهن" in 19:4)
+  const homograph = (w, pid) => {
+    const v = QURAN_HOMOGRAPHS.get(w);
+    if (v === undefined || pid < 0 || pid >= corpus.NQ) return false;
+    if (v === null) return true;
+    const d = corpus.describe(pid);
+    return v.has(d.surah + ":" + d.ayah);
+  };
+
+  const X = { tok, ftok, corpus, o, wt, idf, n, cueMask, metaMask, formMask, dMask, cueLead, cueTrail, cueDirect, cueDirectStrong, sentenceEnd, context, homograph,
     isWord: o.tolerant && o.realWords ? w => corpus.isWord(w) : null };
 
   // ---------- 1) seeds ----------
@@ -349,7 +383,7 @@ export function analyze(words, corpus, options = {}) {
   //   - it does not end on a particle that cannot end a clause ("في", "إذا", "الذين");
   //   - announced (a Qur'an cue or reference directly before it, "صدق الله العظيم" / a reference directly after it,
   //     ﴿ ﴾, { } or ordinary quotation marks / brackets that enclose exactly the run): two content words and
-  //     evidence >= fragEvCue;
+  //     evidence >= fragEvCue (one content word for a whole ayah announced as Qur'an: ﴿كل من عليها فان﴾);
   //   - in plain speech the run is measured without the function words at its two ends (for part of an ayah: also
   //     without common words there) and must still be three words long, with three content words and evidence >=
   //     fragEvWhole for a whole ayah, fragEvPlain for part of one, fragEvMid for exactly three content words from the
@@ -365,23 +399,6 @@ export function analyze(words, corpus, options = {}) {
     // the stretch of speech that a hadith / saying cue announces: Qur'anic words there are part of the narration
     const announced = new Uint8Array(n);
     for (const c of cues) if (!c.trailing) for (let i = c.pos; i < Math.min(n, c.end + o.cueReach); i++) announced[i] = c.weak ? 0 : KIND[c.kind];
-    // punctuation between token s-1 and token s, from the original words (pasted text; a transcript has none)
-    const between = s => {
-      if (s > 0 && s < n && src[s - 1] === src[s]) return wOf(src[s]);
-      let t = s > 0 ? /[^\p{L}\p{N}]*$/u.exec(wOf(src[s - 1]))[0] : "";
-      for (let k = s > 0 ? src[s - 1] + 1 : 0, z = s < n ? src[s] : words.length; k < z; k++) t += " " + wOf(k);
-      return s < n ? t + " " + /^[^\p{L}\p{N}]*/u.exec(wOf(src[s]))[0] : t;
-    };
-    const ORNATE = /[\uFD3E\uFD3F{}]/, Q_OPEN = /[(\[«"“'‘]/, Q_CLOSE = /[)\]»"”'’]/;
-    // 2 = announced as Qur'an, 1 = enclosed in quotation marks / brackets, 0 = plain speech
-    const context = (s, e) => {
-      if (cueDirectStrong[s] === KIND.quran || cueTrail[e - 1] === KIND.quran) return 2;
-      for (const r of refs) if (r.isRef && ((r.end <= s && s - r.end <= 1) || (r.pos >= e && r.pos - e <= 1))) return 2;
-      // brackets count only when they close right after the run (or the text ends there): the quoted string is the run
-      const op = between(s);
-      if (ORNATE.test(op) && (e === n || ORNATE.test(between(e)))) return 2;
-      return Q_OPEN.test(op) && Q_CLOSE.test(between(e)) ? 1 : 0;
-    };
     let prevEnd = 0;
     for (let i = 0; i + 3 <= n; i++) {
       const occ = Q.grams.get(tok[i] + " " + tok[i + 1] + " " + tok[i + 2]);
@@ -401,7 +418,8 @@ export function analyze(words, corpus, options = {}) {
       let s = i, e = i + L;
       while (s < e && (cueMask[s] || metaMask[s])) s++;
       for (let k = s; k < e; k++) if (cueMask[k] || metaMask[k]) { e = k; break; }
-      if (e - s < 3 || OPEN_PARTICLES.has(tok[e - 1])) continue;      // a quotation does not stop on "في" / "إذا" / "الذين"
+      // a quotation does not stop on "في" / "إذا" / "الذين" (﴿كل من عليها فان﴾ does not: that "فان" is not ف + إن)
+      if (e - s < 3 || (OPEN_PARTICLES.has(tok[e - 1]) && !(QURAN_HOMOGRAPHS.has(tok[e - 1]) && best.some(p => homograph(tok[e - 1], Q.pid[p + (e - 1 - i)]))))) continue;
       let cov = 0; for (let k = s; k < e; k++) cov += covered[k];
       if (cov * 2 >= e - s) continue;
       const ctx = context(s, e);
@@ -414,7 +432,9 @@ export function analyze(words, corpus, options = {}) {
       const whole = best.some(wholeAt);
       const touches = best.some(p => { const g = at(p); return Q.start[Q.pid[g]] === g || Q.start[Q.pid[g + len - 1] + 1] === g + len; });
       const masked = k => ctx !== 2 && (formMask[k] === 1 || (dMask[k] === 1 && !o.fragDhikr));
-      const edgeWord = ctx ? () => false : whole ? k => FUNCTION_WORDS.has(tok[k]) : k => FUNCTION_WORDS.has(tok[k]) || idf(ftok[k]) < 3;
+      // (a function word, unless the ayah has a content word of the same spelling at this place: "وهن العظم")
+      const func = k => FUNCTION_WORDS.has(tok[k]) && !(QURAN_HOMOGRAPHS.has(tok[k]) && best.some(p => homograph(tok[k], Q.pid[p + (k - i)])));
+      const edgeWord = ctx ? () => false : whole ? func : k => func(k) || idf(ftok[k]) < 3;
       let cs = s, ce = e;
       while (cs < ce && edgeWord(cs)) cs++;
       while (ce > cs && edgeWord(ce - 1)) ce--;
@@ -423,12 +443,12 @@ export function analyze(words, corpus, options = {}) {
       for (let k = cs; k < ce; k++) {
         if (masked(k)) continue;
         ev += idf(ftok[k]);
-        if (FUNCTION_WORDS.has(tok[k])) continue;
+        if (func(k)) continue;
         content++;
         if (!DEVOTIONAL.has(ftok[k])) plain++;
       }
       if (!ctx && !plain && !o.fragDhikr) continue;                 // nothing but words of everyday dhikr
-      let ok = ctx ? content >= 2 && ev >= o.fragEvCue
+      let ok = ctx ? content >= (ctx === 2 && whole ? 1 : 2) && ev >= o.fragEvCue
         : content >= 3 && ev >= (whole ? o.fragEvWhole : content === 3 && !touches ? o.fragEvMid : o.fragEvPlain);
       // benchmark comparison only: four or more words that are nothing but a listed dhikr phrase count as the ayah
       if (!ok && o.fragDhikr && len >= 4) { ok = true; for (let k = s; k < e; k++) if (!dMask[k]) { ok = false; break; } }
@@ -726,6 +746,8 @@ export function analyze(words, corpus, options = {}) {
       agreement: +b.sum.q.toFixed(3),
       counts: { exact: b.sum.exact, asr: b.sum.asr + b.sum.join, near: b.sum.near, diff: b.sum.diff, added: b.sum.ins, omitted: b.sum.del },
       evidence: +b.sum.evidence.toFixed(1),
+      // of the agreeing words, those that are not function words (particles, prepositions, pronouns), and their evidence
+      contentWords: b.sum.content, contentEvidence: +b.sum.contentEvidence.toFixed(1),
       // informational: the quotation starts after the beginning of the ayah / passage (head), the source goes on after it (tail)
       excerpt: { head: b.head, tail: b.tail },
       // found as a short exact fragment of an ayah (3+ words), below the evidence a quotation of ordinary length needs
@@ -963,13 +985,25 @@ function verify(cl, X) {
   const direct = fits(X.cueDirectStrong[ts]);
   // devotional formulas are said all the time and prove nothing — except right after "قال الله تعالى", where
   // "الحمد لله رب العالمين" is the ayah being quoted
+  // (ctx: how the matched words are presented — 2 announced as Qur'an, 1 in quotation marks / brackets, 0 plain speech)
+  const ctx = X.context(ts, te), quranSaid = isQ && (direct || ctx === 2);
   const formula = isQ && direct ? () => false : op => on(op, formMask);
-  const sum = summarize({ ops }, FP, idf, op => on(op, cueMask) || on(op, metaMask) || formula(op), ftok.slice(a, b));
+  // function words (particles, prepositions, pronouns) agree with half the corpus: they are counted apart from the
+  // content words. A pair is a function word when the spoken or the source word is one — unless the ayah has a content
+  // word of that spelling there.
+  const pidAt = x => { if (!bnd) return cl.pid; let k = 0; while (k + 1 < bnd.length && bnd[k + 1] <= x + pOff) k++; return win.first + k; };
+  const isFunc = op => {
+    if (op.pi2 != null) return false;
+    const w = P[op.pi];
+    if (!FUNCTION_WORDS.has(w) && (op.ti2 != null || !FUNCTION_WORDS.has(tok[a + op.ti]))) return false;
+    return !(isQ && QURAN_HOMOGRAPHS.has(w) && X.homograph(w, pidAt(op.pi)));
+  };
+  const sum = summarize({ ops }, FP, idf, op => on(op, cueMask) || on(op, metaMask) || formula(op), ftok.slice(a, b), isFunc);
   if (sum.inf < o.shortMin) return null;
   // Is this passage being quoted at all? For THAT question a word that sounds like the source word counts as
   // agreeing even when it is a real word (a transcription slip often is one). What the match is CALLED, and every
   // number shown, comes from the strict reading above.
-  const det = ops.some(op => op.soft) ? summarize({ ops: ops.map(op => (op.soft ? { ...op, op: op.soft } : op)) }, FP, idf, op => on(op, cueMask) || on(op, metaMask) || formula(op), ftok.slice(a, b)) : sum;
+  const det = ops.some(op => op.soft) ? summarize({ ops: ops.map(op => (op.soft ? { ...op, op: op.soft } : op)) }, FP, idf, op => on(op, cueMask) || on(op, metaMask) || formula(op), ftok.slice(a, b), isFunc) : sum;
 
   // does the alignment cover whole ayah(s) / the whole passage, start to end?
   const S = ps + pOff, E = pe + pOff;
@@ -993,26 +1027,49 @@ function verify(cl, X) {
 
   // everyday dhikr ("سبحان الله وبحمده سبحان الله العظيم") in plain speech is devotion, not a quotation
   if (!hasCue && sum.inf < o.devotionalMin && ops.every(op => !solid(op) || DEVOTIONAL.has(FP[op.pi]))) return null;
+  // ... and so is everyday dhikr whose words are an ayah ("إنا لله وإنا إليه راجعون" in a condolence, "له الملك وله الحمد
+  // وهو على كل شيء قدير"): the ayah is cited only when it is announced as Qur'an, or when the dhikr is part of a longer
+  // recitation — that is, when enough content words of the ayah were said besides the dhikr and the formulas.
+  // The same for a hadith in which somebody says such words ("... مصيبة فقالوا إنا لله وإنا إليه راجعون"): without a hadith
+  // cue it is kept only to be listed under the ayah when the ayah itself is cited (see `echo` below).
+  let dhikrOnly = false;
+  if (!(isQ ? quranSaid : hasCue) && ops.some(op => on(op, X.dMask))) {
+    let own = 0;
+    for (const op of ops) if (solid(op) && !on(op, X.dMask) && !on(op, formMask) && !on(op, cueMask) && !on(op, metaMask) && !isFunc(op)) own += op.pi2 != null ? 2 : 1;
+    dhikrOnly = own < o.minContent;
+    if (dhikrOnly && isQ) return null;
+  }
 
   const eMin = isQ ? (hasCue ? o.eMinQuranCue : o.eMinQuran) : (hasCue ? o.eMinCue : o.eMin);
   const changedN = sum.diff + sum.ins + sum.del;
   // strict: word for word, and only a few words excused as mis-heard
   const strict = changedN === 0 && sum.asr + sum.near <= o.maxMisheard * sum.matched;
+  // Enough to say that THIS text is being quoted? Function words agree with half the corpus ("تاريخ بني إسرائيل من بعد
+  // موسى" in plain speech has five words of 2:246, two of them function words), so they never count towards the minimum
+  // of content words, and for an ayah in plain speech (no cue, no reference, no brackets) they give only part of their
+  // evidence.
+  const announced = hasCue || (isQ ? ctx > 0 : ctx === 1);
+  // (the Qur'an is small and fixed: words of it in a row, letter for letter, need no third content word — the evidence
+  // rule below decides; a hadith or a book is weighed by all its matched words, as before)
+  const exactRun = isQ && changedN === 0 && sum.asr + sum.near + sum.join === 0;
+  const minC = announced || exactRun ? o.minContentCue : isQ && o.minContentChanged != null ? o.minContentChanged : o.minContent;
+  const ev = m => (announced || !isQ ? m.evidence : m.contentEvidence + o.funcWeight * (m.evidence - m.contentEvidence));
   let status = null;
-  if (det.q >= o.qVerbatim && (det.diff + det.ins + det.del) / det.cols <= o.nearExact && det.longestRun >= Math.min(4, det.matched)) {
-    if (det.inf >= o.minWords && det.evidence >= eMin) status = strict ? "verbatim" : "partial";
+  if (dhikrOnly) ;
+  else if (det.q >= o.qVerbatim && (det.diff + det.ins + det.del) / det.cols <= o.nearExact && det.longestRun >= Math.min(4, det.matched)) {
+    if (det.inf >= o.minWords && det.content >= minC && ev(det) >= eMin) status = strict ? "verbatim" : "partial";
     else if (isQ && whole && hasCue && det.evidence >= 2.5) status = strict ? "verbatim" : "partial";   // short ayah recited whole after a cue
   }
-  if (!status && det.q >= o.qPartial && det.longestRun >= 3 && det.inf >= o.minWords + 1 && det.evidence >= eMin * 1.25) status = "partial";
+  if (!status && !dhikrOnly && det.q >= o.qPartial && det.longestRun >= 3 && det.inf >= o.minWords + 1 && det.content >= minC && ev(det) >= eMin * 1.25) status = "partial";
   // A short canonical text right after its cue: exact, from the first word of the matn, and closed by the end of the
   // sentence or by "رواه ...". The beginning of a longer hadith is a partial quotation; a whole text is verbatim.
-  if (!status && !isQ && !isB && direct && changedN === 0 && sum.asr + sum.near === 0 && sum.evidence >= o.shortEvidence) {
+  if (!status && !dhikrOnly && !isQ && !isB && direct && changedN === 0 && sum.asr + sum.near === 0 && sum.evidence >= o.shortEvidence) {
     const startsMatn = S <= lead || SAY_END.has(win.P[S - 1]);
     const closed = te >= n || X.sentenceEnd[te - 1] === 1 || metaMask[te] === 1 || cueMask[te] === 1;
     // ... or at least three exact words with real evidence from inside a narration ("من غشنا فليس منا")
     if (closed && ts - cueEndBefore(X, ts) <= 1 && (startsMatn || (sum.inf >= 3 && sum.evidence >= o.eMinCue))) status = whole ? "verbatim" : "partial";
   }
-  if (!status && !cl.anchored && det.q >= 0.4 && det.longestRun >= 3 && det.inf >= o.minWords && det.evidence >= eMin * 1.5) status = "lead";
+  if (!status && !dhikrOnly && !cl.anchored && det.q >= 0.4 && det.longestRun >= 3 && det.inf >= o.minWords && det.content >= minC && ev(det) >= eMin * 1.5) status = "lead";
   // The exact words of a Qur'anic phrase inside a hadith, below the bar for a hadith citation but above the one for an
   // ayah: kept only to be listed as a parallel when the ayah itself is found on the same words (see grouping).
   let echo = false;

@@ -75,7 +75,7 @@ const D = {
   "title": ["أثَر — سجل الاستشهادات المنطوقة", "Athar — a ledger of spoken citations"],
   "sum.none": ["لم يُعثر في «{0}» على مواضع استشهاد.", "No citations were found in “{0}”."],
   "sum.line": ["في «{0}» {1} موضع استشهاد: {2}.", "In “{0}”: {1} citation spots — {2}."],
-  "empty.hidden": ["كل الأوصاف مخفية. فعّل وصفًا من الأعلى لعرض مواضعه.", "All statuses are hidden. Turn one on above to see its entries."],
+  "empty.hidden": ["لا يظهر شيء بالتصفية الحالية. فعّل وصفًا من الأعلى، أو ألغِ «لم يُراجَع بعد».", "Nothing is shown with the current filters. Turn a status on above, or turn off “Not reviewed yet”."],
   "empty.none": ["لا توجد في النص عبارات استشهاد ولا نصوص تطابق المدونة. إن كان التسجيل يحتوي استشهادات، فقد يكون التفريغ لم يلتقطها بوضوح.", "No citation phrases and no text matching the corpus. If the recording does contain citations, the transcription may not have captured them clearly."],
   "corpus.loading": ["تُحمَّل المدونة…", "Loading the corpus…"],
   "corpus.ready": ["المدونة جاهزة: {0} آية و{1} حديثًا من تسع مجموعات.", "Corpus ready: {0} verses and {1} hadith from nine collections."],
@@ -161,7 +161,25 @@ const D = {
   "doc.fn.unsure": ["[يحتاج نظرًا]", "[needs a look]"],
   "doc.fn.meaning": ["لم يطابق لفظًا. لعل المقصود: {0} (اقتراح آلي غير مؤكَّد).", "No wording match. Possibly: {0} (an unconfirmed automatic suggestion)."],
   "doc.fn.notfound": ["لم يُعثر على هذا النص في مدونة «أثَر» (القرآن وتسع مجموعات حديثية وما حُمِّل من كتب)؛ يحتاج تخريجًا يدويًّا. عدم العثور لا يعني أن النص غير ثابت.", "Not found in Athar's corpus (the Qur'an, nine hadith collections and the loaded books); needs manual sourcing. Not found does not mean the text is unsound."],
-  "doc.note": ["الحواشي في هذا الملف ({0}) وضعها «أثَر» آليًّا بمطابقة النص المفرَّغ مع مدونته. الحاشية المنتهية بعلامة * لم يؤكّدها مراجع بشري بعد؛ المؤكَّد منها {1}. النص نفسه كما خرج من التفريغ ولم يُصحَّح. الأداة لا تحكم على صحة حديث.", "The footnotes in this file ({0}) were placed automatically by Athar by matching the transcript against its corpus. A footnote ending with * has not been confirmed by a human reviewer yet; confirmed: {1}. The text itself is as transcribed and has not been corrected. The tool does not judge the authenticity of any hadith."],
+  "doc.note.notes": ["الحواشي في هذا الملف ({0}) وضعها «أثَر» آليًّا بمطابقة النص المفرَّغ مع مدونته. الحاشية المنتهية بعلامة * لم يؤكّدها مراجع بشري بعد؛ المؤكَّد منها {1}.", "The footnotes in this file ({0}) were placed automatically by Athar by matching the transcript against its corpus. A footnote ending with * has not been confirmed by a human reviewer yet; confirmed: {1}."],
+  "doc.note.manual": ["منها {0} اختار المراجع مصدرها بنفسه (مكتوب فيها «أضافه المراجع»).", "Of these, {0} have a source the reviewer chose (marked “added by the reviewer”)."],
+  "doc.note.mushaf": ["الآيات التي طابقت المصحف كلمةً بكلمة كُتبت برسم المصحف من نص مشروع تنزيل (tanzil.net)، وكل ما سواها كما خرج من التفريغ.", "Verses that matched the Qur'an word for word are written in Mushaf spelling from the Tanzil text (tanzil.net); everything else is as transcribed."],
+  "doc.note.fixed": ["صحّح المراجع {0} من كلمات التفريغ.", "The reviewer corrected {0} transcribed word(s)."],
+  "doc.note.raw": ["النص نفسه كما خرج من التفريغ ولم يُصحَّح.", "The text itself is as transcribed and has not been corrected."],
+  "doc.note.judge": ["الأداة لا تحكم على صحة حديث.", "The tool does not judge the authenticity of any hadith."],
+  "doc.fn.manual": ["(أضافه المراجع)", "(added by the reviewer)"],
+  "doc.fn.manual.meaning": ["بمعناه في: {0}.", "In meaning, see: {0}."],
+  // ---- summary for the review committee
+  "sumry.title": ["ملخّص للجنة المراجعة", "Summary for the review committee"], "sumry.colon": [": ", ": "], "sumry.sep": ["، ", ", "],
+  "sumry.quran": ["آيات قرآنية", "Qur'an citations"], "sumry.hadith": ["أحاديث", "Hadith citations"], "sumry.books": ["نصوص من كتب", "Book citations"],
+  "sumry.notfound": ["اقتباسات أُعلن عنها ولم يُعثر عليها في المدونة", "Announced quotations not found in the corpus"],
+  "sumry.attr": ["نسبة منطوقة لم توافق ما وُجد", "Spoken attributions that did not agree"],
+  "sumry.status": ["بحسب الوصف", "By status"], "sumry.review": ["حالة المراجعة", "Review state"], "sumry.none": ["لم يُراجَع", "not reviewed"],
+  "sumry.manual": ["أضافه المراجع", "Added by the reviewer"],
+  "sumry.rule": ["الأسطر الثلاثة الأولى تعدّ المطابقات اللفظية (حرفية وجزئية) وما أضافه المراجع، دون ما حُكم عليه بأنه غير صحيح. الأرقام من السجل ومراجعته كما هما الآن.", "The first three lines count textual matches (verbatim and partial) and entries added by the reviewer, leaving out those marked incorrect. Numbers reflect the ledger and its review as they are now."],
+  // ---- citation index for a video description
+  "idx.verse": ["آية", "Verse"], "idx.verses": ["آيات", "Verses"], "idx.surah": ["سورة {0}", "{0}"], "idx.hadith": ["حديث", "Hadith"], "idx.book": ["نص من كتاب", "Book passage"],
+  "idx.intro": ["المقدمة", "Introduction"],
   "na.video": ["الأزمنة من النص الملصوق؛ اضغط زمن أي استشهاد ليُفتح الفيديو عنده.", "Times come from the pasted transcript; press a citation's time to open the video there."],
   "err.video": ["رابط الفيديو غير مفهوم. الصق رابط يوتيوب كاملًا أو اترك الخانة فارغة.", "The video link was not understood. Paste a full YouTube link or leave the field empty."],
   "err.session": ["ملف الجلسة فارغ أو تالف.", "The session file is empty or damaged."],
@@ -181,6 +199,39 @@ const D = {
   "csv.kind": ["النوع", "Kind"], "csv.status": ["الوصف", "Status"], "csv.fidelity": ["درجة الأمانة", "Fidelity"], "csv.agreement": ["نسبة الاتفاق", "Agreement"],
   "csv.spoken": ["النص المنطوق", "Spoken text"], "csv.source": ["المصدر", "Source"], "csv.ref": ["معرّف المصدر الثابت", "Stable source id"], "csv.url": ["الرابط", "Link"],
   "csv.parallels": ["مواضع أخرى", "Other places"], "csv.attr": ["فحص النسبة المنطوقة", "Spoken attribution check"], "csv.review": ["مراجعة بشرية", "Human review"], "csv.note": ["ملاحظة المراجع", "Reviewer's note"],
+  "csv.origin": ["من أضافه", "Added by"], "csv.origin.manual": ["أضافه المراجع", "Added by the reviewer"],
+  // ---- reviewer's tools: progress, shortcuts, manual entries, lookup, corrections, index, options
+  "pg.line": ["راجعتَ {0} من {1}", "Reviewed {0} of {1}"], "pg.open": ["لم يُراجَع بعد ({0})", "Not reviewed yet ({0})"],
+  "pg.open.title": ["أظهر فقط ما لم تحكم عليه بعد", "Show only the entries you have not given a verdict yet"],
+  "e.manual": ["أضافه المراجع", "Added by the reviewer"], "e.manual.remove": ["أزِل هذه الإضافة", "Remove this addition"],
+  "e.manual.note": ["اختار المراجع هذا المصدر بنفسه؛ الوصف من بحث المدونة عن هذه الكلمات.", "The reviewer chose this source; the status comes from searching the corpus for these words."],
+  "e.manual.text": ["النص في المدونة:", "Text in the corpus:"],
+  "e.find": ["ابحث عن مصدر هذا النص", "Find the source of this text"],
+  "lk.title.free": ["ابحث في المدونة", "Search the corpus"], "lk.title.range": ["ابحث عن مصدر هذا النص", "Find the source of this text"],
+  "lk.searching": ["يُبحث في المدونة…", "Searching the corpus…"], "lk.wait": ["بانتظار اكتمال تحميل المدونة…", "Waiting for the corpus to finish loading…"],
+  "lk.type": ["اكتب أو الصق نصًّا ثم اضغط «ابحث».", "Type or paste a text, then press “Search”."],
+  "lk.found": ["أقرب {0} من نصوص المدونة. الوصف يخص هذه الكلمات وحدها؛ راجع النص قبل الاختيار.", "The {0} closest corpus passages. The status is about these words alone; read the text before choosing."],
+  "lk.none": ["لم يُعثر في المدونة على نص قريب من هذا. هذا لا يعني أن النص غير ثابت: قد يكون في كتاب خارج المدونة، أو بلفظ آخر.", "No close passage was found in the corpus. This does not mean the text is unsound: it may be in a book outside the corpus, or in other words."],
+  "lk.err": ["تعذّر البحث: {0}", "The search failed: {0}"],
+  "lk.cut": ["النص المحدَّد طويل: بُحث عن أول {0} كلمة فقط، وهي ما سيُضاف.", "The selection is long: only its first {0} words were searched, and only they would be added."],
+  "lk.cut.free": ["النص طويل: بُحث عن أول {0} كلمة فقط.", "The text is long: only its first {0} words were searched."],
+  "lk.st.verbatim": ["مطابق حرفيًا", "Verbatim match"], "lk.st.partial": ["مطابق جزئيًا", "Partial match"], "lk.st.meaning": ["قريب بالمعنى — ليس مطابقة لفظية", "Close in meaning — not a wording match"],
+  "lk.add": ["أضِف إلى السجل بهذا المصدر", "Add to the ledger with this source"],
+  "lk.clash": ["هذه الكلمات تتقاطع مع استشهاد موجود في السجل ({0})، فلا يُضاف فوقه.", "These words overlap a citation already in the ledger ({0}), so nothing is added over it."],
+  "lk.scope": ["بُحث في: {0}.", "Searched: {0}."], "lk.scope.core": ["المدونة الأساسية (القرآن وتسع مجموعات حديثية)", "the core corpus (the Qur'an and nine hadith collections)"],
+  "lk.scope.not": ["لم تُحمَّل: {0} (تُختار من صفحة البداية).", "Not loaded: {0} (tick them on the start page)."],
+  "lk.en": ["النص بالإنجليزية وحزم الترجمات الإنجليزية غير محمَّلة، فلم يُبحث في الترجمات.", "The text is in English and the English translation packs are not loaded, so translations were not searched."],
+  "lk.en.load": ["حمِّل الترجمات الإنجليزية وأعد البحث", "Load the English translations and search again"],
+  "fix.label": ["تصحيح الكلمة «{0}»", "Correct the word “{0}”"],
+  "fix.hint": ["Enter للحفظ، Esc للإلغاء. اتركها فارغة لحذف الكلمة.", "Enter saves, Esc cancels. Leave it empty to remove the word."],
+  "fix.was": ["صحّحها المراجع. الأصل في التفريغ: {0}", "Corrected by the reviewer. As transcribed: {0}"],
+  "fix.click": ["اضغط لتصحيح الكلمة إن أخطأ فيها التفريغ", "Click to correct this word if it was mis-transcribed"],
+  "fix.undo1": ["تراجع عن تصحيح هذه الكلمة (الأصل: {0})", "Undo this correction (as transcribed: {0})"],
+  "fix.count": ["كلمات مصحَّحة: {0}.", "Corrected words: {0}."], "fix.busy": ["يُعاد التحليل بالكلمات المصحَّحة…", "Analysing again with the corrected words…"],
+  "idx.none": ["لا يوجد استشهاد مطابق لفظًا له زمن.", "There is no textual citation with a time."],
+  "idx.notimes": ["النص بلا أزمنة، فلا يمكن عمل فهرس للفيديو.", "The transcript has no timestamps, so no video index can be made."],
+  "idx.title": ["انسخ فهرس الاستشهادات بأزمنتها لوصف الفيديو", "Copy the index of citations with their times for the video description"],
+  "idx.copied": ["نُسخ إلى الحافظة.", "Copied to the clipboard."], "idx.nocopy": ["تعذّر النسخ تلقائيًّا: حدِّد النص في المربع وانسخه.", "Could not copy automatically: select the text in the box and copy it."],
   "export.tool": ["أثَر — سجل الاستشهادات المنطوقة", "Athar — a ledger of spoken citations"],
   "export.disclaimer": ["مسوّدة آلية للمراجعة البشرية. «لم يُعثر عليه في المدونة» لا يعني أن النص غير صحيح.", "An automatic draft for human review. “Not found in the corpus” does not mean a text is inauthentic."],
 };
@@ -221,7 +272,29 @@ export const STATIC = [
   [".transcript-wrap h2", "النص المفرَّغ", "Transcript"],
   ["#transcript", "النص المفرَّغ؛ تنقَّل بين مواضع الاستشهاد بالأسهم", "Transcript; move between citation spots with the arrow keys", "aria-label"],
   ["#limits", "كيف يعمل أثَر وما حدوده", "How Athar works and its limits", "aria-label"],
-  ["#limits .x", "إغلاق", "Close", "aria-label"],
+  ["dialog .x", "إغلاق", "Close", "aria-label"],
+  ["#btnSearch", "ابحث في المدونة", "Search the corpus"],
+  ["#optMushafLabel", "اكتب الآيات المطابقة برسم المصحف", "Write matched verses in Mushaf spelling"],
+  ["#optMushafWrap", "في ملف Word: الآية المطابقة كلمةً بكلمة تُكتب بنص المصحف (مشروع تنزيل)؛ الجزئية وما سواها يبقى كما فُرِّغ", "In the Word file: a verse matched word for word is written with the Mushaf text (Tanzil); partial matches and everything else stay as transcribed", "title"],
+  ["#btnIndex", "فهرس للوصف", "Index for video description"],
+  ["#committeeTitle", "ملخّص للجنة المراجعة", "Summary for the review committee"],
+  ["#btnKeys", "اختصارات لوحة المفاتيح (؟)", "Keyboard shortcuts (?)"],
+  ["#csearchQ", "ابحث في المدونة", "Search the corpus", "placeholder"], ["#csearchQ", "ابحث في المدونة عن نص", "Search the corpus for a text", "aria-label"],
+  ["#csearchGo", "ابحث", "Search"], ["#lookupGo", "ابحث", "Search"],
+  ["#lookupQ", "اكتب أو الصق نصَّ آية أو حديث", "Type or paste the words of a verse or hadith", "placeholder"], ["#lookupQ", "نص يُبحث عنه في المدونة", "Text to search the corpus for", "aria-label"],
+  ["#trHint", "ظلِّل نصًّا فاتَ الأداةَ للبحث عن مصدره. لتصحيح كلمة في استشهاد: حدِّده ثم اضغط الكلمة.", "Select words the tool missed to look for their source. To correct a word inside a citation: select the citation, then click the word."],
+  ["#btnUndoFixes", "تراجع عن كل التصحيحات", "Undo all corrections"],
+  ["#selAct", "ابحث عن مصدر هذا النص", "Find the source of this text"],
+  ["#lookupAdjust", "تعديل حدود النص", "Adjust where the text begins and ends", "aria-label"],
+  ["#lkStartLabel", "أوله:", "Start:"], ["#lkEndLabel", "آخره:", "End:"],
+  ["#lkA1", "كلمة أقل", "one word less"], ["#lkA0", "كلمة أكثر", "one word more"], ["#lkB1", "كلمة أقل", "one word less"], ["#lkB0", "كلمة أكثر", "one word more"],
+  ["#lkA1", "احذف كلمة من أول النص", "Drop a word from the start", "aria-label"], ["#lkA0", "أضف الكلمة السابقة إلى أول النص", "Add the previous word at the start", "aria-label"],
+  ["#lkB1", "احذف كلمة من آخر النص", "Drop a word from the end", "aria-label"], ["#lkB0", "أضف الكلمة التالية إلى آخر النص", "Add the next word at the end", "aria-label"],
+  ["#lookupClashOpen", "افتح ذلك الاستشهاد", "Open that citation"],
+  ["#indexTitle", "فهرس الاستشهادات لوصف الفيديو", "Citation index for the video description"],
+  ["#indexHint", "سطر لكل استشهاد مطابق لفظًا له زمن (وما أضافه المراجع)، دون ما حكمتَ عليه بأنه غير صحيح. الصقه في وصف الفيديو.", "One line per textual citation that has a time (and those you added), leaving out the ones you marked incorrect. Paste it into the video description."],
+  ["#indexIntroLabel", "أضف «0:00 المقدمة» (يوتيوب يشترط أن تبدأ الفصول من 0:00)", "Add “0:00 Introduction” (YouTube needs chapters to start at 0:00)"],
+  ["#indexCopy", "انسخ", "Copy"],
   ["#footCorpus", "المدونة الأساسية: القرآن الكريم وتسع مجموعات حديثية. الكتب الإضافية: تفسير ابن كثير والجلالين، بداية المجتهد وعمدة الفقه، سيرة ابن هشام وزاد المعاد، الطحاوية والواسطية، رياض الصالحين وبلوغ المرام، وترجمات إنجليزية منشورة. «لم يُعثر عليه في المدونة» لا يعني أن النص غير صحيح.",
     "Core corpus: the Qur'an and nine hadith collections. Optional: Tafsir Ibn Kathir and al-Jalalayn, Bidayat al-Mujtahid and Umdat al-Fiqh, Sirat Ibn Hisham and Zad al-Ma'ad, al-Tahawiyya and al-Wasitiyya, Riyad al-Salihin and Bulugh al-Maram, and published English translations. “Not found in the corpus” does not mean a text is inauthentic."],
   ["#fc1", "نص القرآن:", "Qur'an text:"], ["#fcTanzil", "مشروع تنزيل", "Tanzil Project"],
@@ -260,6 +333,10 @@ const EN_SURAHS = ["Al-Fatihah", "Al-Baqarah", "Aal Imran", "An-Nisa", "Al-Ma'id
 const EN_COLLECTIONS = { bukhari: "Sahih al-Bukhari", muslim: "Sahih Muslim", abudawud: "Sunan Abi Dawud", tirmidhi: "Jami' at-Tirmidhi", nasai: "Sunan an-Nasa'i",
   ibnmajah: "Sunan Ibn Majah", malik: "Muwatta Malik", nawawi: "An-Nawawi's Forty Hadith", qudsi: "Forty Hadith Qudsi" };
 
+const AR_SHORT = { bukhari: "البخاري", muslim: "مسلم", abudawud: "أبو داود", tirmidhi: "الترمذي", nasai: "النسائي", ibnmajah: "ابن ماجه", malik: "موطأ مالك", nawawi: "الأربعون النووية", qudsi: "الأحاديث القدسية" };
+/** the name of a hadith collection as it is said in a list ("البخاري ٣، مسلم ٢"); an unknown key is returned as it is */
+export const collectionName = key => (lang === "ar" ? AR_SHORT[key] : EN_COLLECTIONS[key]) || String(key);
+
 /** label of a source in the interface language. short=true gives the compact form used in lists and tooltips. */
 export function srcLabel(s, short = false) {
   if (!s) return "";
@@ -274,7 +351,7 @@ export function srcLabel(s, short = false) {
       out = none ? t("src.h.nonumber", name) : short ? `${name} ${s.number}` : t("src.h", name, s.number);
     }
   }
-  if (s.numbering === "dataset" && !short) out += " " + t("src.numbering.dataset");
+  if (s.numbering === "dataset" && !short && !out.includes(t("src.numbering.dataset"))) out += " " + t("src.numbering.dataset");
   return out;
 }
 /** tests run without a page: set the language only */

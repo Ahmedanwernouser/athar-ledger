@@ -2,7 +2,7 @@
 // A .docx is a zip of XML parts; the zip is written uncompressed ("stored"), which every word processor reads.
 //
 //   buildDocx({ title, rtl, lang, paragraphs, footnotes }) -> Uint8Array
-//     paragraphs: [{ style?: "Title"|"Subtitle"|"Heading"|"Note", runs: [run] }]
+//     paragraphs: [{ style?: "Title"|"Subtitle"|"Heading"|"SummaryHead"|"Summary"|"SummaryNote"|"Note", runs: [run] }]
 //     run:        { text, bold?, quote?, rtl?, note?: footnoteIndex }   (note = index into `footnotes`, placed after the text)
 //     footnotes:  [{ runs: [run] }]
 
@@ -59,6 +59,9 @@ export function buildDocx({ title = "", rtl = true, lang = "ar-SA", paragraphs =
 <w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="80" w:line="320" w:lineRule="auto"/></w:pPr><w:rPr>${fonts(ui)}<w:color w:val="5A6377"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="Heading"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/></w:pPr><w:rPr><w:b/><w:bCs/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="Note"><w:name w:val="Note"/><w:basedOn w:val="Normal"/><w:pPr><w:pBdr><w:top w:val="single" w:sz="6" w:space="6" w:color="C9A455"/></w:pBdr><w:spacing w:before="240" w:after="80" w:line="320" w:lineRule="auto"/></w:pPr><w:rPr>${fonts(ui)}<w:color w:val="5A6377"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="SummaryHead"><w:name w:val="Summary Heading"/><w:basedOn w:val="Normal"/><w:pPr><w:keepNext/><w:pBdr><w:top w:val="single" w:sz="6" w:space="6" w:color="C9A455"/></w:pBdr><w:spacing w:before="200" w:after="40" w:line="320" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr><w:rPr>${fonts(ui)}<w:b/><w:bCs/><w:color w:val="17225A"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="Summary"><w:name w:val="Summary"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0" w:line="300" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr><w:rPr>${fonts(ui)}<w:color w:val="33405F"/><w:sz w:val="19"/><w:szCs w:val="19"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="SummaryNote"><w:name w:val="Summary Note"/><w:basedOn w:val="Summary"/><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="6" w:color="C9A455"/></w:pBdr><w:spacing w:before="40" w:after="280" w:line="280" w:lineRule="auto"/></w:pPr><w:rPr><w:color w:val="5A6377"/><w:sz w:val="17"/><w:szCs w:val="17"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="FootnoteText"><w:name w:val="footnote text"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="40" w:line="300" w:lineRule="auto"/></w:pPr><w:rPr><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>
 <w:style w:type="character" w:default="1" w:styleId="DefaultParagraphFont"><w:name w:val="Default Paragraph Font"/></w:style>
 <w:style w:type="character" w:styleId="FootnoteReference"><w:name w:val="footnote reference"/><w:rPr><w:vertAlign w:val="superscript"/></w:rPr></w:style>

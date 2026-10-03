@@ -19,6 +19,7 @@
     </div>
     <nav class="top-actions">
       <button type="button" class="navbtn" id="btnNew" hidden>تحليل جديد</button>
+      <button type="button" class="navbtn" id="btnSearch">ابحث في المدونة</button>
       <button type="button" class="navbtn" id="btnLimits">كيف يعمل وما حدوده</button>
       <button type="button" class="navbtn lang" id="btnLang" lang="en">English</button>
     </nav>
@@ -120,7 +121,11 @@
         <h1 id="summaryLine" class="summary-line" tabindex="-1"></h1>
         <div class="exports">
           <button type="button" class="btn gold" id="btnMeaning" hidden>ابحث عن الاقتباسات بالمعنى</button>
-          <button type="button" class="btn gold" id="btnDocx">النص المخرَّج (Word)</button>
+          <span class="export-group">
+            <button type="button" class="btn gold" id="btnDocx">النص المخرَّج (Word)</button>
+            <label class="opt" id="optMushafWrap"><input type="checkbox" id="optMushaf"><span id="optMushafLabel">اكتب الآيات المطابقة برسم المصحف</span></label>
+          </span>
+          <button type="button" class="btn ondark" id="btnIndex">فهرس للوصف</button>
           <button type="button" class="btn ondark" id="btnSave">حفظ الجلسة</button>
           <button type="button" class="btn ondark" id="btnCsv">تنزيل CSV</button>
           <button type="button" class="btn ondark" id="btnJson">تنزيل JSON</button>
@@ -130,6 +135,14 @@
     </div>
 
     <div class="wrap"><ul class="notices" id="notices" role="status" hidden></ul></div>
+
+    <div class="wrap">
+      <details class="committee" id="committee">
+        <summary id="committeeTitle">ملخّص للجنة المراجعة</summary>
+        <dl class="committee-list" id="committeeList"></dl>
+        <p class="note" id="committeeRule"></p>
+      </details>
+    </div>
 
     <div class="player" id="player">
       <div class="wrap">
@@ -141,7 +154,16 @@
 
     <div class="wrap">
       <div class="tools">
-        <div class="filters" id="filters" role="group" aria-label="تصفية السجل"></div>
+        <div class="filters" id="filters" role="group" aria-label="تصفية السجل"><button type="button" class="chip open" id="chipOpen" aria-pressed="false" hidden></button></div>
+        <div class="progress" id="progress">
+          <span id="progressText" role="status"></span>
+          <span class="pbar" aria-hidden="true"><i id="progressBar"></i></span>
+          <button type="button" class="link" id="btnKeys">اختصارات لوحة المفاتيح (؟)</button>
+        </div>
+        <form class="csearch" id="csearch" role="search">
+          <input type="text" enterkeyhint="search" id="csearchQ" dir="auto" placeholder="ابحث في المدونة" aria-label="ابحث في المدونة عن نص" autocomplete="off">
+          <button type="submit" class="btn small" id="csearchGo">ابحث</button>
+        </form>
         <div class="legend" id="legend" role="group" aria-label="مفتاح علامات الفروق">
           <span><b class="k k-asr">كلمة</b> <span id="lgAsr">فرق يُرجَّح أنه من التفريغ</span></span>
           <span><b class="k k-near">كلمة</b> <span id="lgNear">حرف مختلف (تفريغ أو لفظ)</span></span>
@@ -156,12 +178,16 @@
         <aside class="transcript-wrap">
           <div class="video" id="video" hidden><iframe id="videoFrame" title="video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
           <h2>النص المفرَّغ</h2>
+          <p class="tr-hint" id="trHint">ظلِّل نصًّا فاتَ الأداةَ للبحث عن مصدره. لتصحيح كلمة في استشهاد: حدِّده ثم اضغط الكلمة.</p>
+          <p class="fixbar" id="fixBar" role="status" hidden><span id="fixCount"></span> <button type="button" class="link" id="btnUndoFixes">تراجع عن كل التصحيحات</button></p>
           <div class="transcript" id="transcript" role="group" aria-label="النص المفرَّغ"></div>
         </aside>
       </div>
     </div>
   </section>
 </main>
+
+<button type="button" class="selact" id="selAct" hidden>ابحث عن مصدر هذا النص</button>
 
 <footer class="foot"><div class="foot-in">
   <p id="footCorpus">المدونة الأساسية: القرآن الكريم وتسع مجموعات حديثية.</p>
@@ -199,6 +225,24 @@
     <li>قد يظهر مقطع قصير مشترك بين عدة أحاديث منسوبًا إلى أحدها؛ راجع «مواضع أخرى».</li>
     <li>السجل مسوّدة للمراجعة البشرية، لا فتوى ولا تخريج نهائي.</li>
   </ul>
+  <h2>أدوات المراجع</h2>
+  <ul class="limits">
+    <li><b>استشهاد فات الأداة.</b> ظلِّل نصَّه في النص المفرَّغ ثم «ابحث عن مصدر هذا النص»، واختر المصدر: يُضاف إلى السجل موسومًا بأنه «أضافه المراجع».</li>
+    <li><b>كلمة أخطأ فيها التفريغ.</b> اضغط الكلمة في سطر «المنطوق» وصحِّحها (Enter للحفظ، Esc للإلغاء، وتركها فارغة يحذفها): يُعاد التحليل، ويبقى الأصل محفوظًا ويمكن التراجع.</li>
+    <li><b>النص المخرَّج.</b> الآيات المطابقة كلمةً بكلمة تُكتب برسم المصحف من نص مشروع تنزيل إن اخترت ذلك؛ وما سواها يبقى كما فُرِّغ.</li>
+  </ul>
+  <h2>اختصارات لوحة المفاتيح في صفحة النتائج</h2>
+  <dl class="keys">
+    <dt><kbd>j</kbd> <kbd>↓</kbd></dt><dd>الاستشهاد التالي</dd>
+    <dt><kbd>k</kbd> <kbd>↑</kbd></dt><dd>الاستشهاد السابق</dd>
+    <dt><kbd>1</kbd></dt><dd>صحيح</dd>
+    <dt><kbd>2</kbd></dt><dd>غير صحيح</dd>
+    <dt><kbd>3</kbd></dt><dd>يحتاج نظرًا</dd>
+    <dt><kbd>p</kbd></dt><dd>شغِّل من زمن الاستشهاد</dd>
+    <dt><kbd>n</kbd></dt><dd>اكتب ملاحظة</dd>
+    <dt><kbd>?</kbd></dt><dd>أظهر هذه الاختصارات</dd>
+  </dl>
+  <p class="note">تعمل حين لا يكون المؤشر في خانة كتابة، وبمواضع المفاتيح نفسها في لوحة المفاتيح العربية. بعد الحكم يبقى التحديد في مكانه؛ اضغط j للانتقال.</p>
   </div>
   <div data-lang-only="en" hidden>
   <h2>How Athar works</h2>
@@ -229,6 +273,92 @@
     <li>A short passage shared by several hadith may be shown under one of them; check “Other places”.</li>
     <li>The ledger is a draft for human review, not a ruling and not a final sourcing.</li>
   </ul>
+  <h2>Reviewer's tools</h2>
+  <ul class="limits">
+    <li><b>A citation the tool missed.</b> Select its words in the transcript, choose “Find the source of this text” and pick the source: it joins the ledger marked “Added by the reviewer”.</li>
+    <li><b>A mis-transcribed word.</b> Click the word in the “Spoken” line and correct it (Enter saves, Esc cancels, leaving it empty removes the word): the analysis runs again, the original is kept and the correction can be undone.</li>
+    <li><b>The cited transcript.</b> Verses matched word for word are written in Mushaf spelling from the Tanzil text when you choose so; everything else stays as transcribed.</li>
+  </ul>
+  <h2>Keyboard shortcuts on the results page</h2>
+  <dl class="keys">
+    <dt><kbd>j</kbd> <kbd>↓</kbd></dt><dd>Next citation</dd>
+    <dt><kbd>k</kbd> <kbd>↑</kbd></dt><dd>Previous citation</dd>
+    <dt><kbd>1</kbd></dt><dd>Correct</dd>
+    <dt><kbd>2</kbd></dt><dd>Incorrect</dd>
+    <dt><kbd>3</kbd></dt><dd>Needs a look</dd>
+    <dt><kbd>p</kbd></dt><dd>Play from the citation's time</dd>
+    <dt><kbd>n</kbd></dt><dd>Write a note</dd>
+    <dt><kbd>?</kbd></dt><dd>Show these shortcuts</dd>
+  </dl>
+  <p class="note">They work when the cursor is not in a text field, and on the same key positions with an Arabic keyboard layout. After a verdict the selection stays where it is; press j to move on.</p>
+  </div>
+</dialog>
+
+<dialog id="keys" aria-labelledby="keysTitle">
+  <form method="dialog"><button class="x" aria-label="إغلاق">×</button></form>
+  <div data-lang-only="ar">
+  <h2 id="keysTitle">اختصارات لوحة المفاتيح في صفحة النتائج</h2>
+  <dl class="keys">
+    <dt><kbd>j</kbd> <kbd>↓</kbd></dt><dd>الاستشهاد التالي</dd>
+    <dt><kbd>k</kbd> <kbd>↑</kbd></dt><dd>الاستشهاد السابق</dd>
+    <dt><kbd>1</kbd></dt><dd>صحيح</dd>
+    <dt><kbd>2</kbd></dt><dd>غير صحيح</dd>
+    <dt><kbd>3</kbd></dt><dd>يحتاج نظرًا</dd>
+    <dt><kbd>p</kbd></dt><dd>شغِّل من زمن الاستشهاد</dd>
+    <dt><kbd>n</kbd></dt><dd>اكتب ملاحظة</dd>
+    <dt><kbd>?</kbd></dt><dd>أظهر هذه الاختصارات</dd>
+  </dl>
+  <p class="note">تعمل حين لا يكون المؤشر في خانة كتابة، وبمواضع المفاتيح نفسها في لوحة المفاتيح العربية. بعد الحكم يبقى التحديد في مكانه؛ اضغط j للانتقال.</p>
+  </div>
+  <div data-lang-only="en" hidden>
+  <h2>Keyboard shortcuts on the results page</h2>
+  <dl class="keys">
+    <dt><kbd>j</kbd> <kbd>↓</kbd></dt><dd>Next citation</dd>
+    <dt><kbd>k</kbd> <kbd>↑</kbd></dt><dd>Previous citation</dd>
+    <dt><kbd>1</kbd></dt><dd>Correct</dd>
+    <dt><kbd>2</kbd></dt><dd>Incorrect</dd>
+    <dt><kbd>3</kbd></dt><dd>Needs a look</dd>
+    <dt><kbd>p</kbd></dt><dd>Play from the citation's time</dd>
+    <dt><kbd>n</kbd></dt><dd>Write a note</dd>
+    <dt><kbd>?</kbd></dt><dd>Show these shortcuts</dd>
+  </dl>
+  <p class="note">They work when the cursor is not in a text field, and on the same key positions with an Arabic keyboard layout. After a verdict the selection stays where it is; press j to move on.</p>
+  </div>
+</dialog>
+
+<dialog id="lookup" aria-labelledby="lookupTitle">
+  <form method="dialog"><button class="x" aria-label="إغلاق">×</button></form>
+  <h2 id="lookupTitle">ابحث في المدونة</h2>
+  <form class="lookup-form" id="lookupForm" role="search">
+    <input type="text" enterkeyhint="search" id="lookupQ" dir="auto" autocomplete="off" aria-label="نص يُبحث عنه في المدونة" placeholder="اكتب أو الصق نصَّ آية أو حديث">
+    <button type="submit" class="btn small" id="lookupGo">ابحث</button>
+  </form>
+  <div class="lookup-range" id="lookupRange" hidden>
+    <p class="lookup-said" id="lookupSaid"></p>
+    <div class="lookup-adjust" role="group" id="lookupAdjust" aria-label="تعديل حدود النص">
+      <span id="lkStartLabel">أوله:</span>
+      <button type="button" class="rv" data-edge="a" data-d="1" id="lkA1">كلمة أقل</button>
+      <button type="button" class="rv" data-edge="a" data-d="-1" id="lkA0">كلمة أكثر</button>
+      <span id="lkEndLabel">آخره:</span>
+      <button type="button" class="rv" data-edge="b" data-d="-1" id="lkB1">كلمة أقل</button>
+      <button type="button" class="rv" data-edge="b" data-d="1" id="lkB0">كلمة أكثر</button>
+    </div>
+  </div>
+  <p class="note" id="lookupMsg" role="status"></p>
+  <p class="note warn" id="lookupClash" hidden><span id="lookupClashMsg"></span> <button type="button" class="link" id="lookupClashOpen">افتح ذلك الاستشهاد</button></p>
+  <ol class="lookup-list" id="lookupList"></ol>
+  <p class="note" id="lookupScope"></p>
+</dialog>
+
+<dialog id="indexDlg" aria-labelledby="indexTitle">
+  <form method="dialog"><button class="x" aria-label="إغلاق">×</button></form>
+  <h2 id="indexTitle">فهرس الاستشهادات لوصف الفيديو</h2>
+  <p class="note" id="indexHint">سطر لكل استشهاد مطابق لفظًا له زمن (وما أضافه المراجع)، دون ما حكمتَ عليه بأنه غير صحيح. الصقه في وصف الفيديو.</p>
+  <label class="opt-line"><input type="checkbox" id="indexIntro"> <span id="indexIntroLabel">أضف «0:00 المقدمة» (يوتيوب يشترط أن تبدأ الفصول من 0:00)</span></label>
+  <textarea id="indexText" rows="9" readonly dir="auto" aria-labelledby="indexTitle"></textarea>
+  <div class="row">
+    <button type="button" class="btn" id="indexCopy">انسخ</button>
+    <span class="note" id="indexMsg" role="status"></span>
   </div>
 </dialog>
 

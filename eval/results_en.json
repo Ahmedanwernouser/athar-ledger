@@ -87,35 +87,10 @@
     36,
     32
    ],
-   "fillerTextual": 4,
+   "fillerTextual": 0,
    "fillerAllusion": 46,
    "allusionSentences": 46,
-   "fillerExamples": [
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next this is a"
-    },
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next and this is"
-    },
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next and this is"
-    },
-    {
-     "seed": 910,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next this is a"
-    }
-   ],
+   "fillerExamples": [],
    "vqCI": [
     95,
     100
@@ -154,9 +129,9 @@
    ],
    "held": [
     150,
-    82,
-    78,
-    89
+    83,
+    79,
+    90
    ],
    "wrong": [
     {
@@ -212,17 +187,10 @@
     36,
     34
    ],
-   "fillerTextual": 1,
-   "fillerAllusion": 32,
+   "fillerTextual": 0,
+   "fillerAllusion": 31,
    "allusionSentences": 46,
-   "fillerExamples": [
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next and this is"
-    }
-   ],
+   "fillerExamples": [],
    "vqCI": [
     95,
     100
@@ -232,17 +200,17 @@
     100
    ],
    "heldCI": [
-    44,
+    45,
     60
    ],
    "heldTop5CI": [
-    51,
+    52,
     67
    ],
    "heldPerLecture": [
     23,
     29,
-    26
+    27
    ]
   },
   {
@@ -261,8 +229,8 @@
    ],
    "held": [
     150,
-    67,
-    65,
+    66,
+    64,
     79
    ],
    "wrong": [
@@ -303,22 +271,10 @@
     36,
     34
    ],
-   "fillerTextual": 3,
-   "fillerAllusion": 30,
+   "fillerTextual": 1,
+   "fillerAllusion": 23,
    "allusionSentences": 46,
    "fillerExamples": [
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next this is a"
-    },
-    {
-     "seed": 910,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next this is a"
-    },
     {
      "seed": 910,
      "status": "partial",
@@ -335,7 +291,7 @@
     99
    ],
    "heldCI": [
-    36,
+    35,
     51
    ],
    "heldTop5CI": [
@@ -343,7 +299,7 @@
     60
    ],
    "heldPerLecture": [
-    23,
+    22,
     22,
     20
    ]
@@ -400,29 +356,10 @@
     12,
     10
    ],
-   "fillerTextual": 3,
+   "fillerTextual": 0,
    "fillerAllusion": 11,
    "allusionSentences": 11,
-   "fillerExamples": [
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next this is a"
-    },
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next and this is"
-    },
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next and this is"
-    }
-   ]
+   "fillerExamples": []
   },
   {
    "seed": 910,
@@ -458,17 +395,10 @@
     12,
     11
    ],
-   "fillerTextual": 1,
+   "fillerTextual": 0,
    "fillerAllusion": 18,
    "allusionSentences": 18,
-   "fillerExamples": [
-    {
-     "seed": 910,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next this is a"
-    }
-   ]
+   "fillerExamples": []
   },
   {
    "seed": 911,
@@ -567,17 +497,10 @@
     12,
     11
    ],
-   "fillerTextual": 1,
-   "fillerAllusion": 8,
+   "fillerTextual": 0,
+   "fillerAllusion": 7,
    "allusionSentences": 11,
-   "fillerExamples": [
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next and this is"
-    }
-   ]
+   "fillerExamples": []
   },
   {
    "seed": 910,
@@ -634,9 +557,9 @@
    ],
    "held": [
     50,
+    28,
     27,
-    26,
-    32
+    33
    ],
    "wrong": [
     {
@@ -673,8 +596,8 @@
    ],
    "held": [
     50,
-    23,
-    23,
+    22,
+    22,
     26
    ],
    "wrong": [
@@ -691,17 +614,10 @@
     12,
     11
    ],
-   "fillerTextual": 1,
-   "fillerAllusion": 9,
+   "fillerTextual": 0,
+   "fillerAllusion": 5,
    "allusionSentences": 11,
-   "fillerExamples": [
-    {
-     "seed": 909,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next this is a"
-    }
-   ]
+   "fillerExamples": []
   },
   {
    "seed": 910,
@@ -745,16 +661,10 @@
     12,
     12
    ],
-   "fillerTextual": 2,
-   "fillerAllusion": 9,
+   "fillerTextual": 1,
+   "fillerAllusion": 8,
    "allusionSentences": 18,
    "fillerExamples": [
-    {
-     "seed": 910,
-     "status": "partial",
-     "cited": "79:25-26",
-     "spoken": "in this life or the next this is a"
-    },
     {
      "seed": 910,
      "status": "partial",
@@ -798,7 +708,7 @@
     11
    ],
    "fillerTextual": 0,
-   "fillerAllusion": 12,
+   "fillerAllusion": 10,
    "allusionSentences": 17,
    "fillerExamples": []
   }

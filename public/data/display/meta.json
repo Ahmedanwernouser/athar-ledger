@@ -1,0 +1,166 @@
+{
+ "version": 1,
+ "kind": "hadith-display",
+ "note": "original hadith text for display; h_<k>.json holds hadith passages k*K .. k*K+K-1, hadith index = passage id - pid_base",
+ "K": 1750,
+ "pid_base": 6236,
+ "count": 36063,
+ "shards": 21,
+ "collections": [
+  "bukhari",
+  "muslim",
+  "abudawud",
+  "tirmidhi",
+  "nasai",
+  "ibnmajah",
+  "malik",
+  "nawawi",
+  "qudsi"
+ ],
+ "first": [
+  "bukhari:1",
+  "bukhari:1743",
+  "bukhari:3489",
+  "bukhari:5230",
+  "bukhari:6984",
+  "muslim:1274",
+  "muslim:3037",
+  "muslim:4796",
+  "muslim:6570",
+  "abudawud:811",
+  "abudawud:2562",
+  "abudawud:4313",
+  "tirmidhi:794",
+  "tirmidhi:2591",
+  "nasai:367",
+  "nasai:2118",
+  "nasai:3946",
+  "nasai:5695",
+  "ibnmajah:1687",
+  "ibnmajah:3442",
+  "malik:856"
+ ],
+ "bytes": 37496140,
+ "max_file_bytes": 2339829,
+ "stats": {
+  "passages": 36063,
+  "m1": 34050,
+  "m0": 2013,
+  "offset_exact": 36063,
+  "offset_fallback": 0,
+  "matn_cut": 33992,
+  "words_exact": 36007,
+  "words_inexact": 56,
+  "cleaning_changed_norm": 0,
+  "damaged_upstream": 76
+ },
+ "offset_fallback_refs": [],
+ "core_passages_sha256": "9d2b9a3951437be6b144f97f13cbcb2b839efd0ce114f5a373726b191558acf4",
+ "files": {
+  "h_0.json": {
+   "bytes": 1831183,
+   "sha256": "3f1ebebf10c53883ea68054f8891a39932c6d9017b1f4e5c937dbbc4293cb737",
+   "count": 1750
+  },
+  "h_1.json": {
+   "bytes": 2045357,
+   "sha256": "239135f7fdb88e7c95c105f03ce995989cd33d301a4dd4088e3e31fab709de36",
+   "count": 1750
+  },
+  "h_2.json": {
+   "bytes": 2243928,
+   "sha256": "f4f11b0d8cd5d1dc829773c97d144af4334246f64a08aae0fb66c7e620591c49",
+   "count": 1750
+  },
+  "h_3.json": {
+   "bytes": 1769617,
+   "sha256": "b8a7438c548354eb491a9faf61d38ff8879bd840c0376a9de049ca604bf45e8c",
+   "count": 1750
+  },
+  "h_4.json": {
+   "bytes": 1900309,
+   "sha256": "db409df555a72f4fb59fd6f106d3f54d8c8eadc63c722063782d42fdd7a64322",
+   "count": 1750
+  },
+  "h_5.json": {
+   "bytes": 1737177,
+   "sha256": "1a209e58796686c27ea414115c34ae67520f0a4ef799a159e758df6c9c72cc8c",
+   "count": 1750
+  },
+  "h_6.json": {
+   "bytes": 1795423,
+   "sha256": "104bd9546e5a4a569bb1ddb0f167a46863bf4ccc2232bbdf3c251425b9e22d07",
+   "count": 1750
+  },
+  "h_7.json": {
+   "bytes": 1693934,
+   "sha256": "e40be2aad75e438b1a345e0d1f96516cd86ca5ce665d837501dee24a85a00ca3",
+   "count": 1750
+  },
+  "h_8.json": {
+   "bytes": 1882092,
+   "sha256": "723f9c1a2268ec04589441849a1602b271a3ae13e1c54a5141c9d00d6b9217df",
+   "count": 1750
+  },
+  "h_9.json": {
+   "bytes": 1743536,
+   "sha256": "569066750e7e5723f5e127833cfda994e4767de250f2f9c94a7c7d8f2634af9b",
+   "count": 1750
+  },
+  "h_10.json": {
+   "bytes": 1638887,
+   "sha256": "5e505573b8725032783b215ff50f178ac319f03b01ba806aa1f411907a1473b4",
+   "count": 1750
+  },
+  "h_11.json": {
+   "bytes": 2156245,
+   "sha256": "ade8b363f32834ba912dcdff8452d7b6ce554df0d72f0e097de0f1ded153c361",
+   "count": 1750
+  },
+  "h_12.json": {
+   "bytes": 2339829,
+   "sha256": "47269ed8d1ff73344cbfcf90dc115ff976d61c1e057e76ceee9b4e97f7275791",
+   "count": 1750
+  },
+  "h_13.json": {
+   "bytes": 2259585,
+   "sha256": "93f4aa3b8a561a99efb2b0b076b78cf78c2422c3c349675ff3e7d7530ae961d2",
+   "count": 1750
+  },
+  "h_14.json": {
+   "bytes": 1655927,
+   "sha256": "f4f3e52f501ae3dddef3e07fe712e3673a54f787be1def0d2f746f96d8bf2597",
+   "count": 1750
+  },
+  "h_15.json": {
+   "bytes": 1635107,
+   "sha256": "45c39274acc7b0e1f88c6a1c5229c841aeb6d26f72b489905cd4940657c594d4",
+   "count": 1750
+  },
+  "h_16.json": {
+   "bytes": 1501973,
+   "sha256": "8a63e9a09b9682b639469e7d9911ce5a23a60e47f5c980fa655756581efef318",
+   "count": 1750
+  },
+  "h_17.json": {
+   "bytes": 1495323,
+   "sha256": "2549c941e13748849e81d52ee514e37ff632758f245459d066ac0a77155478aa",
+   "count": 1750
+  },
+  "h_18.json": {
+   "bytes": 1490730,
+   "sha256": "0813ae9a4b8bd314787b4ac8fd6e5003de668ecaf420763b818a8ed2b9c6fb2e",
+   "count": 1750
+  },
+  "h_19.json": {
+   "bytes": 1547150,
+   "sha256": "7f0e24870f4cecb38d59db6d522d37e123363a475a0031f43e75dae6118f51a2",
+   "count": 1750
+  },
+  "h_20.json": {
+   "bytes": 1132828,
+   "sha256": "172aa7dba2653806078fd45a1f9d0620bfb526cc39d9f242fc09f002b8b3dd4a",
+   "count": 1063
+  }
+ }
+}

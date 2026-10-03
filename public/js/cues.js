@@ -384,11 +384,15 @@ export const DEVOTIONAL = new Set(("سبحان الله وبحمده بحمده 
   + "رسول عبده ورسوله وسبحان العلي الكريم عدد خلقه ورضا نفسه وزنة عرشه ومداد كلماته كثيرا طيبا مباركا فيه حمدا بكرة واصيلا").split(/\s+/).map(w => fold(normMixed(w))));
 
 // ---- short exact fragments of an ayah (engine step 3d) ----
-// Everyday dhikr whose words ARE an ayah or part of one. Said in plain speech it is devotion, not a quotation, so the
-// short-fragment path never cites it without a Qur'an cue (the tail forms cover "وإنا لله وإنا إليه راجعون", where the
+// Everyday dhikr whose words ARE an ayah or part of one. Said in plain speech it is devotion, not a quotation, so no
+// path of the engine cites it without a Qur'an cue, a reference or ﴿ ﴾ (the tail forms cover "وإنا لله وإنا إليه راجعون", where the
 // first word differs from the ayah, and "حسبي الله ونعم الوكيل").
 const DHIKR = ["إنا لله وإنا إليه راجعون", "لله وإنا إليه راجعون", "حسبنا الله ونعم الوكيل", "الله ونعم الوكيل", "وما توفيقي إلا بالله", "توفيقي إلا بالله",
-  "لا قوة إلا بالله", "قوة إلا بالله", "ما شاء الله", "توكلت على الله", "حسبي الله", "على الله توكلنا", "سبحان ربي", "تبارك الله", "أستغفر الله", "ذو الجلال والإكرام", "ذي الجلال والإكرام"].map(p => F(p).split(" "));
+  "لا قوة إلا بالله", "قوة إلا بالله", "ما شاء الله", "توكلت على الله", "حسبي الله", "على الله توكلنا", "سبحان ربي", "تبارك الله", "أستغفر الله", "ذو الجلال والإكرام", "ذي الجلال والإكرام",
+  "له الملك وله الحمد وهو على كل شيء قدير", "له الملك وله الحمد", "أفوض أمري إلى الله", "نعم المولى ونعم النصير",
+  // the salawat (not an ayah): said in plain speech they are devotion, not a quotation of the hadith that teaches them
+  "اللهم صل على محمد وعلى آل محمد", "كما صليت على إبراهيم وعلى آل إبراهيم", "اللهم بارك على محمد وعلى آل محمد", "بارك على محمد وعلى آل محمد",
+  "كما باركت على إبراهيم وعلى آل إبراهيم", "صليت على آل إبراهيم", "باركت على آل إبراهيم", "في العالمين إنك حميد مجيد", "إنك حميد مجيد"].map(p => F(p).split(" "));
 /** marks tokens that belong to such a phrase */
 export function dhikrMask(ftok) {
   const mask = new Uint8Array(ftok.length);
@@ -408,6 +412,18 @@ const FUNC_BASE = ("من الى عن على في حتى مع عند لدى بي�
   + "فيه فيها فيهم فيكم منه منها منهم منكم مني عليه عليها عليهم عليكم علينا اليه اليها اليهم اليكم الينا اليك عنه عنها عنهم عنكم "
   + "معه معها معهم معكم عنده عندهم عندكم بينهم بينكم بينهما").split(/\s+/).map(w => normMixed(w));
 export const FUNCTION_WORDS = new Set(FUNC_BASE.flatMap(w => [w, "و" + w, "ف" + w]).concat(["و", "ف", "ب", "ل", "ك", "لقد", "ولقد", "فلقد"]));
+// Words of the Qur'an that are SPELLED like a function word (alone or after و / ف) but are a content word where they
+// stand: "وهن" in ﴿إني وهن العظم مني﴾ is the verb wahana, not و + هن; "فلك" in ﴿كل في فلك يسبحون﴾ is an orbit, not ف + لك.
+// Found by listing every token of the Qur'an that FUNCTION_WORDS contains and reading its occurrences. null = a content
+// word wherever the Qur'an has it; otherwise the ayahs in which it is one (everywhere else it is the function word).
+// In those places the word counts as a content word and is never stripped from the edge of a fragment.
+export const QURAN_HOMOGRAPHS = new Map(Object.entries({
+  "وهن": null, "وهنا": null, "فلك": null, "فتحت": null, "فسوي": null, "سوي": null,
+  "ولي": ["2:107", "2:120", "2:257", "3:68", "6:51", "6:70", "9:74", "9:116", "13:37", "17:111", "18:26", "27:10", "28:31", "29:22", "31:7", "32:4", "41:34", "42:8", "42:31", "42:44", "45:19"],
+  "وكل": ["32:11"], "وفي": ["53:37"], "فان": ["55:26"], "وهم": ["12:24"], "هم": ["5:11"],
+  "ام": ["3:7", "6:92", "7:150", "13:39", "20:94", "28:7", "28:10", "42:7", "43:4"],
+  "علي": ["42:51"], "قبل": ["2:177", "12:26", "27:37"], "الا": ["9:8", "9:10"], "قد": ["12:26", "12:27", "12:28"], "لما": ["89:19"], "مني": ["75:37"],
+}).map(([w, refs]) => [normMixed(w), refs && new Set(refs)]));
 // Particles that cannot end a clause (prepositions, conjunctions, negations, conditionals, relative pronouns): an exact run
 // that stops on one of them was cut off or goes on with a changed word ("واذكر ربك إذا [غفلت]"), so it is not cited.
 export const OPEN_PARTICLES = new Set(("من الى عن على في حتى مع عند لدى بين قبل بعد دون غير سوى ان اذ اذا لو لولا لما كي كما لكن بل ثم او ام اما لا ما لم لن ليس قد لقد هل الا انما "

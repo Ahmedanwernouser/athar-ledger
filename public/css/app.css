@@ -327,6 +327,8 @@ dialog .x { float: inline-end; border: 0; background: none; font-size: 1.7rem; l
   .statuses dd { margin-bottom: 8px; }
   dialog { padding: 20px 18px 24px; }
   .navbtn { padding: 4px 9px; font-size: .86rem; }
+  .top-in { flex-wrap: wrap; gap: 8px 16px; }
+  .top-actions { flex-wrap: wrap; justify-content: flex-end; margin-inline-start: auto; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 @media print {
@@ -345,7 +347,8 @@ dialog .x { float: inline-end; border: 0; background: none; font-size: 1.7rem; l
   /* colour carries meaning here: keep it on paper */
   .mark, .map, .status::before, .w-diff, .k-diff, .w-del, .k-del, .note.warn, .notices li, .cand, .brand-mark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   /* the reviewer's verdict and note as plain text; nothing is printed for an entry that was not reviewed */
-  .review .rv, .review input { display: none !important; }
+  .review .rv, .review input, .progress, .csearch, .selact, .rm, .find, .tr-hint, .fixbar, dialog { display: none !important; }
+
   .rv-print { display: inline; font-weight: 600; }
   .review.blank { display: none; }
   summary { color: #000; list-style: none; font-weight: 600; }
@@ -360,3 +363,91 @@ dialog .x { float: inline-end; border: 0; background: none; font-size: 1.7rem; l
 .video { position: relative; aspect-ratio: 16 / 9; margin-bottom: 12px; border-radius: var(--r); overflow: hidden; background: #000; flex: none; }
 .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 @media print { .video { display: none !important; } }
+
+/* ---------- the reviewer's tools: progress, summary, corpus search, additions, corrections ---------- */
+.export-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.opt { display: inline-flex; align-items: center; gap: 6px; font-size: .86rem; color: #DCE2F5; cursor: pointer; }
+.opt input { accent-color: var(--gold); margin: 0; width: 15px; height: 15px; }
+.committee { margin: 18px 0 0; padding: 10px 18px; background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); font-size: .93rem; }
+.committee summary { font-family: var(--display); font-weight: 700; font-size: 1.02rem; color: var(--ink); }
+.committee-list { margin: 10px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 22px; }
+.committee-list dt { font-weight: 600; }
+.committee-list dd { margin: 0; color: #33405F; }
+.committee .note { font-size: .82rem; margin-top: 8px; }
+.progress { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: .9rem; color: var(--muted); }
+.progress #progressText { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.pbar { width: 130px; height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; flex: none; }
+.pbar i { display: block; height: 100%; width: 0; background: var(--indigo); transition: width .2s; }
+.progress .link { font-size: .84rem; }
+/* "not reviewed yet": a filter that is off until pressed (the status chips are the other way round) */
+.chip.open { margin-inline-start: 10px; }
+.chip.open::before { display: none; }
+.chip.open[aria-pressed="false"] { color: var(--ink); border-style: solid; text-decoration: none; background: var(--sheet); }
+.chip.open[aria-pressed="true"] { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+.csearch, .lookup-form { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.csearch input, .lookup-form input { flex: 1; min-width: 0; padding: 4px 12px; border: 1px solid var(--edge); border-radius: var(--r-s); background: var(--sheet); }
+.csearch input { width: 230px; font-size: .9rem; }
+.lookup-form input { padding: 7px 12px; }
+.csearch input:focus, .lookup-form input:focus { border-color: var(--indigo); }
+/* an entry the reviewer added */
+.hand { margin-top: 6px; font-size: .78rem; font-weight: 600; color: #5C3A00; background: #FBF1DA; border: 1px solid #E3C988; border-radius: 999px; padding: 0 10px; line-height: 1.8; }
+.mark.by-hand { box-shadow: inset 0 0 0 2px var(--gold); }
+.transcript .c.by-hand { border-bottom-style: double; border-bottom-width: 4px; }
+.entry > .rm, .entry > .find { justify-self: start; margin-top: 10px; font-size: .86rem; }
+.entry:focus-visible { outline: 2px solid var(--indigo); outline-offset: -3px; border-radius: 0; }
+/* a word the reviewer can correct, and one that was corrected */
+.fw { cursor: text; border-radius: 3px; }
+.fw:hover { background: var(--tint); }
+.fw:focus-visible { outline: 2px solid var(--indigo); outline-offset: 1px; }
+.fx { border-bottom: 2px dotted var(--indigo); }
+.transcript .fx.gone { text-decoration: line-through; color: var(--notfound); }
+.fix-edit { display: inline-flex; align-items: center; gap: 4px; vertical-align: baseline; }
+.fix-edit input { font-family: inherit; font-size: .85em; line-height: 1.5; max-width: 12em; padding: 0 8px; border: 1.5px solid var(--indigo); border-radius: 5px; background: #fff; color: var(--ink); }
+.fix-undo { border: 1px solid var(--edge); background: var(--sheet); border-radius: 5px; cursor: pointer; padding: 0 7px; font-size: .95rem; line-height: 1.6; font-family: var(--ui); }
+.fix-undo:hover { border-color: var(--indigo); }
+.tr-hint, .fixbar { margin: 0 0 8px; font-size: .8rem; line-height: 1.6; color: var(--muted); }
+.fixbar { color: var(--ink); }
+/* shown under a selection in the transcript */
+.selact { position: fixed; z-index: 30; top: 0; left: 0; background: var(--indigo); color: #fff; border: 1px solid var(--gold); border-radius: 999px; padding: 6px 18px; font-size: .9rem; font-weight: 600; cursor: pointer; box-shadow: 0 12px 26px -12px rgba(14, 22, 64, .7); white-space: nowrap; }
+.selact:hover { background: var(--indigo-deep); }
+.selact:focus-visible { outline-color: var(--gold); }
+/* corpus search dialog */
+#lookup, #indexDlg { width: min(720px, 92vw); }
+.lookup-said { margin: 0; padding: 8px 14px; max-height: 8.5em; overflow: auto; background: var(--page); border-radius: var(--r-s); font-family: var(--quote); font-size: 1.3rem; line-height: 1.9; }
+.lookup-said[dir=ltr] { font-size: 1.05rem; line-height: 1.7; }
+.lookup-adjust { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 8px; font-size: .84rem; color: var(--muted); }
+.lookup-adjust span:not(:first-child) { margin-inline-start: 10px; }
+.lookup-adjust .rv:disabled { color: var(--muted); border-style: dashed; cursor: not-allowed; }
+.lookup-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
+.lk { --c: var(--meaning); border: 1px solid var(--line); border-inline-start: 4px solid var(--c); border-radius: var(--r-s); padding: 10px 14px 12px; }
+.lk.s-verbatim { --c: var(--verbatim); } .lk.s-partial { --c: var(--partial); }
+.lk .status { font-size: .88rem; }
+.lk .src { margin: 2px 0 0; padding: 0; border: 0; }
+.lk .cand-text { margin-top: 4px; }
+.lk .cand-text.ltr { font-size: 1.02rem; line-height: 1.7; font-family: var(--ui); }
+.lk .btn { margin-top: 10px; }
+.warn-text { color: #5C3A00; font-weight: 600; }
+.opt-line { display: flex; gap: 8px; align-items: baseline; font-size: .92rem; margin: 10px 0; cursor: pointer; }
+.opt-line input { accent-color: var(--indigo); }
+#indexText { min-height: 200px; font-size: .92rem; line-height: 1.8; margin-bottom: 12px; display: block; }
+#indexDlg .note { margin: 0; }
+/* keyboard shortcuts */
+.keys { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; align-items: baseline; }
+.keys dd { margin: 0; }
+kbd { display: inline-block; min-width: 1.7em; text-align: center; direction: ltr; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: .86rem; line-height: 1.5; padding: 0 6px; background: var(--page); border: 1px solid var(--edge); border-bottom-width: 2px; border-radius: 5px; }
+@media print {
+  .committee { margin-top: 10px; break-inside: avoid; }
+  .committee summary { font-size: 1.05rem; }
+  .hand { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .entry:focus, .entry:focus-visible { outline: none; }
+  .fx { border-bottom: 0; }
+}
+@media (max-width: 960px) {
+  .committee-list { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .committee-list dd { margin-bottom: 6px; }
+  .csearch, .progress { flex: 1 1 100%; }
+  .csearch input { width: auto; }
+  .chip.open { margin-inline-start: 0; }
+  .lookup-said { font-size: 1.15rem; }
+  .keys { gap: 4px 14px; }
+}

@@ -4,6 +4,7 @@ import { analyze } from "./engine.js";
 import { resolveByMeaning, applyMeaning } from "./meaning.js";
 import { llmClient } from "./asr.js";
 import { norm } from "./text.js";
+import { lookup, describeRef } from "./lookup.js";
 
 let corpus = null;
 
@@ -104,20 +105,78 @@ export function spokenDisplay(e, words, tokenToWord) {
   const idx = []; for (let k = e.ts; k < e.te; k++) idx.push(tokenToWord[k]);
   if (new Set(idx).size !== idx.length) return false;
   const plain = x => x.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
-  const out = []; let k = 0;
+  const out = [], at = []; let k = 0;
   for (const d of e.diff) {
-    if (!d.spoken) { out.push(null); continue; }
-    const shown = [];
+    if (!d.spoken) { out.push(null); at.push(null); continue; }
+    const shown = [], where = [];
     for (const tk of d.spoken.split(" ")) {
-      const w = words[idx[k++]]; if (!w || typeof w.w !== "string") return false;
+      const w = words[idx[k]]; if (!w || typeof w.w !== "string") return false;
       if (norm(w.w) !== tk && plain(w.w) !== plain(tk)) return false;
-      shown.push(w.w);
+      shown.push(w.w); where.push(idx[k++]);
     }
-    out.push(shown.join(" "));
+    out.push(shown.join(" ")); at.push(where);
   }
   if (k !== idx.length) return false;
-  e.diff.forEach((d, i) => { if (out[i]) d.spokenDisplay = out[i]; });
+  // wordIdx: the transcript word behind each shown word (the page lets the reviewer correct a mis-transcribed word there)
+  e.diff.forEach((d, i) => { if (out[i]) { d.spokenDisplay = out[i]; d.wordIdx = at[i]; } });
   return true;
+}
+
+/**
+ * The words of a verbatim Qur'an entry exactly as the Mushaf writes them (for the Word document), or null.
+ * Given only when every spoken word is tied to one word of the verse and to one word of the transcript, with nothing added,
+ * left out or changed: then the run is a contiguous stretch of the display text of the ayah(s). A verse number (﴿n﴾) follows
+ * an ayah only when the whole ayah is inside the run. The basmala that opens a surah is not part of an ayah's words here,
+ * so it never appears unless it is the ayah itself (al-Fatihah 1). Call after decorate() and spokenDisplay().
+ */
+export function mushafRun(e) {
+  if (!e || e.status !== "verbatim" || !e.diff || !e.diffDisplay || !e.source || e.source.type !== "q" || e.source.via === "en") return null;
+  const parts = []; let firstAyah = true;
+  for (const d of e.diff) {
+    if (!d.source || !d.spoken || !d.sourceDisplay || !d.spokenDisplay || !["exact", "asr", "near"].includes(d.kind)) return null;
+    parts.push(d.sourceDisplay);
+    if (d.ayahEnd) { if (!firstAyah || e.diffFromStart) parts.push(`﴿${d.ayahEnd}﴾`); firstAyah = false; }
+  }
+  return parts.length ? parts.join(" ") : null;
+}
+
+/** tests run without a worker scope: give the module its corpus */
+export function setCorpusForTests(c) { corpus = c; ayahCache.clear(); }
+
+/** everything the page needs for one engine entry: sources as displayed, the words as transcribed, the Mushaf run */
+export function finish(e, words, tokenToWord) {
+  decorate(e);
+  try { spokenDisplay(e, words, tokenToWord); } catch { /* the normalised words stay */ }
+  const m = mushafRun(e); if (m) e.mushaf = m;
+  return e;
+}
+
+/** a source on its own (a lookup candidate, a reference named again): verbatim Qur'an text, translation, the corpus text of a hadith */
+function decorateSource(s) {
+  if (!s) return s;
+  if (s.type === "q" && s.surah && corpus.surahStart[s.surah] >= 0) quranText(s);
+  if (s.type === "q" || s.type === "h") {
+    const tr = corpus.translationOf(s.ref); if (tr) s.translation = tr;
+    if (s.type === "h") { const pid = corpus.coreRef.get(s.ref); if (pid != null) s.arabic = corpus.P[pid].n; }
+  }
+  return s;
+}
+
+/** lookup of one stretch of words -> what the page shows and can turn into a ledger entry */
+export function lookupFor(words, max) {
+  const r = lookup(words, corpus, max ? { max } : {});
+  const candidates = r.candidates.map(c => {
+    if (!c.entry) return { status: "meaning", source: decorateSource({ ...c.source }), score: c.score };
+    const e = finish({ ...c.entry }, c.run, c.tokenToWord), L = c.offset;
+    // positions in the entry are those of the searched words (the cue phrase put before them is not the reviewer's text)
+    let tied = true;
+    for (const d of e.diff || []) if (d.wordIdx) { d.wordIdx = d.wordIdx.map(i => i - L); if (d.wordIdx.some(i => i < 0)) tied = false; }
+    if (!tied) for (const d of e.diff || []) delete d.wordIdx;
+    e.wordStart = Math.max(0, e.wordStart - L); e.wordEnd = Math.max(0, e.wordEnd - L);
+    delete e.ts; delete e.te; delete e.id;
+    return { status: c.status, source: e.source, entry: e };
+  });
+  return { candidates, truncated: r.truncated, searched: r.searched, lang: r.lang, english: corpus.hasEnglish(), books: corpus.hasBooks() };
 }
 
 /** attach what the page needs to display a source */
@@ -164,9 +223,22 @@ async function onMessage(ev) {
       self.postMessage({ id, ok: true, result: { passages: corpus.N, loaded: corpus.packs.map(p => p.id) } });
     } else if (type === "analyze") {
       const r = analyze(ev.data.words, corpus);
-      r.ledger.forEach(decorate);
-      for (const e of r.ledger) { try { spokenDisplay(e, ev.data.words, r.tokenToWord); } catch { /* the normalised words stay */ } }
+      for (const e of r.ledger) finish(e, ev.data.words, r.tokenToWord);
       self.postMessage({ id, ok: true, result: { ledger: r.ledger, stats: r.stats, tokenToWord: r.tokenToWord } });
+    } else if (type === "lookup") {
+      // the corpus passages closest to one stretch of words (a selection in the transcript, or typed text)
+      self.postMessage({ id, ok: true, result: lookupFor(ev.data.words) });
+    } else if (type === "resolve") {
+      // entries a reviewer added by hand, named again by their stable reference: the same lookup when it still finds that
+      // source at those words (status and comparison as they are now), otherwise the source alone, otherwise null
+      const out = (ev.data.items || []).map(it => {
+        let found = null;
+        try { found = lookupFor(it.words || [], 40).candidates.find(c => c.source && c.source.ref === it.ref) || null; } catch { found = null; }
+        if (found) return found;
+        const s = describeRef(it.ref, corpus);
+        return s ? { status: null, source: decorateSource(s) } : null;
+      });
+      self.postMessage({ id, ok: true, result: out });
     } else if (type === "meaning") {
       meaningCtl = new AbortController();
       const r = await resolveByMeaning(ev.data.entry, corpus, llmClient(ev.data.cfg, meaningCtl.signal));

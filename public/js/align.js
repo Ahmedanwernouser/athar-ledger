@@ -5,7 +5,7 @@
 //   • one-letter slips                                  -> "near"
 // Match scores are scaled by how informative the word is, so the alignment cannot creep into
 // surrounding speech by hopping between common words (في، من، الله ...).
-import { wordSim, within1, editDistance } from "./text.js";
+import { wordSim, within1, editDistance, inflectionOf } from "./text.js";
 
 const GAP = 2.0, DIFF = 2.6;
 const BASE = { exact: 3.0, asr: 2.7, near: 1.7 };
@@ -101,7 +101,9 @@ export function align(T, FT, P, FP, wt, opt = { tolerant: true }) {
       const soft = t === p ? "exact" : (tol ? wordSim(t, p, FT[i - 1], FP[j - 1]) : "diff");
       // real-word rule: the pair is REPORTED as a wording difference; `soft` keeps what it sounds like, which still
       // counts when deciding whether this passage is being quoted at all
-      if (isWord && (soft === "asr" || soft === "near") && isWord(t)) ops.push({ op: "diff", soft, ti: i - 1, pi: j - 1 });
+      // (a grammatical variant of the source word — "أعنا" for "أعني" — is a real word form even when no text of the
+      // corpus happens to contain it)
+      if (isWord && (soft === "asr" || soft === "near") && (isWord(t) || (soft === "near" && inflectionOf(t, p)))) ops.push({ op: "diff", soft, ti: i - 1, pi: j - 1 });
       else ops.push({ op: soft, ti: i - 1, pi: j - 1 });
       i--; j--;
     } else if (b === 2) { ops.push({ op: "ins", ti: i - 1, pi: -1 }); i--; }
@@ -126,12 +128,14 @@ export function align(T, FT, P, FP, wt, opt = { tolerant: true }) {
 /**
  * Evidence = summed informativeness (idf) of the words that agree. For every matched pair the LESS informative
  * of the two words counts, so a common spoken word can never borrow weight from a rare look-alike in the source.
+ * isFunction(op): optional test "is this pair a function word?" — `content` / `contentEvidence` count the agreeing
+ * informative words that are not (without the test every informative word is a content word).
  */
-export function summarize(al, FP, idf, noEvidence = () => false, FT = null) {
-  const c = { exact: 0, asr: 0, near: 0, join: 0, diff: 0, ins: 0, del: 0, evidence: 0, longestRun: 0, inf: 0 };
+export function summarize(al, FP, idf, noEvidence = () => false, FT = null, isFunction = null) {
+  const c = { exact: 0, asr: 0, near: 0, join: 0, diff: 0, ins: 0, del: 0, evidence: 0, longestRun: 0, inf: 0, content: 0, contentEvidence: 0 };
   let run = 0;
   for (const o of al.ops) {
-    const skip = noEvidence(o);
+    const skip = noEvidence(o), before = c.evidence;
     const tw = FT && o.ti >= 0 ? idf(o.op === "joinT" ? FT[o.ti] + FT[o.ti2] : FT[o.ti]) : Infinity;
     const idfE = skip ? () => 0 : (o.op === "joinT" ? idf : w => Math.min(idf(w), tw));
     switch (o.op) {
@@ -145,7 +149,11 @@ export function summarize(al, FP, idf, noEvidence = () => false, FT = null) {
       case "ins": c.ins++; run = 0; break;
       case "del": c.del++; run = 0; break;
     }
-    if (!skip && o.op !== "diff" && o.op !== "ins" && o.op !== "del") c.inf += o.op === "joinP" ? 2 : 1;   // agreeing words outside cue phrases and formulas
+    if (!skip && o.op !== "diff" && o.op !== "ins" && o.op !== "del") {
+      c.inf += o.op === "joinP" ? 2 : 1;   // agreeing words outside cue phrases and formulas
+      // ... and of those, the CONTENT words (not particles, prepositions, pronouns): only they show what is being quoted
+      if (isFunction === null || !isFunction(o)) { c.content += o.op === "joinP" ? 2 : 1; c.contentEvidence += c.evidence - before; }
+    }
     if (run > c.longestRun) c.longestRun = run;
   }
   c.matched = c.exact + c.asr + c.near + c.join;
