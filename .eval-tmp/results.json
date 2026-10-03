@@ -1,0 +1,4034 @@
+[
+ {
+  "seed": 202,
+  "wer": 0,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 8984,
+  "words": 10855,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    38,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 133,
+   "classN": 134,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 23,
+   "oocPartial": 7,
+   "oocFlagged": 12,
+   "parN": 26,
+   "parTop1": 12,
+   "parTop3": 13,
+   "parTop5": 13,
+   "parMeaning": 4,
+   "parWrong": 11,
+   "parTextual": 5,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 12,
+   "startN": 140,
+   "attrN": 23,
+   "attrOK": 23,
+   "weak": 0
+  },
+  "nTok": 10855
+ },
+ {
+  "seed": 202,
+  "wer": 0,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 4062,
+  "words": 10855,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    38,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 133,
+   "classN": 134,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 28,
+   "oocPartial": 2,
+   "oocFlagged": 13,
+   "parN": 26,
+   "parTop1": 13,
+   "parTop3": 14,
+   "parTop5": 14,
+   "parMeaning": 5,
+   "parWrong": 11,
+   "parTextual": 5,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 12,
+   "startN": 140,
+   "attrN": 23,
+   "attrOK": 23,
+   "weak": 0
+  },
+  "nTok": 10855
+ },
+ {
+  "seed": 202,
+  "wer": 0,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 2559,
+  "words": 10855,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    59,
+    58,
+    59
+   ],
+   "ph": [
+    40,
+    40,
+    38,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 132,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 26,
+   "oocPartial": 4,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 4,
+   "parTop3": 4,
+   "parTop5": 4,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 11,
+   "startN": 139,
+   "attrN": 22,
+   "attrOK": 22,
+   "weak": 0
+  },
+  "nTok": 10855
+ },
+ {
+  "seed": 202,
+  "wer": 0,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 4032,
+  "words": 10855,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    38,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 133,
+   "classN": 134,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 23,
+   "oocPartial": 7,
+   "oocFlagged": 12,
+   "parN": 26,
+   "parTop1": 7,
+   "parTop3": 8,
+   "parTop5": 9,
+   "parMeaning": 4,
+   "parWrong": 10,
+   "parTextual": 5,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 12,
+   "startN": 140,
+   "attrN": 23,
+   "attrOK": 23,
+   "weak": 0
+  },
+  "nTok": 10855
+ },
+ {
+  "seed": 202,
+  "wer": 0,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 53,
+  "words": 10855,
+  "m": {
+   "vq": [
+    40,
+    28,
+    25,
+    25
+   ],
+   "vh": [
+    60,
+    58,
+    50,
+    50
+   ],
+   "ph": [
+    40,
+    8,
+    7,
+    7
+   ]
+  },
+  "r": {
+   "classOK": 87,
+   "classN": 92,
+   "critWrongSource": 12,
+   "critOOC": 0,
+   "critFiller": 3,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 19,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 168,
+   "startN": 94,
+   "attrN": 23,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10855
+ },
+ {
+  "seed": 202,
+  "wer": 0,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 842,
+  "words": 10855,
+  "m": {
+   "vq": [
+    40,
+    33,
+    33,
+    33
+   ],
+   "vh": [
+    60,
+    47,
+    44,
+    44
+   ],
+   "ph": [
+    40,
+    27,
+    24,
+    24
+   ]
+  },
+  "r": {
+   "classOK": 81,
+   "classN": 103,
+   "critWrongSource": 7,
+   "critOOC": 2,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 27,
+   "oocPartial": 1,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 551,
+   "startN": 107,
+   "attrN": 19,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10855
+ },
+ {
+  "seed": 202,
+  "wer": 0.1,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 6297,
+  "words": 10672,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    60,
+    57,
+    59
+   ],
+   "ph": [
+    40,
+    39,
+    37,
+    39
+   ]
+  },
+  "r": {
+   "classOK": 121,
+   "classN": 131,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 26,
+   "oocPartial": 4,
+   "oocFlagged": 12,
+   "parN": 26,
+   "parTop1": 9,
+   "parTop3": 12,
+   "parTop5": 12,
+   "parMeaning": 5,
+   "parWrong": 11,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 31,
+   "startN": 137,
+   "attrN": 23,
+   "attrOK": 19,
+   "weak": 0
+  },
+  "nTok": 10672
+ },
+ {
+  "seed": 202,
+  "wer": 0.1,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 3749,
+  "words": 10672,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    60,
+    54,
+    58
+   ],
+   "ph": [
+    40,
+    38,
+    36,
+    38
+   ]
+  },
+  "r": {
+   "classOK": 91,
+   "classN": 130,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 28,
+   "oocPartial": 2,
+   "oocFlagged": 12,
+   "parN": 26,
+   "parTop1": 9,
+   "parTop3": 12,
+   "parTop5": 12,
+   "parMeaning": 5,
+   "parWrong": 11,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 61,
+   "startN": 136,
+   "attrN": 23,
+   "attrOK": 18,
+   "weak": 0
+  },
+  "nTok": 10672
+ },
+ {
+  "seed": 202,
+  "wer": 0.1,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 1672,
+  "words": 10672,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    59,
+    56,
+    58
+   ],
+   "ph": [
+    40,
+    39,
+    37,
+    39
+   ]
+  },
+  "r": {
+   "classOK": 120,
+   "classN": 130,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 28,
+   "oocPartial": 2,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 3,
+   "parTop3": 3,
+   "parTop5": 3,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 3,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 29,
+   "startN": 136,
+   "attrN": 22,
+   "attrOK": 19,
+   "weak": 0
+  },
+  "nTok": 10672
+ },
+ {
+  "seed": 202,
+  "wer": 0.1,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 3545,
+  "words": 10672,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    60,
+    57,
+    59
+   ],
+   "ph": [
+    40,
+    39,
+    37,
+    39
+   ]
+  },
+  "r": {
+   "classOK": 121,
+   "classN": 131,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 26,
+   "oocPartial": 4,
+   "oocFlagged": 12,
+   "parN": 26,
+   "parTop1": 8,
+   "parTop3": 9,
+   "parTop5": 9,
+   "parMeaning": 5,
+   "parWrong": 9,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 31,
+   "startN": 137,
+   "attrN": 23,
+   "attrOK": 19,
+   "weak": 0
+  },
+  "nTok": 10672
+ },
+ {
+  "seed": 202,
+  "wer": 0.1,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 42,
+  "words": 10672,
+  "m": {
+   "vq": [
+    40,
+    14,
+    13,
+    13
+   ],
+   "vh": [
+    60,
+    40,
+    36,
+    36
+   ],
+   "ph": [
+    40,
+    6,
+    6,
+    6
+   ]
+  },
+  "r": {
+   "classOK": 55,
+   "classN": 59,
+   "critWrongSource": 5,
+   "critOOC": 0,
+   "critFiller": 2,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 9,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 136,
+   "startN": 60,
+   "attrN": 17,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10672
+ },
+ {
+  "seed": 202,
+  "wer": 0.1,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 83,
+  "words": 10672,
+  "m": {
+   "vq": [
+    40,
+    32,
+    32,
+    32
+   ],
+   "vh": [
+    60,
+    36,
+    34,
+    34
+   ],
+   "ph": [
+    40,
+    23,
+    19,
+    19
+   ]
+  },
+  "r": {
+   "classOK": 69,
+   "classN": 88,
+   "critWrongSource": 6,
+   "critOOC": 1,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 422,
+   "startN": 91,
+   "attrN": 15,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10672
+ },
+ {
+  "seed": 202,
+  "wer": 0.2,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 5152,
+  "words": 10495,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    38,
+    37,
+    38
+   ]
+  },
+  "r": {
+   "classOK": 92,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 26,
+   "oocPartial": 4,
+   "oocFlagged": 8,
+   "parN": 26,
+   "parTop1": 8,
+   "parTop3": 8,
+   "parTop5": 8,
+   "parMeaning": 4,
+   "parWrong": 12,
+   "parTextual": 3,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 52,
+   "startN": 138,
+   "attrN": 23,
+   "attrOK": 17,
+   "weak": 0
+  },
+  "nTok": 10495
+ },
+ {
+  "seed": 202,
+  "wer": 0.2,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 3180,
+  "words": 10495,
+  "m": {
+   "vq": [
+    40,
+    37,
+    37,
+    37
+   ],
+   "vh": [
+    60,
+    57,
+    55,
+    57
+   ],
+   "ph": [
+    40,
+    32,
+    29,
+    31
+   ]
+  },
+  "r": {
+   "classOK": 51,
+   "classN": 122,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 8,
+   "parN": 26,
+   "parTop1": 7,
+   "parTop3": 7,
+   "parTop5": 7,
+   "parMeaning": 4,
+   "parWrong": 12,
+   "parTextual": 2,
+   "parOtherTextual": 2,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 93,
+   "startN": 126,
+   "attrN": 20,
+   "attrOK": 14,
+   "weak": 4
+  },
+  "nTok": 10495
+ },
+ {
+  "seed": 202,
+  "wer": 0.2,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 1704,
+  "words": 10495,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    59,
+    58,
+    59
+   ],
+   "ph": [
+    40,
+    37,
+    36,
+    37
+   ]
+  },
+  "r": {
+   "classOK": 91,
+   "classN": 131,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 28,
+   "oocPartial": 2,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 2,
+   "parTop3": 2,
+   "parTop5": 2,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 2,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 51,
+   "startN": 136,
+   "attrN": 22,
+   "attrOK": 16,
+   "weak": 0
+  },
+  "nTok": 10495
+ },
+ {
+  "seed": 202,
+  "wer": 0.2,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 2689,
+  "words": 10495,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    38,
+    37,
+    38
+   ]
+  },
+  "r": {
+   "classOK": 92,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 26,
+   "oocPartial": 4,
+   "oocFlagged": 8,
+   "parN": 26,
+   "parTop1": 5,
+   "parTop3": 5,
+   "parTop5": 6,
+   "parMeaning": 4,
+   "parWrong": 8,
+   "parTextual": 3,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 52,
+   "startN": 138,
+   "attrN": 23,
+   "attrOK": 17,
+   "weak": 0
+  },
+  "nTok": 10495
+ },
+ {
+  "seed": 202,
+  "wer": 0.2,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 36,
+  "words": 10495,
+  "m": {
+   "vq": [
+    40,
+    7,
+    6,
+    6
+   ],
+   "vh": [
+    60,
+    23,
+    20,
+    20
+   ],
+   "ph": [
+    40,
+    5,
+    5,
+    5
+   ]
+  },
+  "r": {
+   "classOK": 31,
+   "classN": 34,
+   "critWrongSource": 4,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 5,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 81,
+   "startN": 35,
+   "attrN": 10,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10495
+ },
+ {
+  "seed": 202,
+  "wer": 0.2,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 86,
+  "words": 10495,
+  "m": {
+   "vq": [
+    40,
+    18,
+    18,
+    18
+   ],
+   "vh": [
+    60,
+    28,
+    24,
+    24
+   ],
+   "ph": [
+    40,
+    13,
+    12,
+    12
+   ]
+  },
+  "r": {
+   "classOK": 47,
+   "classN": 58,
+   "critWrongSource": 5,
+   "critOOC": 2,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 28,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 279,
+   "startN": 59,
+   "attrN": 10,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10495
+ },
+ {
+  "seed": 202,
+  "wer": 0.3,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 4018,
+  "words": 10260,
+  "m": {
+   "vq": [
+    40,
+    37,
+    37,
+    37
+   ],
+   "vh": [
+    60,
+    57,
+    55,
+    56
+   ],
+   "ph": [
+    40,
+    34,
+    32,
+    33
+   ]
+  },
+  "r": {
+   "classOK": 70,
+   "classN": 122,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 7,
+   "parN": 26,
+   "parTop1": 6,
+   "parTop3": 6,
+   "parTop5": 6,
+   "parMeaning": 1,
+   "parWrong": 7,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 48,
+   "startN": 128,
+   "attrN": 21,
+   "attrOK": 11,
+   "weak": 3
+  },
+  "nTok": 10260
+ },
+ {
+  "seed": 202,
+  "wer": 0.3,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 2967,
+  "words": 10260,
+  "m": {
+   "vq": [
+    40,
+    33,
+    32,
+    33
+   ],
+   "vh": [
+    60,
+    46,
+    43,
+    46
+   ],
+   "ph": [
+    40,
+    22,
+    21,
+    22
+   ]
+  },
+  "r": {
+   "classOK": 31,
+   "classN": 97,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 7,
+   "parN": 26,
+   "parTop1": 3,
+   "parTop3": 3,
+   "parTop5": 3,
+   "parMeaning": 1,
+   "parWrong": 9,
+   "parTextual": 1,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 114,
+   "startN": 101,
+   "attrN": 17,
+   "attrOK": 9,
+   "weak": 4
+  },
+  "nTok": 10260
+ },
+ {
+  "seed": 202,
+  "wer": 0.3,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 1375,
+  "words": 10260,
+  "m": {
+   "vq": [
+    40,
+    37,
+    37,
+    37
+   ],
+   "vh": [
+    60,
+    57,
+    55,
+    56
+   ],
+   "ph": [
+    40,
+    34,
+    32,
+    33
+   ]
+  },
+  "r": {
+   "classOK": 70,
+   "classN": 122,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 3,
+   "parTop3": 3,
+   "parTop5": 3,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 3,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 48,
+   "startN": 128,
+   "attrN": 21,
+   "attrOK": 11,
+   "weak": 2
+  },
+  "nTok": 10260
+ },
+ {
+  "seed": 202,
+  "wer": 0.3,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 2142,
+  "words": 10260,
+  "m": {
+   "vq": [
+    40,
+    37,
+    37,
+    37
+   ],
+   "vh": [
+    60,
+    57,
+    55,
+    56
+   ],
+   "ph": [
+    40,
+    34,
+    32,
+    33
+   ]
+  },
+  "r": {
+   "classOK": 70,
+   "classN": 122,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 7,
+   "parN": 26,
+   "parTop1": 5,
+   "parTop3": 5,
+   "parTop5": 5,
+   "parMeaning": 1,
+   "parWrong": 6,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 48,
+   "startN": 128,
+   "attrN": 21,
+   "attrOK": 11,
+   "weak": 3
+  },
+  "nTok": 10260
+ },
+ {
+  "seed": 202,
+  "wer": 0.3,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 37,
+  "words": 10260,
+  "m": {
+   "vq": [
+    40,
+    3,
+    2,
+    2
+   ],
+   "vh": [
+    60,
+    8,
+    7,
+    7
+   ],
+   "ph": [
+    40,
+    1,
+    0,
+    0
+   ]
+  },
+  "r": {
+   "classOK": 11,
+   "classN": 12,
+   "critWrongSource": 3,
+   "critOOC": 0,
+   "critFiller": 1,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 31,
+   "startN": 12,
+   "attrN": 4,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10260
+ },
+ {
+  "seed": 202,
+  "wer": 0.3,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 75,
+  "words": 10260,
+  "m": {
+   "vq": [
+    40,
+    15,
+    15,
+    15
+   ],
+   "vh": [
+    60,
+    13,
+    12,
+    12
+   ],
+   "ph": [
+    40,
+    9,
+    9,
+    9
+   ]
+  },
+  "r": {
+   "classOK": 29,
+   "classN": 37,
+   "critWrongSource": 1,
+   "critOOC": 1,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 172,
+   "startN": 37,
+   "attrN": 8,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10260
+ },
+ {
+  "seed": 303,
+  "wer": 0,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 6965,
+  "words": 10834,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    60,
+    60
+   ],
+   "ph": [
+    40,
+    39,
+    39,
+    39
+   ]
+  },
+  "r": {
+   "classOK": 131,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 26,
+   "oocPartial": 4,
+   "oocFlagged": 14,
+   "parN": 25,
+   "parTop1": 11,
+   "parTop3": 11,
+   "parTop5": 12,
+   "parMeaning": 2,
+   "parWrong": 11,
+   "parTextual": 4,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 22,
+   "startN": 139,
+   "attrN": 18,
+   "attrOK": 18,
+   "weak": 0
+  },
+  "nTok": 10834
+ },
+ {
+  "seed": 303,
+  "wer": 0,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 4144,
+  "words": 10834,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    60,
+    60
+   ],
+   "ph": [
+    40,
+    39,
+    39,
+    39
+   ]
+  },
+  "r": {
+   "classOK": 131,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 27,
+   "oocPartial": 3,
+   "oocFlagged": 14,
+   "parN": 25,
+   "parTop1": 12,
+   "parTop3": 12,
+   "parTop5": 13,
+   "parMeaning": 3,
+   "parWrong": 11,
+   "parTextual": 4,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 23,
+   "startN": 139,
+   "attrN": 18,
+   "attrOK": 18,
+   "weak": 0
+  },
+  "nTok": 10834
+ },
+ {
+  "seed": 303,
+  "wer": 0,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 2579,
+  "words": 10834,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    60,
+    60
+   ],
+   "ph": [
+    40,
+    39,
+    39,
+    39
+   ]
+  },
+  "r": {
+   "classOK": 131,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 25,
+   "oocPartial": 5,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 3,
+   "parTop3": 3,
+   "parTop5": 3,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 3,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 22,
+   "startN": 139,
+   "attrN": 18,
+   "attrOK": 18,
+   "weak": 0
+  },
+  "nTok": 10834
+ },
+ {
+  "seed": 303,
+  "wer": 0,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 4018,
+  "words": 10834,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    60,
+    60
+   ],
+   "ph": [
+    40,
+    39,
+    39,
+    39
+   ]
+  },
+  "r": {
+   "classOK": 131,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 26,
+   "oocPartial": 4,
+   "oocFlagged": 14,
+   "parN": 25,
+   "parTop1": 6,
+   "parTop3": 7,
+   "parTop5": 8,
+   "parMeaning": 2,
+   "parWrong": 10,
+   "parTextual": 4,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 22,
+   "startN": 139,
+   "attrN": 18,
+   "attrOK": 18,
+   "weak": 0
+  },
+  "nTok": 10834
+ },
+ {
+  "seed": 303,
+  "wer": 0,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 45,
+  "words": 10834,
+  "m": {
+   "vq": [
+    40,
+    25,
+    24,
+    24
+   ],
+   "vh": [
+    60,
+    60,
+    53,
+    53
+   ],
+   "ph": [
+    40,
+    3,
+    3,
+    3
+   ]
+  },
+  "r": {
+   "classOK": 85,
+   "classN": 88,
+   "critWrongSource": 8,
+   "critOOC": 0,
+   "critFiller": 2,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 18,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 206,
+   "startN": 88,
+   "attrN": 18,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10834
+ },
+ {
+  "seed": 303,
+  "wer": 0,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 111,
+  "words": 10834,
+  "m": {
+   "vq": [
+    40,
+    32,
+    32,
+    32
+   ],
+   "vh": [
+    60,
+    44,
+    40,
+    40
+   ],
+   "ph": [
+    40,
+    25,
+    18,
+    18
+   ]
+  },
+  "r": {
+   "classOK": 76,
+   "classN": 96,
+   "critWrongSource": 16,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 503,
+   "startN": 101,
+   "attrN": 16,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10834
+ },
+ {
+  "seed": 303,
+  "wer": 0.1,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 6824,
+  "words": 10630,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    58,
+    58,
+    58
+   ],
+   "ph": [
+    40,
+    37,
+    37,
+    37
+   ]
+  },
+  "r": {
+   "classOK": 118,
+   "classN": 129,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 27,
+   "oocPartial": 3,
+   "oocFlagged": 12,
+   "parN": 25,
+   "parTop1": 8,
+   "parTop3": 8,
+   "parTop5": 8,
+   "parMeaning": 0,
+   "parWrong": 11,
+   "parTextual": 3,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 30,
+   "startN": 135,
+   "attrN": 18,
+   "attrOK": 15,
+   "weak": 1
+  },
+  "nTok": 10630
+ },
+ {
+  "seed": 303,
+  "wer": 0.1,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 4083,
+  "words": 10630,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    57,
+    56,
+    57
+   ],
+   "ph": [
+    40,
+    37,
+    37,
+    37
+   ]
+  },
+  "r": {
+   "classOK": 87,
+   "classN": 127,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 13,
+   "parN": 25,
+   "parTop1": 9,
+   "parTop3": 9,
+   "parTop5": 9,
+   "parMeaning": 2,
+   "parWrong": 11,
+   "parTextual": 2,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 58,
+   "startN": 132,
+   "attrN": 18,
+   "attrOK": 15,
+   "weak": 2
+  },
+  "nTok": 10630
+ },
+ {
+  "seed": 303,
+  "wer": 0.1,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 2101,
+  "words": 10630,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    58,
+    58,
+    58
+   ],
+   "ph": [
+    40,
+    37,
+    37,
+    37
+   ]
+  },
+  "r": {
+   "classOK": 118,
+   "classN": 129,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 26,
+   "oocPartial": 4,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 3,
+   "parTop3": 3,
+   "parTop5": 3,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 3,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 30,
+   "startN": 135,
+   "attrN": 18,
+   "attrOK": 15,
+   "weak": 0
+  },
+  "nTok": 10630
+ },
+ {
+  "seed": 303,
+  "wer": 0.1,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 3198,
+  "words": 10630,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    58,
+    58,
+    58
+   ],
+   "ph": [
+    40,
+    37,
+    37,
+    37
+   ]
+  },
+  "r": {
+   "classOK": 118,
+   "classN": 129,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 27,
+   "oocPartial": 3,
+   "oocFlagged": 12,
+   "parN": 25,
+   "parTop1": 4,
+   "parTop3": 5,
+   "parTop5": 6,
+   "parMeaning": 0,
+   "parWrong": 9,
+   "parTextual": 3,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 30,
+   "startN": 135,
+   "attrN": 18,
+   "attrOK": 15,
+   "weak": 1
+  },
+  "nTok": 10630
+ },
+ {
+  "seed": 303,
+  "wer": 0.1,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 50,
+  "words": 10630,
+  "m": {
+   "vq": [
+    40,
+    8,
+    8,
+    8
+   ],
+   "vh": [
+    60,
+    40,
+    37,
+    37
+   ],
+   "ph": [
+    40,
+    1,
+    1,
+    1
+   ]
+  },
+  "r": {
+   "classOK": 48,
+   "classN": 49,
+   "critWrongSource": 3,
+   "critOOC": 0,
+   "critFiller": 3,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 8,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 125,
+   "startN": 49,
+   "attrN": 13,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10630
+ },
+ {
+  "seed": 303,
+  "wer": 0.1,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 83,
+  "words": 10630,
+  "m": {
+   "vq": [
+    40,
+    25,
+    25,
+    25
+   ],
+   "vh": [
+    60,
+    38,
+    32,
+    32
+   ],
+   "ph": [
+    40,
+    17,
+    11,
+    11
+   ]
+  },
+  "r": {
+   "classOK": 63,
+   "classN": 77,
+   "critWrongSource": 18,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 354,
+   "startN": 80,
+   "attrN": 13,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10630
+ },
+ {
+  "seed": 303,
+  "wer": 0.2,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 4982,
+  "words": 10469,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    58,
+    58,
+    58
+   ],
+   "ph": [
+    40,
+    34,
+    34,
+    34
+   ]
+  },
+  "r": {
+   "classOK": 95,
+   "classN": 124,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 11,
+   "parN": 25,
+   "parTop1": 6,
+   "parTop3": 7,
+   "parTop5": 8,
+   "parMeaning": 3,
+   "parWrong": 8,
+   "parTextual": 2,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 40,
+   "startN": 130,
+   "attrN": 18,
+   "attrOK": 15,
+   "weak": 0
+  },
+  "nTok": 10469
+ },
+ {
+  "seed": 303,
+  "wer": 0.2,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 3197,
+  "words": 10469,
+  "m": {
+   "vq": [
+    40,
+    38,
+    37,
+    37
+   ],
+   "vh": [
+    60,
+    55,
+    54,
+    55
+   ],
+   "ph": [
+    40,
+    32,
+    31,
+    32
+   ]
+  },
+  "r": {
+   "classOK": 56,
+   "classN": 119,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 11,
+   "parN": 25,
+   "parTop1": 6,
+   "parTop3": 7,
+   "parTop5": 8,
+   "parMeaning": 5,
+   "parWrong": 8,
+   "parTextual": 0,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 147,
+   "startN": 125,
+   "attrN": 17,
+   "attrOK": 14,
+   "weak": 0
+  },
+  "nTok": 10469
+ },
+ {
+  "seed": 303,
+  "wer": 0.2,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 1630,
+  "words": 10469,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    57,
+    57,
+    57
+   ],
+   "ph": [
+    40,
+    34,
+    34,
+    34
+   ]
+  },
+  "r": {
+   "classOK": 95,
+   "classN": 123,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 2,
+   "parTop3": 2,
+   "parTop5": 2,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 2,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 38,
+   "startN": 129,
+   "attrN": 18,
+   "attrOK": 15,
+   "weak": 0
+  },
+  "nTok": 10469
+ },
+ {
+  "seed": 303,
+  "wer": 0.2,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 2669,
+  "words": 10469,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    58,
+    58,
+    58
+   ],
+   "ph": [
+    40,
+    34,
+    34,
+    34
+   ]
+  },
+  "r": {
+   "classOK": 95,
+   "classN": 124,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 11,
+   "parN": 25,
+   "parTop1": 3,
+   "parTop3": 3,
+   "parTop5": 3,
+   "parMeaning": 3,
+   "parWrong": 8,
+   "parTextual": 2,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 40,
+   "startN": 130,
+   "attrN": 18,
+   "attrOK": 15,
+   "weak": 0
+  },
+  "nTok": 10469
+ },
+ {
+  "seed": 303,
+  "wer": 0.2,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 36,
+  "words": 10469,
+  "m": {
+   "vq": [
+    40,
+    3,
+    2,
+    2
+   ],
+   "vh": [
+    60,
+    21,
+    20,
+    20
+   ],
+   "ph": [
+    40,
+    0,
+    0,
+    0
+   ]
+  },
+  "r": {
+   "classOK": 24,
+   "classN": 24,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 8,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 59,
+   "startN": 24,
+   "attrN": 5,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10469
+ },
+ {
+  "seed": 303,
+  "wer": 0.2,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 90,
+  "words": 10469,
+  "m": {
+   "vq": [
+    40,
+    20,
+    20,
+    20
+   ],
+   "vh": [
+    60,
+    27,
+    27,
+    27
+   ],
+   "ph": [
+    40,
+    12,
+    8,
+    8
+   ]
+  },
+  "r": {
+   "classOK": 47,
+   "classN": 55,
+   "critWrongSource": 5,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 263,
+   "startN": 59,
+   "attrN": 10,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10469
+ },
+ {
+  "seed": 303,
+  "wer": 0.3,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 4025,
+  "words": 10334,
+  "m": {
+   "vq": [
+    40,
+    37,
+    37,
+    37
+   ],
+   "vh": [
+    60,
+    58,
+    57,
+    58
+   ],
+   "ph": [
+    40,
+    33,
+    32,
+    33
+   ]
+  },
+  "r": {
+   "classOK": 75,
+   "classN": 122,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 27,
+   "oocPartial": 3,
+   "oocFlagged": 10,
+   "parN": 25,
+   "parTop1": 5,
+   "parTop3": 7,
+   "parTop5": 8,
+   "parMeaning": 2,
+   "parWrong": 6,
+   "parTextual": 2,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 79,
+   "startN": 128,
+   "attrN": 18,
+   "attrOK": 13,
+   "weak": 0
+  },
+  "nTok": 10334
+ },
+ {
+  "seed": 303,
+  "wer": 0.3,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 2468,
+  "words": 10334,
+  "m": {
+   "vq": [
+    40,
+    31,
+    31,
+    31
+   ],
+   "vh": [
+    60,
+    47,
+    46,
+    46
+   ],
+   "ph": [
+    40,
+    25,
+    24,
+    24
+   ]
+  },
+  "r": {
+   "classOK": 34,
+   "classN": 99,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 10,
+   "parN": 25,
+   "parTop1": 6,
+   "parTop3": 8,
+   "parTop5": 9,
+   "parMeaning": 4,
+   "parWrong": 6,
+   "parTextual": 1,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 138,
+   "startN": 103,
+   "attrN": 12,
+   "attrOK": 9,
+   "weak": 3
+  },
+  "nTok": 10334
+ },
+ {
+  "seed": 303,
+  "wer": 0.3,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 1317,
+  "words": 10334,
+  "m": {
+   "vq": [
+    40,
+    37,
+    37,
+    37
+   ],
+   "vh": [
+    60,
+    57,
+    56,
+    57
+   ],
+   "ph": [
+    40,
+    33,
+    32,
+    33
+   ]
+  },
+  "r": {
+   "classOK": 75,
+   "classN": 121,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 27,
+   "oocPartial": 3,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 2,
+   "parTop3": 2,
+   "parTop5": 2,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 2,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 81,
+   "startN": 127,
+   "attrN": 18,
+   "attrOK": 13,
+   "weak": 0
+  },
+  "nTok": 10334
+ },
+ {
+  "seed": 303,
+  "wer": 0.3,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 1920,
+  "words": 10334,
+  "m": {
+   "vq": [
+    40,
+    37,
+    37,
+    37
+   ],
+   "vh": [
+    60,
+    58,
+    57,
+    58
+   ],
+   "ph": [
+    40,
+    33,
+    32,
+    33
+   ]
+  },
+  "r": {
+   "classOK": 75,
+   "classN": 122,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 27,
+   "oocPartial": 3,
+   "oocFlagged": 10,
+   "parN": 25,
+   "parTop1": 3,
+   "parTop3": 3,
+   "parTop5": 3,
+   "parMeaning": 2,
+   "parWrong": 8,
+   "parTextual": 2,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 79,
+   "startN": 128,
+   "attrN": 18,
+   "attrOK": 13,
+   "weak": 0
+  },
+  "nTok": 10334
+ },
+ {
+  "seed": 303,
+  "wer": 0.3,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 27,
+  "words": 10334,
+  "m": {
+   "vq": [
+    40,
+    1,
+    1,
+    1
+   ],
+   "vh": [
+    60,
+    12,
+    11,
+    11
+   ],
+   "ph": [
+    40,
+    0,
+    0,
+    0
+   ]
+  },
+  "r": {
+   "classOK": 13,
+   "classN": 13,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 1,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 3,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 47,
+   "startN": 13,
+   "attrN": 2,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10334
+ },
+ {
+  "seed": 303,
+  "wer": 0.3,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 73,
+  "words": 10334,
+  "m": {
+   "vq": [
+    40,
+    16,
+    16,
+    16
+   ],
+   "vh": [
+    60,
+    18,
+    17,
+    17
+   ],
+   "ph": [
+    40,
+    8,
+    7,
+    7
+   ]
+  },
+  "r": {
+   "classOK": 34,
+   "classN": 41,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 25,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 204,
+   "startN": 42,
+   "attrN": 4,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10334
+ },
+ {
+  "seed": 404,
+  "wer": 0,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 5722,
+  "words": 10705,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    40,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 134,
+   "classN": 134,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 28,
+   "oocPartial": 2,
+   "oocFlagged": 13,
+   "parN": 26,
+   "parTop1": 12,
+   "parTop3": 14,
+   "parTop5": 14,
+   "parMeaning": 4,
+   "parWrong": 10,
+   "parTextual": 5,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 14,
+   "startN": 140,
+   "attrN": 13,
+   "attrOK": 13,
+   "weak": 0
+  },
+  "nTok": 10705
+ },
+ {
+  "seed": 404,
+  "wer": 0,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 4620,
+  "words": 10705,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    40,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 134,
+   "classN": 134,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 13,
+   "parN": 26,
+   "parTop1": 13,
+   "parTop3": 15,
+   "parTop5": 15,
+   "parMeaning": 5,
+   "parWrong": 10,
+   "parTextual": 5,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 14,
+   "startN": 140,
+   "attrN": 13,
+   "attrOK": 13,
+   "weak": 0
+  },
+  "nTok": 10705
+ },
+ {
+  "seed": 404,
+  "wer": 0,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 2382,
+  "words": 10705,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    40,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 134,
+   "classN": 134,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 28,
+   "oocPartial": 2,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 4,
+   "parTop3": 4,
+   "parTop5": 4,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 19,
+   "startN": 140,
+   "attrN": 13,
+   "attrOK": 13,
+   "weak": 0
+  },
+  "nTok": 10705
+ },
+ {
+  "seed": 404,
+  "wer": 0,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 3440,
+  "words": 10705,
+  "m": {
+   "vq": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    40,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 134,
+   "classN": 134,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 28,
+   "oocPartial": 2,
+   "oocFlagged": 13,
+   "parN": 26,
+   "parTop1": 7,
+   "parTop3": 7,
+   "parTop5": 7,
+   "parMeaning": 4,
+   "parWrong": 12,
+   "parTextual": 5,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 14,
+   "startN": 140,
+   "attrN": 13,
+   "attrOK": 13,
+   "weak": 0
+  },
+  "nTok": 10705
+ },
+ {
+  "seed": 404,
+  "wer": 0,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 35,
+  "words": 10705,
+  "m": {
+   "vq": [
+    40,
+    24,
+    24,
+    24
+   ],
+   "vh": [
+    60,
+    60,
+    52,
+    52
+   ],
+   "ph": [
+    40,
+    7,
+    6,
+    6
+   ]
+  },
+  "r": {
+   "classOK": 85,
+   "classN": 89,
+   "critWrongSource": 9,
+   "critOOC": 0,
+   "critFiller": 1,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 19,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 185,
+   "startN": 91,
+   "attrN": 13,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10705
+ },
+ {
+  "seed": 404,
+  "wer": 0,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 73,
+  "words": 10705,
+  "m": {
+   "vq": [
+    40,
+    36,
+    35,
+    35
+   ],
+   "vh": [
+    60,
+    43,
+    35,
+    35
+   ],
+   "ph": [
+    40,
+    20,
+    18,
+    18
+   ]
+  },
+  "r": {
+   "classOK": 80,
+   "classN": 96,
+   "critWrongSource": 14,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 2,
+   "parTop3": 2,
+   "parTop5": 2,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 2,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 575,
+   "startN": 99,
+   "attrN": 12,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10705
+ },
+ {
+  "seed": 404,
+  "wer": 0.1,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 5093,
+  "words": 10546,
+  "m": {
+   "vq": [
+    40,
+    39,
+    39,
+    39
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    40,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 126,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 12,
+   "parN": 26,
+   "parTop1": 12,
+   "parTop3": 14,
+   "parTop5": 15,
+   "parMeaning": 4,
+   "parWrong": 8,
+   "parTextual": 6,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 30,
+   "startN": 139,
+   "attrN": 13,
+   "attrOK": 11,
+   "weak": 0
+  },
+  "nTok": 10546
+ },
+ {
+  "seed": 404,
+  "wer": 0.1,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 3868,
+  "words": 10546,
+  "m": {
+   "vq": [
+    40,
+    39,
+    39,
+    39
+   ],
+   "vh": [
+    60,
+    60,
+    57,
+    59
+   ],
+   "ph": [
+    40,
+    39,
+    39,
+    39
+   ]
+  },
+  "r": {
+   "classOK": 93,
+   "classN": 132,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 12,
+   "parN": 26,
+   "parTop1": 12,
+   "parTop3": 14,
+   "parTop5": 16,
+   "parMeaning": 5,
+   "parWrong": 9,
+   "parTextual": 5,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 62,
+   "startN": 138,
+   "attrN": 13,
+   "attrOK": 11,
+   "weak": 0
+  },
+  "nTok": 10546
+ },
+ {
+  "seed": 404,
+  "wer": 0.1,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 1979,
+  "words": 10546,
+  "m": {
+   "vq": [
+    40,
+    39,
+    39,
+    39
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    40,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 126,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 3,
+   "parTop3": 3,
+   "parTop5": 3,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 3,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 35,
+   "startN": 139,
+   "attrN": 13,
+   "attrOK": 11,
+   "weak": 0
+  },
+  "nTok": 10546
+ },
+ {
+  "seed": 404,
+  "wer": 0.1,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 3615,
+  "words": 10546,
+  "m": {
+   "vq": [
+    40,
+    39,
+    39,
+    39
+   ],
+   "vh": [
+    60,
+    60,
+    59,
+    60
+   ],
+   "ph": [
+    40,
+    40,
+    40,
+    40
+   ]
+  },
+  "r": {
+   "classOK": 126,
+   "classN": 133,
+   "critWrongSource": 0,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 12,
+   "parN": 26,
+   "parTop1": 8,
+   "parTop3": 8,
+   "parTop5": 8,
+   "parMeaning": 4,
+   "parWrong": 11,
+   "parTextual": 6,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 13,
+   "startErr": 30,
+   "startN": 139,
+   "attrN": 13,
+   "attrOK": 11,
+   "weak": 0
+  },
+  "nTok": 10546
+ },
+ {
+  "seed": 404,
+  "wer": 0.1,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 42,
+  "words": 10546,
+  "m": {
+   "vq": [
+    40,
+    9,
+    9,
+    9
+   ],
+   "vh": [
+    60,
+    44,
+    34,
+    34
+   ],
+   "ph": [
+    40,
+    3,
+    2,
+    2
+   ]
+  },
+  "r": {
+   "classOK": 53,
+   "classN": 55,
+   "critWrongSource": 11,
+   "critOOC": 0,
+   "critFiller": 2,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 10,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 113,
+   "startN": 56,
+   "attrN": 9,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10546
+ },
+ {
+  "seed": 404,
+  "wer": 0.1,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 95,
+  "words": 10546,
+  "m": {
+   "vq": [
+    40,
+    29,
+    28,
+    28
+   ],
+   "vh": [
+    60,
+    33,
+    28,
+    28
+   ],
+   "ph": [
+    40,
+    16,
+    15,
+    15
+   ]
+  },
+  "r": {
+   "classOK": 63,
+   "classN": 74,
+   "critWrongSource": 10,
+   "critOOC": 1,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 418,
+   "startN": 78,
+   "attrN": 7,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10546
+ },
+ {
+  "seed": 404,
+  "wer": 0.2,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 5338,
+  "words": 10280,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    60,
+    58,
+    59
+   ],
+   "ph": [
+    40,
+    36,
+    35,
+    36
+   ]
+  },
+  "r": {
+   "classOK": 104,
+   "classN": 128,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 10,
+   "parN": 26,
+   "parTop1": 8,
+   "parTop3": 8,
+   "parTop5": 8,
+   "parMeaning": 1,
+   "parWrong": 10,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 47,
+   "startN": 134,
+   "attrN": 13,
+   "attrOK": 9,
+   "weak": 0
+  },
+  "nTok": 10280
+ },
+ {
+  "seed": 404,
+  "wer": 0.2,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 3462,
+  "words": 10280,
+  "m": {
+   "vq": [
+    40,
+    36,
+    36,
+    36
+   ],
+   "vh": [
+    60,
+    57,
+    55,
+    57
+   ],
+   "ph": [
+    40,
+    33,
+    30,
+    32
+   ]
+  },
+  "r": {
+   "classOK": 48,
+   "classN": 120,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 10,
+   "parN": 26,
+   "parTop1": 8,
+   "parTop3": 8,
+   "parTop5": 8,
+   "parMeaning": 3,
+   "parWrong": 10,
+   "parTextual": 2,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 101,
+   "startN": 126,
+   "attrN": 12,
+   "attrOK": 8,
+   "weak": 1
+  },
+  "nTok": 10280
+ },
+ {
+  "seed": 404,
+  "wer": 0.2,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 1604,
+  "words": 10280,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    59,
+    57,
+    58
+   ],
+   "ph": [
+    40,
+    36,
+    35,
+    36
+   ]
+  },
+  "r": {
+   "classOK": 104,
+   "classN": 127,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 4,
+   "parTop3": 4,
+   "parTop5": 4,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 50,
+   "startN": 133,
+   "attrN": 13,
+   "attrOK": 9,
+   "weak": 0
+  },
+  "nTok": 10280
+ },
+ {
+  "seed": 404,
+  "wer": 0.2,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 2864,
+  "words": 10280,
+  "m": {
+   "vq": [
+    40,
+    38,
+    38,
+    38
+   ],
+   "vh": [
+    60,
+    60,
+    58,
+    59
+   ],
+   "ph": [
+    40,
+    36,
+    35,
+    36
+   ]
+  },
+  "r": {
+   "classOK": 104,
+   "classN": 128,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 29,
+   "oocPartial": 1,
+   "oocFlagged": 10,
+   "parN": 26,
+   "parTop1": 5,
+   "parTop3": 5,
+   "parTop5": 5,
+   "parMeaning": 1,
+   "parWrong": 7,
+   "parTextual": 4,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 47,
+   "startN": 134,
+   "attrN": 13,
+   "attrOK": 9,
+   "weak": 0
+  },
+  "nTok": 10280
+ },
+ {
+  "seed": 404,
+  "wer": 0.2,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 36,
+  "words": 10280,
+  "m": {
+   "vq": [
+    40,
+    4,
+    4,
+    4
+   ],
+   "vh": [
+    60,
+    23,
+    19,
+    19
+   ],
+   "ph": [
+    40,
+    5,
+    4,
+    4
+   ]
+  },
+  "r": {
+   "classOK": 28,
+   "classN": 30,
+   "critWrongSource": 5,
+   "critOOC": 0,
+   "critFiller": 1,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 4,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 94,
+   "startN": 32,
+   "attrN": 5,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10280
+ },
+ {
+  "seed": 404,
+  "wer": 0.2,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 87,
+  "words": 10280,
+  "m": {
+   "vq": [
+    40,
+    20,
+    19,
+    19
+   ],
+   "vh": [
+    60,
+    20,
+    16,
+    16
+   ],
+   "ph": [
+    40,
+    6,
+    5,
+    5
+   ]
+  },
+  "r": {
+   "classOK": 41,
+   "classN": 46,
+   "critWrongSource": 8,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 1,
+   "parTop3": 1,
+   "parTop5": 1,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 1,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 237,
+   "startN": 46,
+   "attrN": 5,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10280
+ },
+ {
+  "seed": 404,
+  "wer": 0.3,
+  "system": "أثَر (المحرك الكامل)",
+  "ms": 4485,
+  "words": 10238,
+  "m": {
+   "vq": [
+    40,
+    36,
+    36,
+    36
+   ],
+   "vh": [
+    60,
+    59,
+    54,
+    57
+   ],
+   "ph": [
+    40,
+    33,
+    33,
+    33
+   ]
+  },
+  "r": {
+   "classOK": 70,
+   "classN": 123,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 10,
+   "parN": 26,
+   "parTop1": 4,
+   "parTop3": 4,
+   "parTop5": 4,
+   "parMeaning": 4,
+   "parWrong": 10,
+   "parTextual": 2,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 66,
+   "startN": 128,
+   "attrN": 13,
+   "attrOK": 9,
+   "weak": 0
+  },
+  "nTok": 10238
+ },
+ {
+  "seed": 404,
+  "wer": 0.3,
+  "system": "استبعاد: بلا تسامح مع أخطاء التفريغ",
+  "ms": 3243,
+  "words": 10238,
+  "m": {
+   "vq": [
+    40,
+    32,
+    32,
+    32
+   ],
+   "vh": [
+    60,
+    46,
+    42,
+    45
+   ],
+   "ph": [
+    40,
+    24,
+    22,
+    24
+   ]
+  },
+  "r": {
+   "classOK": 28,
+   "classN": 98,
+   "critWrongSource": 1,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 10,
+   "parN": 26,
+   "parTop1": 3,
+   "parTop3": 3,
+   "parTop5": 4,
+   "parMeaning": 5,
+   "parWrong": 10,
+   "parTextual": 0,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 160,
+   "startN": 102,
+   "attrN": 10,
+   "attrOK": 6,
+   "weak": 3
+  },
+  "nTok": 10238
+ },
+ {
+  "seed": 404,
+  "wer": 0.3,
+  "system": "استبعاد: بلا عبارات الاستشهاد",
+  "ms": 1329,
+  "words": 10238,
+  "m": {
+   "vq": [
+    40,
+    36,
+    36,
+    36
+   ],
+   "vh": [
+    60,
+    58,
+    54,
+    56
+   ],
+   "ph": [
+    40,
+    32,
+    32,
+    32
+   ]
+  },
+  "r": {
+   "classOK": 69,
+   "classN": 121,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 2,
+   "parTop3": 2,
+   "parTop5": 2,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 2,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 67,
+   "startN": 126,
+   "attrN": 13,
+   "attrOK": 9,
+   "weak": 0
+  },
+  "nTok": 10238
+ },
+ {
+  "seed": 404,
+  "wer": 0.3,
+  "system": "استبعاد: بلا متجهات (ألفاظ فقط)",
+  "ms": 1985,
+  "words": 10238,
+  "m": {
+   "vq": [
+    40,
+    36,
+    36,
+    36
+   ],
+   "vh": [
+    60,
+    59,
+    54,
+    57
+   ],
+   "ph": [
+    40,
+    33,
+    33,
+    33
+   ]
+  },
+  "r": {
+   "classOK": 70,
+   "classN": 123,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 10,
+   "parN": 26,
+   "parTop1": 4,
+   "parTop3": 4,
+   "parTop5": 4,
+   "parMeaning": 4,
+   "parWrong": 7,
+   "parTextual": 2,
+   "parOtherTextual": 1,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 66,
+   "startN": 128,
+   "attrN": 13,
+   "attrOK": 9,
+   "weak": 0
+  },
+  "nTok": 10238
+ },
+ {
+  "seed": 404,
+  "wer": 0.3,
+  "system": "B0 بحث نصي حرفي",
+  "ms": 28,
+  "words": 10238,
+  "m": {
+   "vq": [
+    40,
+    3,
+    3,
+    3
+   ],
+   "vh": [
+    60,
+    7,
+    5,
+    5
+   ],
+   "ph": [
+    40,
+    1,
+    1,
+    1
+   ]
+  },
+  "r": {
+   "classOK": 10,
+   "classN": 11,
+   "critWrongSource": 2,
+   "critOOC": 0,
+   "critFiller": 1,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 4,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 34,
+   "startN": 11,
+   "attrN": 2,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10238
+ },
+ {
+  "seed": 404,
+  "wer": 0.3,
+  "system": "B1 استرجاع TF-IDF",
+  "ms": 76,
+  "words": 10238,
+  "m": {
+   "vq": [
+    40,
+    17,
+    17,
+    17
+   ],
+   "vh": [
+    60,
+    21,
+    17,
+    17
+   ],
+   "ph": [
+    40,
+    2,
+    2,
+    2
+   ]
+  },
+  "r": {
+   "classOK": 39,
+   "classN": 40,
+   "critWrongSource": 5,
+   "critOOC": 0,
+   "critFiller": 0,
+   "fillerLead": 0,
+   "fillerMeaning": 0,
+   "oocN": 30,
+   "oocAbstain": 30,
+   "oocPartial": 0,
+   "oocFlagged": 0,
+   "parN": 26,
+   "parTop1": 0,
+   "parTop3": 0,
+   "parTop5": 0,
+   "parMeaning": 0,
+   "parWrong": 0,
+   "parTextual": 0,
+   "parOtherTextual": 0,
+   "cueN": 14,
+   "cueClean": 14,
+   "startErr": 155,
+   "startN": 40,
+   "attrN": 5,
+   "attrOK": 0,
+   "weak": 0
+  },
+  "nTok": 10238
+ }
+]

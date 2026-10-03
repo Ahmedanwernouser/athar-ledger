@@ -1,0 +1,20 @@
+[
+ {
+  "id": "demo-clean",
+  "title": "محاضرة قصيرة عن حسن الخلق",
+  "note": "نص تجريبي كتبه مساعد ذكاء اصطناعي (Claude) لغرض العرض، وليس محاضرة حقيقية (بلا صوت؛ الأزمنة تقديرية). فيه آيات وأحاديث حرفية، حديث بلفظ مغيَّر، نسبة منطوقة لا توافق المدونة، اقتباس بالمعنى، وعبارتان شائعتان لا توجدان في المدونة.",
+  "transcript": "samples/demo-clean.json"
+ },
+ {
+  "id": "demo-noisy",
+  "title": "المحاضرة نفسها بعد محاكاة أخطاء التفريغ",
+  "note": "النص نفسه بعد إفساد ١٢٪ من كلماته آليًّا (محاكاة لأخطاء التفريغ الصوتي) لإظهار كيف يُعلِّم السجلُّ الفروق المحتملة.",
+  "transcript": "samples/demo-noisy.json"
+ },
+ {
+  "id": "demo-en",
+  "title": "A short English lecture on good character",
+  "note": "Sample text written by an AI assistant (Claude) for demonstration, not a real lecture (no audio; times are estimated). It loads the English translations (≈ 55 MB) and shows: verses and hadith read in translation, an explicit reference that does not match, a paraphrase, a popular saying that is not in the corpus, and an Arabic recitation inside English speech.",
+  "transcript": "samples/demo-en.json"
+ }
+]

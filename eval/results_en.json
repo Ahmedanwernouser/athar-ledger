@@ -1,0 +1,806 @@
+{
+ "meta": {
+  "simulated": true,
+  "lectures": 3,
+  "seeds": [
+   909,
+   910,
+   911
+  ],
+  "passages": 109494,
+  "cover": 0.5,
+  "heldOutEditions": [
+   "Abdel Haleem",
+   "Arberry"
+  ],
+  "countsPerLecture": {
+   "vq": 40,
+   "vh": 60,
+   "held": 50,
+   "cue": 12
+  }
+ },
+ "rows": [
+  {
+   "rate": 0,
+   "lectures": 3,
+   "words": 34732,
+   "vq": [
+    120,
+    120,
+    119
+   ],
+   "vh": [
+    180,
+    179,
+    179
+   ],
+   "held": [
+    150,
+    92,
+    88,
+    96
+   ],
+   "wrong": [
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "77:43",
+     "cited": "52:19",
+     "status": "partial",
+     "agreement": 0.636
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "16:82",
+     "cited": "2:137",
+     "status": "partial",
+     "agreement": 0.625
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "21:6",
+     "cited": "36:31",
+     "status": "partial",
+     "agreement": 0.5
+    },
+    {
+     "seed": 910,
+     "kind": "vq",
+     "truth": "55:51",
+     "cited": "55:16",
+     "status": "verbatim",
+     "agreement": 1
+    },
+    {
+     "seed": 911,
+     "kind": "held",
+     "truth": "74:24",
+     "cited": "25:4",
+     "status": "verbatim",
+     "agreement": 1
+    }
+   ],
+   "cue": [
+    36,
+    32
+   ],
+   "fillerTextual": 4,
+   "fillerAllusion": 46,
+   "allusionSentences": 46,
+   "fillerExamples": [
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next this is a"
+    },
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next and this is"
+    },
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next and this is"
+    },
+    {
+     "seed": 910,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next this is a"
+    }
+   ],
+   "vqCI": [
+    95,
+    100
+   ],
+   "vhCI": [
+    97,
+    100
+   ],
+   "heldCI": [
+    51,
+    66
+   ],
+   "heldTop5CI": [
+    56,
+    71
+   ],
+   "heldPerLecture": [
+    28,
+    30,
+    30
+   ]
+  },
+  {
+   "rate": 0.1,
+   "lectures": 3,
+   "words": 34255,
+   "vq": [
+    120,
+    120,
+    119
+   ],
+   "vh": [
+    180,
+    179,
+    178
+   ],
+   "held": [
+    150,
+    82,
+    78,
+    89
+   ],
+   "wrong": [
+    {
+     "seed": 909,
+     "kind": "vh",
+     "truth": "muslim:5771",
+     "cited": "muslim:5006",
+     "status": "partial",
+     "agreement": 0.719
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "77:43",
+     "cited": "52:19",
+     "status": "partial",
+     "agreement": 0.7
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "16:82",
+     "cited": "2:137",
+     "status": "partial",
+     "agreement": 0.625
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "21:6",
+     "cited": "36:31",
+     "status": "partial",
+     "agreement": 0.5
+    },
+    {
+     "seed": 910,
+     "kind": "vq",
+     "truth": "55:51",
+     "cited": "55:16",
+     "status": "partial",
+     "agreement": 0.909
+    },
+    {
+     "seed": 911,
+     "kind": "held",
+     "truth": "26:8",
+     "cited": "26:103",
+     "status": "verbatim",
+     "agreement": 1
+    }
+   ],
+   "cue": [
+    36,
+    34
+   ],
+   "fillerTextual": 1,
+   "fillerAllusion": 32,
+   "allusionSentences": 46,
+   "fillerExamples": [
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next and this is"
+    }
+   ],
+   "vqCI": [
+    95,
+    100
+   ],
+   "vhCI": [
+    96,
+    100
+   ],
+   "heldCI": [
+    44,
+    60
+   ],
+   "heldTop5CI": [
+    51,
+    67
+   ],
+   "heldPerLecture": [
+    23,
+    29,
+    26
+   ]
+  },
+  {
+   "rate": 0.2,
+   "lectures": 3,
+   "words": 33664,
+   "vq": [
+    120,
+    119,
+    118
+   ],
+   "vh": [
+    180,
+    178,
+    177
+   ],
+   "held": [
+    150,
+    67,
+    65,
+    79
+   ],
+   "wrong": [
+    {
+     "seed": 909,
+     "kind": "vh",
+     "truth": "bukhari:4219",
+     "cited": "bukhari:4217",
+     "status": "verbatim",
+     "agreement": 0.975
+    },
+    {
+     "seed": 910,
+     "kind": "vq",
+     "truth": "55:51",
+     "cited": "55:16",
+     "status": "partial",
+     "agreement": 0.833
+    },
+    {
+     "seed": 910,
+     "kind": "held",
+     "truth": "37:126",
+     "cited": "26:26",
+     "status": "verbatim",
+     "agreement": 1
+    },
+    {
+     "seed": 911,
+     "kind": "held",
+     "truth": "74:24",
+     "cited": "28:36",
+     "status": "verbatim",
+     "agreement": 1
+    }
+   ],
+   "cue": [
+    36,
+    34
+   ],
+   "fillerTextual": 3,
+   "fillerAllusion": 30,
+   "allusionSentences": 46,
+   "fillerExamples": [
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next this is a"
+    },
+    {
+     "seed": 910,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next this is a"
+    },
+    {
+     "seed": 910,
+     "status": "partial",
+     "cited": "abudawud:924",
+     "spoken": "in the past and in the present the messenger ofallah"
+    }
+   ],
+   "vqCI": [
+    94,
+    100
+   ],
+   "vhCI": [
+    95,
+    99
+   ],
+   "heldCI": [
+    36,
+    51
+   ],
+   "heldTop5CI": [
+    45,
+    60
+   ],
+   "heldPerLecture": [
+    23,
+    22,
+    20
+   ]
+  }
+ ],
+ "perLecture": [
+  {
+   "seed": 909,
+   "rate": 0,
+   "words": 11659,
+   "vq": [
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    60
+   ],
+   "held": [
+    50,
+    31,
+    28,
+    29
+   ],
+   "wrong": [
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "77:43",
+     "cited": "52:19",
+     "status": "partial",
+     "agreement": 0.636
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "16:82",
+     "cited": "2:137",
+     "status": "partial",
+     "agreement": 0.625
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "21:6",
+     "cited": "36:31",
+     "status": "partial",
+     "agreement": 0.5
+    }
+   ],
+   "cue": [
+    12,
+    10
+   ],
+   "fillerTextual": 3,
+   "fillerAllusion": 11,
+   "allusionSentences": 11,
+   "fillerExamples": [
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next this is a"
+    },
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next and this is"
+    },
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next and this is"
+    }
+   ]
+  },
+  {
+   "seed": 910,
+   "rate": 0,
+   "words": 11597,
+   "vq": [
+    40,
+    40,
+    39
+   ],
+   "vh": [
+    60,
+    59,
+    59
+   ],
+   "held": [
+    50,
+    30,
+    30,
+    31
+   ],
+   "wrong": [
+    {
+     "seed": 910,
+     "kind": "vq",
+     "truth": "55:51",
+     "cited": "55:16",
+     "status": "verbatim",
+     "agreement": 1
+    }
+   ],
+   "cue": [
+    12,
+    11
+   ],
+   "fillerTextual": 1,
+   "fillerAllusion": 18,
+   "allusionSentences": 18,
+   "fillerExamples": [
+    {
+     "seed": 910,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next this is a"
+    }
+   ]
+  },
+  {
+   "seed": 911,
+   "rate": 0,
+   "words": 11476,
+   "vq": [
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    60
+   ],
+   "held": [
+    50,
+    31,
+    30,
+    36
+   ],
+   "wrong": [
+    {
+     "seed": 911,
+     "kind": "held",
+     "truth": "74:24",
+     "cited": "25:4",
+     "status": "verbatim",
+     "agreement": 1
+    }
+   ],
+   "cue": [
+    12,
+    11
+   ],
+   "fillerTextual": 0,
+   "fillerAllusion": 17,
+   "allusionSentences": 17,
+   "fillerExamples": []
+  },
+  {
+   "seed": 909,
+   "rate": 0.1,
+   "words": 11518,
+   "vq": [
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59
+   ],
+   "held": [
+    50,
+    26,
+    23,
+    26
+   ],
+   "wrong": [
+    {
+     "seed": 909,
+     "kind": "vh",
+     "truth": "muslim:5771",
+     "cited": "muslim:5006",
+     "status": "partial",
+     "agreement": 0.719
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "77:43",
+     "cited": "52:19",
+     "status": "partial",
+     "agreement": 0.7
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "16:82",
+     "cited": "2:137",
+     "status": "partial",
+     "agreement": 0.625
+    },
+    {
+     "seed": 909,
+     "kind": "held",
+     "truth": "21:6",
+     "cited": "36:31",
+     "status": "partial",
+     "agreement": 0.5
+    }
+   ],
+   "cue": [
+    12,
+    11
+   ],
+   "fillerTextual": 1,
+   "fillerAllusion": 8,
+   "allusionSentences": 11,
+   "fillerExamples": [
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next and this is"
+    }
+   ]
+  },
+  {
+   "seed": 910,
+   "rate": 0.1,
+   "words": 11431,
+   "vq": [
+    40,
+    40,
+    39
+   ],
+   "vh": [
+    60,
+    59,
+    59
+   ],
+   "held": [
+    50,
+    29,
+    29,
+    31
+   ],
+   "wrong": [
+    {
+     "seed": 910,
+     "kind": "vq",
+     "truth": "55:51",
+     "cited": "55:16",
+     "status": "partial",
+     "agreement": 0.909
+    }
+   ],
+   "cue": [
+    12,
+    11
+   ],
+   "fillerTextual": 0,
+   "fillerAllusion": 13,
+   "allusionSentences": 18,
+   "fillerExamples": []
+  },
+  {
+   "seed": 911,
+   "rate": 0.1,
+   "words": 11306,
+   "vq": [
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    60
+   ],
+   "held": [
+    50,
+    27,
+    26,
+    32
+   ],
+   "wrong": [
+    {
+     "seed": 911,
+     "kind": "held",
+     "truth": "26:8",
+     "cited": "26:103",
+     "status": "verbatim",
+     "agreement": 1
+    }
+   ],
+   "cue": [
+    12,
+    12
+   ],
+   "fillerTextual": 0,
+   "fillerAllusion": 11,
+   "allusionSentences": 17,
+   "fillerExamples": []
+  },
+  {
+   "seed": 909,
+   "rate": 0.2,
+   "words": 11342,
+   "vq": [
+    40,
+    40,
+    40
+   ],
+   "vh": [
+    60,
+    60,
+    59
+   ],
+   "held": [
+    50,
+    23,
+    23,
+    26
+   ],
+   "wrong": [
+    {
+     "seed": 909,
+     "kind": "vh",
+     "truth": "bukhari:4219",
+     "cited": "bukhari:4217",
+     "status": "verbatim",
+     "agreement": 0.975
+    }
+   ],
+   "cue": [
+    12,
+    11
+   ],
+   "fillerTextual": 1,
+   "fillerAllusion": 9,
+   "allusionSentences": 11,
+   "fillerExamples": [
+    {
+     "seed": 909,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next this is a"
+    }
+   ]
+  },
+  {
+   "seed": 910,
+   "rate": 0.2,
+   "words": 11225,
+   "vq": [
+    40,
+    40,
+    39
+   ],
+   "vh": [
+    60,
+    59,
+    59
+   ],
+   "held": [
+    50,
+    23,
+    22,
+    25
+   ],
+   "wrong": [
+    {
+     "seed": 910,
+     "kind": "vq",
+     "truth": "55:51",
+     "cited": "55:16",
+     "status": "partial",
+     "agreement": 0.833
+    },
+    {
+     "seed": 910,
+     "kind": "held",
+     "truth": "37:126",
+     "cited": "26:26",
+     "status": "verbatim",
+     "agreement": 1
+    }
+   ],
+   "cue": [
+    12,
+    12
+   ],
+   "fillerTextual": 2,
+   "fillerAllusion": 9,
+   "allusionSentences": 18,
+   "fillerExamples": [
+    {
+     "seed": 910,
+     "status": "partial",
+     "cited": "79:25-26",
+     "spoken": "in this life or the next this is a"
+    },
+    {
+     "seed": 910,
+     "status": "partial",
+     "cited": "abudawud:924",
+     "spoken": "in the past and in the present the messenger ofallah"
+    }
+   ]
+  },
+  {
+   "seed": 911,
+   "rate": 0.2,
+   "words": 11097,
+   "vq": [
+    40,
+    39,
+    39
+   ],
+   "vh": [
+    60,
+    59,
+    59
+   ],
+   "held": [
+    50,
+    21,
+    20,
+    28
+   ],
+   "wrong": [
+    {
+     "seed": 911,
+     "kind": "held",
+     "truth": "74:24",
+     "cited": "28:36",
+     "status": "verbatim",
+     "agreement": 1
+    }
+   ],
+   "cue": [
+    12,
+    11
+   ],
+   "fillerTextual": 0,
+   "fillerAllusion": 12,
+   "allusionSentences": 17,
+   "fillerExamples": []
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "type": "module",
+ "private": true,
+ "name": "athar-ledger",
+ "scripts": {
+  "test": "node --test tests/*.test.mjs && node worker/test.mjs",
+  "eval": "node eval/all.mjs",
+  "build": "bash tools/build_all.sh",
+  "serve": "python3 -m http.server 8788 -d public",
+  "build:core": "python3 tools/build_index.py"
+ }
+}

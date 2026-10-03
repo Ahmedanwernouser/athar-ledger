@@ -1,0 +1,115 @@
+{
+ "_note": "REAL text with an external gold standard: the 473 tweets of the QDetect paper (El-Beltagy & Rafea 2021). Counts only; the tweets are not shipped (see eval/README.md). dev = even line index of Tweets_Gold.txt (thresholds were chosen on it), test = odd (held out). Counting rule of the QDetect authors: fragments per tweet, not which ayah.",
+ "engine": {
+  "dev": {
+   "tweets": 237,
+   "tp": 41,
+   "fp": 1,
+   "fn": 5,
+   "tn": 193,
+   "P": 0.976,
+   "R": 0.891,
+   "F": 0.932
+  },
+  "test": {
+   "tweets": 236,
+   "tp": 38,
+   "fp": 1,
+   "fn": 7,
+   "tn": 194,
+   "P": 0.974,
+   "R": 0.844,
+   "F": 0.905
+  },
+  "all": {
+   "tweets": 473,
+   "tp": 79,
+   "fp": 2,
+   "fn": 12,
+   "tn": 387,
+   "P": 0.975,
+   "R": 0.868,
+   "F": 0.919
+  }
+ },
+ "engineWithoutShortFragments": {
+  "dev": {
+   "tweets": 237,
+   "tp": 32,
+   "fp": 0,
+   "fn": 14,
+   "tn": 193,
+   "P": 1,
+   "R": 0.696,
+   "F": 0.821
+  },
+  "test": {
+   "tweets": 236,
+   "tp": 30,
+   "fp": 1,
+   "fn": 15,
+   "tn": 194,
+   "P": 0.968,
+   "R": 0.667,
+   "F": 0.789
+  },
+  "all": {
+   "tweets": 473,
+   "tp": 62,
+   "fp": 1,
+   "fn": 29,
+   "tn": 387,
+   "P": 0.984,
+   "R": 0.681,
+   "F": 0.805
+  }
+ },
+ "engineCountingEverydayDhikr": {
+  "dev": {
+   "tweets": 237,
+   "tp": 43,
+   "fp": 2,
+   "fn": 3,
+   "tn": 192,
+   "P": 0.956,
+   "R": 0.935,
+   "F": 0.945
+  },
+  "test": {
+   "tweets": 236,
+   "tp": 38,
+   "fp": 1,
+   "fn": 7,
+   "tn": 194,
+   "P": 0.974,
+   "R": 0.844,
+   "F": 0.905
+  },
+  "all": {
+   "tweets": 473,
+   "tp": 81,
+   "fp": 3,
+   "fn": 10,
+   "tn": 386,
+   "P": 0.964,
+   "R": 0.89,
+   "F": 0.926
+  }
+ },
+ "hadithTextualCitations": {
+  "dev": 18,
+  "test": 11,
+  "note": "no gold for hadith"
+ },
+ "qdetectPublished_allTweets": {
+  "revisedGold": {
+   "P": 0.989,
+   "R": 0.967,
+   "F": 0.978
+  },
+  "paper": {
+   "P": 0.968,
+   "R": 0.948
+  }
+ }
+}
