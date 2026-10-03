@@ -1,0 +1,26 @@
+{
+ "id": "en-hadith",
+ "title": "English: the nine hadith collections",
+ "domain": "english",
+ "domain_ar": "ترجمة كتب الحديث بالإنجليزية",
+ "lang": "en",
+ "books": {},
+ "passages": 36015,
+ "words": 2911592,
+ "shards": 8,
+ "bytes": 31650989,
+ "index": {
+  "idx2": {
+   "keys": 340180,
+   "postings": 1589799,
+   "bytes": 4880512,
+   "sha256": "6455e33742602ce63063c6c93bd09ed5b6cac312b4afcb8b862c3e23e35d1242"
+  },
+  "idx3": {
+   "keys": 1001973,
+   "postings": 2364778,
+   "bytes": 9739436,
+   "sha256": "2534de1967621c31c86305d241b7a98d0d8857eef516861a7c49156f6663af51"
+  }
+ }
+}
