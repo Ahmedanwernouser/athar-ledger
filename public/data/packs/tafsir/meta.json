@@ -1,0 +1,40 @@
+{
+ "id": "tafsir",
+ "title": "تفسير: ابن كثير والجلالين",
+ "domain": "tafsir",
+ "domain_ar": "تفسير",
+ "books": {
+  "ibnkathir": {
+   "title": "تفسير القرآن العظيم",
+   "author": "ابن كثير (ت ٧٧٤هـ)"
+  },
+  "jalalayn": {
+   "title": "تفسير الجلالين",
+   "author": "المحلي (ت ٨٦٤هـ) والسيوطي (ت ٩١١هـ)"
+  }
+ },
+ "passages": 25078,
+ "words": 1742152,
+ "shards": 5,
+ "bytes": 32581211,
+ "chunk_words": 110,
+ "overlap_words": 20,
+ "index": {
+  "idx2": {
+   "keys": 605205,
+   "postings": 1404859,
+   "bytes": 5835756,
+   "sha256": "9a016fea8e6e828b7975284f327cb2c9cf11572d97bcde5aa7c686065db7ade4"
+  },
+  "idx3": {
+   "keys": 1024945,
+   "postings": 1567293,
+   "bytes": 8259324,
+   "sha256": "1d3b9480e8c1689331499d9cafdf7142404a9c945d6fc7ea670a176264f679c9"
+  }
+ },
+ "page_refs": {
+  "ibnkathir": true
+ },
+ "editorial_words_left_out": 94
+}
