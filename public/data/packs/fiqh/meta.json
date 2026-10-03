@@ -1,0 +1,41 @@
+{
+ "id": "fiqh",
+ "title": "فقه: بداية المجتهد وعمدة الفقه",
+ "domain": "fiqh",
+ "domain_ar": "فقه",
+ "books": {
+  "bidaya": {
+   "title": "بداية المجتهد ونهاية المقتصد",
+   "author": "ابن رشد الحفيد (ت ٥٩٥هـ)"
+  },
+  "umda": {
+   "title": "عمدة الفقه",
+   "author": "ابن قدامة المقدسي (ت ٦٢٠هـ)"
+  }
+ },
+ "passages": 4214,
+ "words": 340924,
+ "shards": 1,
+ "bytes": 7018800,
+ "chunk_words": 110,
+ "overlap_words": 20,
+ "index": {
+  "idx2": {
+   "keys": 167479,
+   "postings": 304380,
+   "bytes": 1446168,
+   "sha256": "2cffa045c70b6c5e051d5df57782063cde8826b5edadedbad6ec4d2933f81237"
+  },
+  "idx3": {
+   "keys": 262797,
+   "postings": 321409,
+   "bytes": 1956816,
+   "sha256": "0c69982cfbb45b9f1acfd64d3aef62daf6fe17b2902e751df08ec72fb9f32998"
+  }
+ },
+ "page_refs": {
+  "bidaya": true,
+  "umda": true
+ },
+ "editorial_words_left_out": 6
+}

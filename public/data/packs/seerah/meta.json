@@ -1,0 +1,41 @@
+{
+ "id": "seerah",
+ "title": "سيرة: سيرة ابن هشام وزاد المعاد",
+ "domain": "seerah",
+ "domain_ar": "سيرة",
+ "books": {
+  "ibnhisham": {
+   "title": "السيرة النبوية",
+   "author": "ابن هشام (ت ٢١٣هـ)"
+  },
+  "zadmaad": {
+   "title": "زاد المعاد في هدي خير العباد",
+   "author": "ابن قيم الجوزية (ت ٧٥١هـ)"
+  }
+ },
+ "passages": 9029,
+ "words": 722447,
+ "shards": 2,
+ "bytes": 14690048,
+ "chunk_words": 110,
+ "overlap_words": 20,
+ "index": {
+  "idx2": {
+   "keys": 363027,
+   "postings": 632323,
+   "bytes": 3079796,
+   "sha256": "05eea474fd12b19e248490698d84be5c30e33f321c49e8e2e8200e61678dec4e"
+  },
+  "idx3": {
+   "keys": 536663,
+   "postings": 661200,
+   "bytes": 4005728,
+   "sha256": "f4b11c7e51a256891849fe008bd5e6089412830ea6a43af3e1487e1d7d8821d1"
+  }
+ },
+ "page_refs": {
+  "ibnhisham": true,
+  "zadmaad": true
+ },
+ "editorial_words_left_out": 16
+}
