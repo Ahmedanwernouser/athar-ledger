@@ -14,4 +14,4 @@ eval/recordings/*
 # live test: audio never enters the repository, results live on the branch live-results
 eval/live/audio/
 eval/live/out/
-eval/live/out-yt/
+eval/yt/out-yt/

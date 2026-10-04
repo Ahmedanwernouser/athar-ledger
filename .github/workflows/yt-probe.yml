@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["eval/live/youtube_probe.mjs", ".github/workflows/yt-probe.yml"]
+    paths: ["eval/yt/**", ".github/workflows/yt-probe.yml"]
 permissions:
   contents: write
 jobs:
@@ -19,12 +19,12 @@ jobs:
       - name: probe
         env:
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
-        run: node eval/live/youtube_probe.mjs
+        run: node eval/yt/probe.mjs
       - name: publish results
         if: always()
         run: |
           set -e
-          cp -r eval/live/out-yt /tmp/out
+          cp -r eval/yt/out-yt /tmp/out
           git config user.name "yt-probe"
           git config user.email "yt-probe@users.noreply.github.com"
           git checkout --orphan yt-probe-results
