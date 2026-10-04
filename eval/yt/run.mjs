@@ -44,18 +44,22 @@ const page = async (url) => (await realFetch(url, { headers: { "Accept-Language"
 const trueLength = async (id) => { try { const m = /"lengthSeconds":"(\d+)"/.exec(await page("https://www.youtube.com/watch?v=" + id + "&hl=en")); return m ? +m[1] : null; } catch { return null; } };
 const askLength = async (id) => { const r = await globalThis.fetch("https://w.dev/yt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video: id }) }); const j = await r.json().catch(() => ({})); return j.seconds ?? j.error; };
 try {
-  const cand = [];
+  const cand = [], printed = new Map();
   const pl = await page("https://www.youtube.com/playlist?list=PLZbyN8Td38XgDoErS9Ca3jIxwVsGKizxT&hl=en");
   cand.push(...[...new Set([...pl.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map(m => m[1]))].slice(0, 6));
   for (const q of ["محاضرة كاملة الشيخ الحويني", "خطبة الجمعة كاملة", "شرح الأربعين النووية الدرس الأول"]) {
     const sr = await page("https://www.youtube.com/results?search_query=" + encodeURIComponent(q) + "&sp=EgIYAg%253D%253D&hl=en");
     cand.push(...[...new Set([...sr.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map(m => m[1]))].slice(0, 5));
+    // the results page prints each video's length ("simpleText":"1:02:33") inside its own entry
+    for (const m of sr.matchAll(/"videoRenderer":\{"videoId":"([A-Za-z0-9_-]{11})"[\s\S]{0,6000}?"lengthText":\{[\s\S]{0,300}?"simpleText":"([0-9:]+)"/g)) {
+      const p = m[2].split(":").map(Number); printed.set(m[1], p.reduce((a, b) => a * 60 + b, 0));
+    }
   }
   const rows = []; let picked = false;
   for (const id of [...new Set([VIDEOS[0], ...cand])].slice(0, 22)) {
-    const truth = await trueLength(id), got = await askLength(id);
+    const truth = (await trueLength(id)) ?? printed.get(id) ?? null, got = await askLength(id);
     rows.push({ id, truth, worker: got, diff: typeof got === "number" && truth ? got - truth : null });
-    if (!picked && truth >= 660 && truth <= 2400 && typeof got === "number" && Math.abs(got - truth) <= 5) { VIDEOS.push(id); picked = true; }
+    if (!picked && typeof got === "number" && got >= 660 && got <= 2400 && (truth == null || Math.abs(got - truth) <= 5)) { VIDEOS.push(id); picked = true; }
   }
   save("lengths.json", rows);
   const num = rows.filter(r => r.diff != null);
