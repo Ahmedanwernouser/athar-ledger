@@ -278,7 +278,9 @@ async function ytPost(cfg, body, signal) {
   };
   let { r, j } = await post();
   // the Worker's counters take one write a second, and a model can be busy for a moment: one patient retry
-  if (r.status === 503 || (r.status === 429 && j && j.error === "upstream_busy")) { await sleep(r.status === 503 ? 2000 : 8000, signal); ({ r, j } = await post()); }
+  if (r.status === 503 || (r.status === 429 && j && j.error === "upstream_busy") || (r.status === 502 && j && j.error === "upstream")) {
+    await sleep(cfg.ytRetryMs ?? (r.status === 503 ? 2000 : r.status === 502 ? 15000 : 8000), signal); ({ r, j } = await post());
+  }
   if (!r.ok) throw errorOf(r, j);
   if (!j || typeof j !== "object") throw new AsrError("bad_response");
   return j;
@@ -318,7 +320,13 @@ export async function transcribeYoutube(video, language, cfg, onProgress = () =>
   for (let k = 0; k < plan.length; k++) {
     onProgress(0.05 + 0.95 * (k / plan.length), { code: "yt.part", args: [k + 1, plan.length] });
     if (k) await sleep(1100, signal);                       // the Worker's counter cannot take two writes within a second
-    const j = await ytPost(cfg, { video, from: plan[k].from, to: plan[k].to, language: language === "en" ? "en" : "ar" }, signal);
+    let j;
+    try { j = await ytPost(cfg, { video, from: plan[k].from, to: plan[k].to, language: language === "en" ? "en" : "ar" }, signal); }
+    catch (e) {
+      // a later window failed: what was transcribed so far is kept and said to be partial, not thrown away
+      if (!k || !words.length || (e instanceof AsrError && e.code === "aborted")) throw e;
+      return { words, provider: "gemini", model, seconds, approx: true, truncated, partial: { upTo: plan[k].cut, why: e instanceof AsrError ? e : new AsrError("unknown") } };
+    }
     if (typeof j.model === "string" && j.model) model = j.model.slice(0, 80);
     if (j.truncated) truncated = true;
     const part = wordsFromWhisper(j, 0, null).filter(w => w.start != null);

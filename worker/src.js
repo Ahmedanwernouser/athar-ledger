@@ -536,7 +536,8 @@ const YT_MAX_SECONDS = 6 * 3600;
 const YT_AUDIO_TOKENS_PER_SECOND = 32;
 const YT_TIMEOUT_MS = 170_000;
 const YT_COUNT_TIMEOUT_MS = 20_000;
-const YT_DEF_MODELS = "gemini-3.8-flash,gemini-3.5-flash";
+const YT_DEF_MODELS = "gemini-3.8-flash,gemini-3.5-flash,gemini-2.5-flash";
+const YT_ROUNDS_WAIT_MS = [0, 4000, 10000];   // "high demand" (503) is common and brief: the models are tried up to three times round
 const ytModels = (env) => { const m = String(env.GEMINI_YT_MODELS || YT_DEF_MODELS).split(",").map((x) => x.trim()).filter((x) => /^gemini-[a-z0-9.-]{1,40}$/.test(x)); return m.length ? m.slice(0, 4) : YT_DEF_MODELS.split(","); };
 const ytUrl = (id) => "https://www.youtube.com/watch?v=" + id;
 const ytClock = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -644,7 +645,9 @@ async function ytRoute(req, env, cors) {
   const left = { "X-Athar-Remaining": String(Math.max(cap - g.used[0], 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1], 0)) };
 
   let lastStatus = 0, retry = null;
-  for (const model of models) {
+  for (const wait of YT_ROUNDS_WAIT_MS) {
+   if (wait) { if (lastStatus !== 503 && lastStatus !== 500 && lastStatus !== 0) break; await sleep(env.YT_NO_WAIT ? 0 : wait); }
+   for (const model of models) {
     try {
       const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:generateContent`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_TIMEOUT_MS),
         body: JSON.stringify(ytBody(model, id, from, to, lang)) });
@@ -658,6 +661,7 @@ async function ytRoute(req, env, cors) {
       if (!out) { lastStatus = 0; continue; }
       return new Response(JSON.stringify(out), { status: 200, headers: { ...cors, ...left, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
     } catch { lastStatus = 0; }
+   }
   }
   // never forward the upstream body
   if (lastStatus === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...left, ...(retry ? { "Retry-After": retry } : {}) });

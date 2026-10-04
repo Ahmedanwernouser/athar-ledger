@@ -54,3 +54,23 @@ test("the whole path against a stand-in Worker: length first, then each window, 
     await assert.rejects(transcribeYoutube("1foxMsRygJg", "ar", {}), e => e instanceof AsrError && e.code === "disabled");
   } finally { globalThis.fetch = real; }
 });
+test("a later window that fails after one more try: the part already transcribed is kept and marked partial", async () => {
+  const real = globalThis.fetch; let n = 0;
+  const reply = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
+  globalThis.fetch = async (url, init) => {
+    const b = JSON.parse(init.body);
+    if (b.from == null) return reply({ seconds: 1500 });
+    if (b.from === 0) return reply({ words: [{ word: "كلام", start: 1, end: 2 }, { word: "أول", start: 2, end: 3 }], model: "gemini-x" });
+    n++; return reply({ error: "upstream", upstream_status: 503 }, 502);
+  };
+  try {
+    const r = await transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example", ytRetryMs: 0 });
+    assert.equal(n, 2, "the failed window is asked once more");
+    assert.equal(said(r.words), "كلام أول");
+    assert.equal(r.partial.upTo, 600);
+    assert.equal(r.partial.why.code, "upstream");
+    // the FIRST window failing is a failure, not an empty partial result
+    globalThis.fetch = async (url, init) => (JSON.parse(init.body).from == null ? reply({ seconds: 1500 }) : reply({ error: "upstream" }, 502));
+    await assert.rejects(transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example", ytRetryMs: 0 }), e => e.code === "upstream");
+  } finally { globalThis.fetch = real; }
+});

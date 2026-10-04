@@ -565,7 +565,7 @@ sec("/llm caps");
 
 sec("/yt: a YouTube video from its link (Gemini)");
 { const yt = (body, o = {}) => new Request("https://w.dev/yt", { method: "POST", headers: { Origin: OK, "Content-Type": "application/json", ...(o.headers || {}) }, body: typeof body === "string" ? body : JSON.stringify(body) });
-  const Y = (o = {}) => baseEnv({ GEMINI_API_KEY: GKEY, ...o });
+  const Y = (o = {}) => baseEnv({ GEMINI_API_KEY: GKEY, YT_NO_WAIT: "1", ...o });
   const VID = "1foxMsRygJg";
   const count = (audio) => () => new Response(JSON.stringify({ totalTokens: 1, promptTokensDetails: [{ modality: "VIDEO", tokenCount: 999 }, { modality: "AUDIO", tokenCount: audio }] }), { status: 200 });
   const pieces = (list, extra = {}) => () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(list) }] }, finishReason: "STOP", ...extra }] }), { status: 200 });
@@ -616,6 +616,12 @@ sec("/yt: a YouTube video from its link (Gemini)");
   { up.impl = () => new Response("quota " + GKEY, { status: 429, headers: { "Retry-After": "30" } }); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y());
     ok(r.status === 429 && r.j.error === "upstream_busy" && r.h.get("Retry-After") === "30", "/yt every model busy -> upstream_busy with the wait"); }
   { up.impl = () => new Response("boom " + GKEY, { status: 500 }); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 502 && r.j.error === "upstream" && r.j.upstream_status === 500, "/yt upstream failure: status only, never the body"); }
+  { up.calls = []; let n = 0; up.impl = () => (++n <= 4 ? new Response("high demand " + GKEY, { status: 503 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    const env = Y(); const r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && up.calls.length === 5 && env.CAP.m.get("d:2026-10-02") === "1", "/yt every model overloaded once: a second round answers, and the window is still one cap unit"); }
+  { up.calls = []; up.impl = () => new Response("high demand", { status: 503 }); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y());
+    ok(r.status === 502 && up.calls.length === 9 && r.j.upstream_status === 503, "/yt three rounds over three models, then it gives up with the status"); }
+  { up.calls = []; up.impl = () => new Response("quota", { status: 429 }); await call(yt({ video: VID, from: 0, to: 600 }), Y()); eq(up.calls.length, 3, "/yt a quota answer is not retried round after round"); }
   { up.impl = () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "not a list" }] } }] }), { status: 200 }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.error, "upstream", "/yt an answer that is not the list -> upstream"); }
   { up.impl = pieces([]); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 200 && r.j.words.length === 0 && r.j.text === "", "/yt a window without speech is an empty transcript, not an error"); }
   { up.impl = pieces([{ t: "00:01", x: "كلام" }], { finishReason: "MAX_TOKENS" }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.truncated, true, "/yt a cut-off answer says so"); }

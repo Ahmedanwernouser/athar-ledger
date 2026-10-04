@@ -421,6 +421,7 @@ async function runYoutube(id) {
   if (!live(run)) return;
   const who = { provider: "gemini-yt", model: res.model }, warnings = [msg("warn.yt", () => transcriberLabel(who))];
   if (res.truncated) warnings.push(msg("warn.yt.cut"));
+  if (res.partial) { const why = asrMsg(res.partial.why), upTo = res.partial.upTo; warnings.push(msg("warn.yt.partial", () => fmtTime(upTo), () => fmtTime(res.seconds), () => say(why))); }
   await runWords(run, res.words, { title: t("yt.title", id), video: id, warnings, transcribers: [who] });
 }
 
