@@ -6,7 +6,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import worker from "../../worker/src.js";
 import { transcribeYoutube } from "../../public/js/asr.js";
-import { loadCorpusWith } from "../lib.mjs";
+import { loadCorpusWith, loadSem } from "../lib.mjs";
+import { fetchVectors } from "../../public/js/sem.js";
 import { analyze } from "../../public/js/engine.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, "out-yt");
@@ -36,6 +37,7 @@ globalThis.fetch = async (url, init = {}) => {
 };
 
 const corpus = await loadCorpusWith(["daif"]);
+const semLocal = await loadSem(corpus);       // the shipped sentence vectors; the speech is embedded by the DEPLOYED Worker below
 const VIDEOS = String(process.env.YT_VIDEOS || "1foxMsRygJg ikgqwDVXs8E").split(/[\s,]+/).filter(Boolean);
 // ---- is the length the Worker reports (countTokens: audio tokens / 32) the real length, for short AND long videos? ----
 // Ground truth: "lengthSeconds" in the video's own watch page, read from this machine. Candidates: the owner's playlist and a
@@ -72,7 +74,19 @@ for (const id of VIDEOS) {
   try {
     const r = await transcribeYoutube(id, "ar", { asrUrl: "https://w.dev" }, () => {});
     const words = r.words;
-    const res = analyze(words, corpus);
+    let res = analyze(words, corpus), semNote = "sentence vectors: not tried";
+    // what the page does next: the stretches after cues that found no text go to the deployed Worker's /embed, then the analysis is repeated
+    if (semLocal && process.env.LIVE_WORKER && process.env.LIVE_ORIGIN) {
+      const want = new Set(); analyze(words, corpus, { sem: { want } });
+      const vecs = want.size ? await fetchVectors([...want], { url: process.env.LIVE_WORKER, model: semLocal.index.model, dim: semLocal.index.dim, headers: { Origin: process.env.LIVE_ORIGIN } }) : new Map();
+      semNote = `sentence vectors: ${want.size} stretches asked, ${vecs.size} answered by the deployed Worker`;
+      if (vecs.size) {
+        const before = res.ledger.filter(e => e.suggestions || e.status === "meaning").map(e => (e.suggestions || e.candidates || []).slice(0, 3).map(c => c.label).join(" / "));
+        res = analyze(words, corpus, { sem: { index: semLocal.index, lookup: t => vecs.get(t) || null } });
+        const after = res.ledger.filter(e => e.suggestions || e.status === "meaning").map(e => `${Math.round(e.start)}s «${e.spoken.slice(0, 70)}» -> ${(e.suggestions || e.candidates || []).slice(0, 3).map(c => c.label + " (" + c.via + ")").join(" / ")}`);
+        semNote += `; suggestions before: ${before.join(" || ") || "-"}; after: ${after.join(" || ") || "-"}`;
+      }
+    }
     save(`${id}.transcript.txt`, words.map(w => w.w).join(" "));
     save(`${id}.words.json`, { video: id, seconds: r.seconds, model: r.model, truncated: r.truncated, words });
     save(`${id}.ledger.json`, res.ledger.map(e => ({ start: e.start, status: e.status, cue: e.cue, spoken: e.spoken, source: e.source && e.source.label, agreement: e.agreement, weakOnly: e.weakOnly, weakBooks: (e.weakBooks || []).map(w => w.label), grades: (e.spokenGrades || []).map(g => g.kind + ": " + g.text), attribution: e.attribution && e.attribution.code })));
@@ -80,6 +94,7 @@ for (const id of VIDEOS) {
     say(`${id}: ${r.seconds} s, ${words.length} words, model ${r.model}, ${Math.round((Date.now() - t0) / 1000)} s of work, ${upstream.length} upstream calls (${upstream.map(u => u.status).join(" ")}), ` +
       `last word at ${words.length ? words.at(-1).start : "-"} s, ${back} words out of time order, ${r.partial ? "PARTIAL up to " + r.partial.upTo + " s (" + r.partial.why.code + "), " : "complete, "}${res.ledger.length} ledger entries: ` +
       res.ledger.map(e => `${Math.round(e.start)}s ${e.status}${e.source ? " " + e.source.label : ""}`).join(" | "));
+    say(`${id}: ${semNote}`);
   } catch (e) { say(`${id}: FAILED ${e && e.code ? e.code + " " + (e.detail || "") : e && e.message}; upstream ${JSON.stringify(upstream)}`); }
 }
 // ---- the DEPLOYED Worker, asked as the site asks it (its own key, its own counters): the length, then the first window ----

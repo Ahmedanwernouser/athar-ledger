@@ -67,12 +67,12 @@ export function unpackVectors(b64, n, dim) {
  * The vectors of `texts`, asked from the Worker in batches. -> Map text -> Int8Array (texts that could not be embedded are
  * simply absent: the engine then orders their candidates as it did before). Never throws.
  */
-export async function fetchVectors(texts, { url, model, dim, signal = null, batch = 48 }) {
+export async function fetchVectors(texts, { url, model, dim, signal = null, batch = 48, headers = null }) {
   const out = new Map(), uniq = [...new Set(texts)];
   for (let i = 0; i < uniq.length; i += batch) {
     const part = uniq.slice(i, i + batch);
     try {
-      const r = await fetch(url.replace(/\/+$/, "") + "/embed", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texts: part, kind: "q", model, dim }), signal });
+      const r = await fetch(url.replace(/\/+$/, "") + "/embed", { method: "POST", headers: { "Content-Type": "application/json", ...(headers || {}) }, body: JSON.stringify({ texts: part, kind: "q", model, dim }), signal });
       if (!r.ok) break;
       const j = await r.json();
       if (j.model !== model || j.n !== part.length || j.dim !== dim) break;
