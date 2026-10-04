@@ -10,3 +10,7 @@ __pycache__/
 # team voice recordings stay local unless the team decides to publish them
 eval/recordings/*
 !eval/recordings/.gitkeep
+
+# live test: audio never enters the repository, results live on the branch live-results
+eval/live/audio/
+eval/live/out/

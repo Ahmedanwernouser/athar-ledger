@@ -1,0 +1,12 @@
+{
+ "_note": "Lecture audio for the live test. Either a fixed item {id, file?} from archive.org, or a search {q}. Each clip is cut to `minutes` starting at `skip` seconds. The audio is used on the test machine only and is never committed.",
+ "skip": 180,
+ "minutes": 12,
+ "items": [
+  { "name": "lec1", "q": "title:(خطبة) AND creator:(كشك)" },
+  { "name": "lec2", "q": "title:(محمد حسان)" },
+  { "name": "lec3", "q": "title:(الشعراوي) AND title:(تفسير OR خواطر)" },
+  { "name": "lec4", "q": "title:(رياض الصالحين) AND title:(شرح)" },
+  { "name": "lec5", "q": "title:(النابلسي)" }
+ ]
+}

@@ -1,0 +1,45 @@
+# Live test of the transcription path against the real provider APIs, on real audio.
+# The keys are repository secrets; they are never printed and never written to a file.
+# Results go to the branch `live-results` (transcripts and ledgers only, never audio).
+name: live-asr
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["eval/live/**", ".github/workflows/live-asr.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: live-asr
+  cancel-in-progress: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: ffmpeg
+        run: which ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+      - name: audio
+        run: node eval/live/fetch_audio.mjs
+      - name: transcribe
+        env:
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: node eval/live/run.mjs
+      - name: publish results
+        if: always()
+        run: |
+          set -e
+          cp -r eval/live/out /tmp/out
+          git config user.name "live-asr"
+          git config user.email "live-asr@users.noreply.github.com"
+          git checkout --orphan live-results
+          git rm -rfq --cached .
+          rm -rf live && mkdir live && cp -r /tmp/out/. live/
+          echo "${GITHUB_SHA}" > live/COMMIT
+          git add -f live
+          git commit -qm "live results for ${GITHUB_SHA}"
+          git push -f origin live-results
