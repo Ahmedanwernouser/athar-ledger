@@ -1,4 +1,4 @@
-# Development probe: sentence embeddings for quotations by meaning (see eval/embed/probe.mjs).
+# The evaluation's embedding cache (see eval/embed/cache.mjs): vectors for the texts in eval/embed/requests/.
 # It asks the deployed Worker's /embed route, as the site does; no secret is used. Results go to the branch `embed-results`.
 name: embed-probe
 on:
@@ -23,7 +23,7 @@ jobs:
         env:
           LIVE_WORKER: https://athar-asr.athar-7399079d.workers.dev
           LIVE_ORIGIN: https://athar-ledger.pages.dev
-        run: node eval/embed/probe.mjs
+        run: node eval/embed/cache.mjs
       - name: publish results
         if: always()
         run: |
