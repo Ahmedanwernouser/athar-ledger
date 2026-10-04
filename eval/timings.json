@@ -972,7 +972,7 @@
  },
  "english": {
   "909/0": {
-   "seconds": 17.1,
+   "seconds": 17.8,
    "words": 11659
   },
   "910/0": {
@@ -980,19 +980,19 @@
    "words": 11597
   },
   "911/0": {
-   "seconds": 12,
+   "seconds": 12.3,
    "words": 11476
   },
   "909/0.1": {
-   "seconds": 9.8,
+   "seconds": 10.4,
    "words": 11518
   },
   "910/0.1": {
-   "seconds": 9.3,
+   "seconds": 9.1,
    "words": 11431
   },
   "911/0.1": {
-   "seconds": 9.7,
+   "seconds": 9.6,
    "words": 11306
   },
   "909/0.2": {
@@ -1000,18 +1000,18 @@
    "words": 11342
   },
   "910/0.2": {
-   "seconds": 7.3,
+   "seconds": 7.4,
    "words": 11225
   },
   "911/0.2": {
-   "seconds": 7.6,
+   "seconds": 7.4,
    "words": 11097
   }
  },
  "all": {
-  "run.mjs": 173,
-  "books.mjs": 12,
-  "english.mjs": 95,
-  "total": 287
+  "run.mjs": 234,
+  "books.mjs": 15,
+  "english.mjs": 97,
+  "total": 353
  }
 }

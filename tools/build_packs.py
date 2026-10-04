@@ -31,6 +31,12 @@ PACKS = {
         "ibnhisham": ["السيرة النبوية", "ابن هشام (ت ٢١٣هـ)"], "zadmaad": ["زاد المعاد في هدي خير العباد", "ابن قيم الجوزية (ت ٧٥١هـ)"]}},
     "aqeedah": {"title": "عقيدة: الطحاوية والواسطية", "domain": "aqeedah", "domain_ar": "عقيدة", "books": {
         "tahawiyya": ["متن العقيدة الطحاوية", "الطحاوي (ت ٣٢١هـ)"], "wasitiyya": ["العقيدة الواسطية", "ابن تيمية (ت ٧٢٨هـ)"]}},
+    # Books about weak and fabricated hadith. The site searches this pack for EVERY hadith, next to the ordinary collections,
+    # and reports the two answers separately. Each passage may carry "g": the words of the book itself around its own verdict.
+    "daif": {"title": "ضعيف وموضوع: الموضوعات واللآلئ والفوائد والمقاصد وكشف الخفاء", "domain": "hadith-weak", "domain_ar": "ضعيف وموضوع", "weak": True, "books": {
+        "mawduat": ["الموضوعات", "ابن الجوزي (ت ٥٩٧هـ)"], "laali": ["اللآلئ المصنوعة في الأحاديث الموضوعة", "السيوطي (ت ٩١١هـ)"],
+        "fawaid": ["الفوائد المجموعة في الأحاديث الموضوعة", "الشوكاني (ت ١٢٥٠هـ)"], "maqasid": ["المقاصد الحسنة", "السخاوي (ت ٩٠٢هـ)"],
+        "kashf": ["كشف الخفاء ومزيل الإلباس", "العجلوني (ت ١١٦٢هـ)"]}},
 }
 
 PAGE = re.compile(r"PageV(\d+)P(\d+)")
@@ -145,6 +151,25 @@ def chunk(paras, key):
     return [{"t": "b", "r": f"{key}:{i + 1}", "n": " ".join(c["words"]), "h": head(c), "v": c["at"][0], "p": c["at"][1]}
             for i, c in enumerate(out) if len(c["words"]) >= MIN_WORDS]
 
+# The book's own words about a hadith's rank, copied from its text (never worded by this tool): the phrase, with a few words round it.
+VERDICTS = [r"هذا حديث (?:لا يصح|موضوع|باطل|ضعيف|لا اصل له)", r"حديث موضوع", r"لا اصل له", r"موضوع", r"لا يصح", r"لا يثبت", r"باطل", r"ضعيف جدا", r"ضعيف", r"كذاب", r"وضاع", r"متروك", r"منكر"]
+VERDICT_RE = [re.compile(r"(?<![ء-ي])(?:" + v + r")(?![ء-ي])") for v in VERDICTS]      # whole words only ("ضعيفان" is not "ضعيف")
+def verdict(words, before=7, after=11):
+    s = " ".join(words)
+    for rx in VERDICT_RE:
+        m = rx.search(s)
+        if m:
+            k = len(s[:m.start()].split()); j = k + len(m.group(0).split())
+            return " ".join(words[max(0, k - before):j + after])
+    return ""
+
+def add_verdicts(part):
+    """g = the book's own verdict wording in this passage; failing that, in the passage that follows it (an entry is cut into passages)"""
+    for i, x in enumerate(part):
+        w = x["n"].split(); g = verdict(w)
+        if not g and i + 1 < len(part) and part[i + 1]["r"].split(":")[0] == x["r"].split(":")[0]: g = verdict(part[i + 1]["n"].split()[:50])
+        if g: x["g"] = g
+
 def jalalayn():
     out = []
     for x in json.load(open(BOOKS / "jalalayn.json", encoding="utf-8"))["quran"]:
@@ -162,6 +187,7 @@ def main():
                 drop = collections.Counter()
                 paras, usable = parse_openiti(BOOKS / f"{key}.txt", drop, key in NUMBERED)
                 part = chunk(paras, key)
+                if cfg.get("weak"): add_verdicts(part)
                 page_refs[key] = usable; dropped[key] = {k: drop[k] for k in sorted(drop)}
             print(f"  {key}: {len(part)} passages, {sum(len(x['n'].split()) for x in part):,} words"
                   + ("" if key == "jalalayn" else f", pages {'yes' if page_refs[key] else 'NO (cited by heading)'}, distinct pages {len({(x['v'], x['p']) for x in part})}, left out {dropped[key]}"))
@@ -183,14 +209,14 @@ def main():
             blob, nk, npost, dropped = build_index(tuples, n)
             (d / f"idx{n}.bin").write_bytes(blob); size += len(blob)
             stats[f"idx{n}"] = {"keys": nk, "postings": npost, "bytes": len(blob), "sha256": hashlib.sha256(blob).hexdigest()}
-        meta = {"id": pid, "title": cfg["title"], "domain": cfg["domain"], "domain_ar": cfg["domain_ar"],
+        meta = {"id": pid, "title": cfg["title"], "domain": cfg["domain"], "domain_ar": cfg["domain_ar"], "weak": bool(cfg.get("weak")),
                 "books": {k: {"title": v[0], "author": v[1]} for k, v in cfg["books"].items()},
                 "passages": len(P), "words": sum(len(x["n"].split()) for x in P), "shards": len(shards), "bytes": size,
                 "chunk_words": CHUNK, "overlap_words": OVERLAP, "index": stats,
                 # per book: are page references available, and how many words of editorial matter were left out
                 "page_refs": page_refs, "editorial_words_left_out": dropped}
         (d / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
-        manifest.append({k: meta[k] for k in ("id", "title", "domain", "domain_ar", "books", "passages", "words", "bytes")})
+        manifest.append({k: meta[k] for k in ("id", "title", "domain", "domain_ar", "weak", "books", "passages", "words", "bytes")})
         print(f"{pid}: {len(P)} passages, {meta['words']:,} words, {size / 1e6:.1f} MB")
     try: manifest += [m for m in json.load(open(OUT / "packs.json", encoding="utf-8")) if m["id"].startswith("en-")]   # keep the English packs' entries
     except FileNotFoundError: pass

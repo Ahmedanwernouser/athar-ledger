@@ -277,11 +277,17 @@ function drawPacks(list) {
     packs.set(pk.id, p);
     cb.onchange = () => {
       choose(pk.id, cb.checked);
+      if (pk.weak) { const off = new Set(store.get("athar:packs-off", [])); cb.checked ? off.delete(pk.id) : off.add(pk.id); store.set("athar:packs-off", [...off]); }
       if (cb.checked) { S.packNote = null; loadPack(pk.id); }
       else S.packNote = p.state === "none" ? null : msg("pack.unticked", () => packName(pk.id));    // what is loaded stays until the page is reloaded
       $("packAsk").hidden = true; drawPackLabels();
     };
     $("packList").append(lab);
+  }
+  // The books of weak / fabricated hadith are searched for every hadith: they load by themselves unless the reader unticked them
+  for (const pk of list) {
+    const p = packs.get(pk.id);
+    if (pk.weak && p && p.state === "none" && !store.get("athar:packs-off", []).includes(pk.id)) { p.cb.checked = true; choose(pk.id, true); loadPack(pk.id); }
   }
   // packs chosen on an earlier visit are large: they are offered, not downloaded silently
   $("packAsk").hidden = !packsWanted().length;
@@ -755,7 +761,7 @@ const st = statusOf;
 const byTwo = e => !!(e.statusCombined && e.statusCombined !== e.status);
 const pos = e => (S.hasTimes ? e.start ?? 0 : e.wordStart);
 const posEnd = e => (S.hasTimes ? e.end ?? e.start ?? 0 : e.wordEnd + 1);
-const kindOf = e => (e.source && e.source.type === "b" ? t("kind.book", getLang() === "ar" ? e.source.domainAr : e.source.domain) : tOpt("kind." + (e.type || "h")));
+const kindOf = e => (e.source && e.source.type === "b" && !e.weakOnly ? t("kind.book", getLang() === "ar" ? e.source.domainAr : e.source.domain) : tOpt("kind." + (e.type || "h")));
 const titleNow = () => (S.titleKey ? t(S.titleKey) : S.title);
 const sep = () => (getLang() === "ar" ? "، " : ", ");
 const markTitle = e => `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} — ${t("status." + st(e))}${byTwo(e) ? " (" + t("two.tag") + ")" : ""}${e.source ? " — " + srcLabel(e.source, true) : ""}${e.manual ? " — " + t("e.manual") : ""}${e.pass === "t2" ? " — " + t("two.second") : ""}`;
@@ -1085,6 +1091,22 @@ function drawEntry(e) {
   }
   for (const g of (e.spokenGrades || [])) li.append(mixed(el("p", "note " + (g.kind === "weak" ? "warn" : ""), t("e.grade." + (g.kind === "strong" ? "strong" : "weak"), S.hasTimes && g.start != null ? fmtTime(g.start) : "", g.text)), g.text));
   if (src && src.type === "h" && src.matnOnly === false && e.status !== "meaning" && !viaEn) li.append(el("p", "note", t("note.isnad")));
+  // the two answers about a hadith, kept apart: the ordinary books (the source above, or "not found") and the books of weak / fabricated hadith
+  if (e.weakSearched && (e.type === "h" || e.cue === "hadith")) {
+    if (e.weakOnly) li.append(el("p", "note warn", t("e.weak.only")));
+    if (e.weakBooks && e.weakBooks.length) {
+      const box = el("div", "weakbox");
+      for (const w of e.weakBooks) {
+        const row = el("div", "cand"), head = w.label + (w.heading ? ` — ${w.heading}` : "");
+        row.append(mixed(el("p", "note warn", head), head));
+        row.append(w.bookWords ? mixed(el("p", "note", t("e.weak.words", w.bookWords)), w.bookWords) : el("p", "note", t("e.weak.nowords")));
+        box.append(row);
+      }
+      box.append(el("p", "note", t("e.weak.note")));
+      li.append(details(e, "weak", t("e.weak.head", num(e.weakBooks.length)), box));
+      const dd = li.lastChild; if (dd && !S.openState.has(e.key + "/weak")) dd.open = true;
+    } else if (!e.weakOnly) li.append(el("p", "note", t("e.weak.none")));
+  }
 
   const linkOrText = p => { const x = el("li"), label = srcLabel(p); if (p.url) { const a = mixed(el("a", null, label), label); a.href = p.url; a.target = "_blank"; a.rel = "noopener"; x.append(a); } else { x.textContent = label; mixed(x, label); } return x; };
   if (e.parallels && e.parallels.length) { const ul = el("ul"); e.parallels.slice(0, 30).forEach(p => ul.append(linkOrText(p))); li.append(details(e, "parallels", t("e.parallels", num(e.parallels.length)), ul)); }

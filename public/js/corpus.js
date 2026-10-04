@@ -158,7 +158,9 @@ export class Corpus {
     return parts ? { df, parts } : null;
   }
   /** true when at least one BOOK pack (tafsir, fiqh ...) is loaded — translations are not books */
-  hasBooks() { return this.packs.some(p => p.id !== "core" && p.meta.lang !== "en"); }
+  hasBooks() { return this.packs.some(p => p.id !== "core" && p.meta.lang !== "en" && !p.meta.weak); }
+  /** true when the weak / fabricated hadith books are loaded */
+  hasWeak() { return this.packs.some(p => p.meta.weak); }
   /** true when an English pack (translations) is loaded */
   hasEnglish() { return this.packs.some(p => p.meta.lang === "en"); }
   /** permanently excluded from matching and from "by meaning" retrieval */
@@ -322,8 +324,10 @@ export class Corpus {
   /** Qur'an text in Arabic or in an English translation */
   quranLike(pid) { return pid < this.NQ || this.P[pid].r.startsWith("enq:"); }
   isBook(pid) { return this.P[pid].t === "b"; }
-  /** 0 = Qur'an, 1 = hadith collections, 2 = books: the order in which equal matches are preferred */
-  tier(pid) { return this.quranLike(pid) ? 0 : this.isBook(pid) ? 2 : 1; }
+  /** a passage of a book about weak / fabricated hadith (pack "daif"): searched for every hadith, reported on its own */
+  isWeak(pid) { if (pid < this.coreN) return false; for (const pk of this.packs) if (pk.meta.weak && pid >= pk.base && pid < pk.base + pk.n) return true; return false; }
+  /** 0 = Qur'an, 1 = hadith collections, 2 = books, 3 = books of weak / fabricated hadith: the order in which equal matches are preferred */
+  tier(pid) { return this.quranLike(pid) ? 0 : this.isBook(pid) ? (this.isWeak(pid) ? 3 : 2) : 1; }
   /** ids of the first and last ayah of the surah (and translation) that `pid` belongs to */
   quranRange(pid) {
     if (pid < this.NQ) { const s = +this.P[pid].r.split(":")[0]; return [this.surahStart[s], this.surahEnd[s]]; }
@@ -410,6 +414,7 @@ export class Corpus {
       }
       const where = p.p ? ` — ${p.v ? "ج" + arNum(p.v) + " " : ""}ص${arNum(p.p)}` : "";
       return { type: "b", domain: bk.domain, domainAr: bk.domain_ar, collection: key, book: bk.title, author: bk.author, heading: p.h || "",
+        ...(bk.domain === "hadith-weak" ? { weak: true, bookWords: p.g || "" } : {}),
         label: `${bk.title}، ${bk.author}${where}`, short: `${bk.title}${where}`, url: null, ref: p.r };
     }
     const [col, num] = p.r.split(":");

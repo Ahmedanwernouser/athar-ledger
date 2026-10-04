@@ -3,6 +3,7 @@
  "title": "حديث: رياض الصالحين وبلوغ المرام",
  "domain": "hadith",
  "domain_ar": "حديث",
+ "weak": false,
  "books": {
   "riyad": {
    "title": "رياض الصالحين",

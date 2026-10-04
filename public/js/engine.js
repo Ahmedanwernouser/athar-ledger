@@ -313,18 +313,22 @@ export function analyze(words, corpus, options = {}) {
     const perBucket = new Map(), kept = [], bucketBest = new Map();
     for (const cl of clusters) {
       // clusters arrive strongest first: one far weaker than the best in its stretch cannot be the source or a parallel
-      const bb = bucketBest.get(cl.a >> 3);
-      if (bb === undefined) bucketBest.set(cl.a >> 3, cl.score); else if ((cl.agg ?? cl.score) < o.seedShare * bb) continue;
+      // (the books of weak hadith are weighed among themselves, so they can never push an ordinary source out)
+      const bk = (cl.a >> 3) * 2 + (corpus.tier(cl.pid) === 3 ? 1 : 0), bb = bucketBest.get(bk);
+      if (bb === undefined) bucketBest.set(bk, cl.score); else if ((cl.agg ?? cl.score) < o.seedShare * bb) continue;
       // separate quotas for the Qur'an, the hadith collections and books, so a much-quoted verse is never crowded out
       // by the hadith that quote it or by commentaries on it
       const cls = corpus.tier(cl.pid);
-      const k = (cl.a >> 3) * 3 + cls, c = perBucket.get(k) || 0;
-      if (c >= (cls === 2 ? o.perRegionBooks : o.perRegion)) continue;
+      const k = (cl.a >> 3) * 4 + cls, c = perBucket.get(k) || 0;
+      if (c >= (cls >= 2 ? o.perRegionBooks : o.perRegion)) continue;
       perBucket.set(k, c + 1); kept.push(cl);
     }
     clusters.length = 0; clusters.push(...kept);
   }
-  if (clusters.length > o.maxClusters) clusters.length = o.maxClusters;
+  if (clusters.length > o.maxClusters) {
+    const ord = clusters.filter(c => corpus.tier(c.pid) !== 3), wk = clusters.filter(c => corpus.tier(c.pid) === 3);
+    clusters.length = 0; clusters.push(...ord.slice(0, o.maxClusters), ...wk.slice(0, Math.max(20, o.maxClusters >> 2)));
+  }
 
   // ---------- 3) verify each cluster by alignment ----------
   let found = [];
@@ -519,6 +523,11 @@ export function analyze(words, corpus, options = {}) {
   }
 
   // ---------- 4) group overlapping matches into citations ----------
+  // Books about weak and fabricated hadith are searched in parallel with everything else but kept APART: the ordinary
+  // sources are decided exactly as they would be without them, and what the weak books say is attached afterwards
+  // (or, when no ordinary source has the text, becomes a citation of its own, marked weakOnly).
+  const weakFound = corpus.hasWeak() ? found.filter(m => !m.echo && !m.isQ && corpus.isWeak(m.pidA)) : [];
+  if (weakFound.length) found = found.filter(m => !corpus.isWeak(m.pidA));
   const net = m => m.det.inf - m.det.diff - m.det.ins - m.det.del;   // informative words that agree (by sound) minus words that do not
   const textual = m => (m.status === "lead" ? 0 : 1);
   const srank = m => corpus.stableRank(m.pidA);
@@ -578,6 +587,23 @@ export function analyze(words, corpus, options = {}) {
     }
     if (top !== c.best) { c.alts = all.filter(x => x !== top); c.best = top; c.ts = top.ts; c.te = top.te; }
     c.tierOf = tierOf;
+  }
+
+  if (weakFound.length) {
+    const ovShare = (c, m) => Math.max(0, Math.min(c.te, m.te) - Math.max(c.ts, m.ts)) / Math.min(c.te - c.ts, m.te - m.ts);
+    weakFound.sort((x, y) => textual(y) - textual(x) || net(y) - net(x) || rank(y) - rank(x) || y.sum.evidence - x.sum.evidence || srank(x) - srank(y) || x.ts - y.ts || x.ps - y.ps);
+    for (const m of weakFound) {
+      let home = null, best = 0.2;
+      for (const c of cites) { const sh = ovShare(c, m); if (sh > best) { best = sh; home = c; } }
+      if (home) {
+        if (home.best.isQ) continue;                      // a weak-hadith book quoting an ayah says nothing about the ayah
+        const w = home.weak || (home.weak = []);
+        if (w.length < 12 && !w.some(x => x.pidA === m.pidA)) w.push(m);
+      } else if (rank(m) >= 3) {
+        cites.push({ ts: m.ts, te: m.te, best: m, alts: [], others: [], refs: [], colAfter: [], colBefore: [], weakOnly: true, weak: [m] });
+      }
+    }
+    for (const c of cites) if (c.weakOnly) c.tierOf = x => corpus.tier(x.pidA);
   }
 
   // Everyday dhikr whose words are an ayah ("وإنا لله وإنا إليه راجعون" at the end of a condolence) is not a quotation of
@@ -742,11 +768,21 @@ export function analyze(words, corpus, options = {}) {
     const uniq = []; const seenRef = new Set();
     for (const s of sources) if (!seenRef.has(s.ref)) { seenRef.add(s.ref); uniq.push(s); }
     const cue = cueBefore(c.ts);
+    // what the books of weak / fabricated hadith have for this text (each book once, best passage first); the book's own words, never ours
+    const weakBooks = [];
+    for (const m of (c.weak || []).slice().sort((x, y) => rank(y) - rank(x) || y.sum.q - x.sum.q || srank(x) - srank(y))) {
+      // a weak-books passage that only partly shares the words of a text the ordinary books hold well, and says nothing about its rank, is a book merely quoting it
+      if (rank(m) < 3 || (!c.weakOnly && rank(m) <= rank(c.best) && !corpus.describe(m.pidA, m.pidB).bookWords)) continue;
+      const w = corpus.describe(m.pidA, m.pidB);
+      if (weakBooks.some(x => x.collection === w.collection)) continue;
+      weakBooks.push({ ...w, q: +m.sum.q.toFixed(3), status: m.status, statusAr: STATUS[m.status].ar, evidence: +m.sum.evidence.toFixed(1) });
+    }
     const entry = {
       ts: c.ts, te: c.te, wordStart: src[c.ts], wordEnd: src[c.te - 1],
       start: wordTime(c.ts).start ?? null, end: wordTime(c.te - 1).end ?? null,
       spoken: spokenText(c.ts, c.te),
-      type: d.type, status: b.status, statusAr: STATUS[b.status].ar, fidelity: STATUS[b.status].fidelity,
+      type: c.weakOnly ? "h" : d.type, status: b.status, statusAr: STATUS[b.status].ar, fidelity: STATUS[b.status].fidelity,
+      weakBooks, weakOnly: !!c.weakOnly, inNormalBooks: !c.weakOnly, weakSearched: corpus.hasWeak(),
       agreement: +b.sum.q.toFixed(3),
       counts: { exact: b.sum.exact, asr: b.sum.asr + b.sum.join, near: b.sum.near, diff: b.sum.diff, added: b.sum.ins, omitted: b.sum.del },
       evidence: +b.sum.evidence.toFixed(1),
@@ -777,12 +813,15 @@ export function analyze(words, corpus, options = {}) {
       spoken: spokenText(x.ts, x.te), type: x.cue.kind === "quran" ? "q" : x.cue.kind === "hadith" ? "h" : "s",
       status: x.status, statusAr: STATUS[x.status].ar, fidelity: STATUS[x.status].fidelity,
       agreement: null, counts: null, evidence: x.status === "meaning" ? +x.meaning.cands[0].score.toFixed(3) : 0,
-      source: null, parallels: [], inBooks: [], diff: null, cue: x.cue.kind, attribution: null,
+      source: null, parallels: [], inBooks: [], weakBooks: [], weakOnly: false, inNormalBooks: x.status === "meaning", weakSearched: corpus.hasWeak(), diff: null, cue: x.cue.kind, attribution: null,
     };
     if (x.meaning) {
       const list = x.meaning.cands.map(k => ({ ...corpus.describe(k.pid), shared: k.shared, score: +k.score.toFixed(x.meaning.mode === "hybrid" ? 3 : 1),
         via: x.meaning.mode, excerpt: excerpt(corpus, k.pid, k.sharedF) }));
-      if (x.status === "meaning") { e.candidates = list; e.source = list[0]; }
+      if (x.status === "meaning") {
+        e.candidates = list; e.source = list[0];
+        if (list[0].weak) { e.weakOnly = true; e.inNormalBooks = false; e.weakBooks = [list[0]]; e.type = "h"; }
+      }
       else { e.suggestions = list.slice(0, 5); e.evidence = 0; }   // closest passages: a search hint, not a match
     }
     if (x.cue.kind === "saying") {

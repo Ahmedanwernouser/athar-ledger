@@ -2,12 +2,12 @@
 
 This folder holds two different kinds of material. They do NOT share one licence.
 
-## 1. Arabic book packs: `hadith2/`, `tafsir/`, `fiqh/`, `seerah/`, `aqeedah/`
+## 1. Arabic book packs: `hadith2/`, `tafsir/`, `fiqh/`, `seerah/`, `aqeedah/`, `daif/` (books of weak and fabricated hadith)
 
 Derived from the **OpenITI corpus** (Open Islamicate Texts Initiative, https://github.com/OpenITI,
 release record https://zenodo.org/records/10007820), published under
 **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)**.
-OpenITI's texts were digitised from al-Maktaba al-Shamela; the works themselves are classical (authors d. 213–911 AH).
+OpenITI's texts were digitised from al-Maktaba al-Shamela; the works themselves are classical (authors d. 213–1250 AH).
 
 - **Attribution**: OpenITI must be credited (done in the site footer and here).
 - **NonCommercial**: this data may not be used for commercial purposes.

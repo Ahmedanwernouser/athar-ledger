@@ -3,6 +3,7 @@
  "title": "تفسير: ابن كثير والجلالين",
  "domain": "tafsir",
  "domain_ar": "تفسير",
+ "weak": false,
  "books": {
   "ibnkathir": {
    "title": "تفسير القرآن العظيم",

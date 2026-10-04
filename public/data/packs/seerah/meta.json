@@ -3,6 +3,7 @@
  "title": "سيرة: سيرة ابن هشام وزاد المعاد",
  "domain": "seerah",
  "domain_ar": "سيرة",
+ "weak": false,
  "books": {
   "ibnhisham": {
    "title": "السيرة النبوية",

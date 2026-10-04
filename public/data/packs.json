@@ -4,6 +4,7 @@
   "title": "حديث: رياض الصالحين وبلوغ المرام",
   "domain": "hadith",
   "domain_ar": "حديث",
+  "weak": false,
   "books": {
    "riyad": {
     "title": "رياض الصالحين",
@@ -23,6 +24,7 @@
   "title": "تفسير: ابن كثير والجلالين",
   "domain": "tafsir",
   "domain_ar": "تفسير",
+  "weak": false,
   "books": {
    "ibnkathir": {
     "title": "تفسير القرآن العظيم",
@@ -42,6 +44,7 @@
   "title": "فقه: بداية المجتهد وعمدة الفقه",
   "domain": "fiqh",
   "domain_ar": "فقه",
+  "weak": false,
   "books": {
    "bidaya": {
     "title": "بداية المجتهد ونهاية المقتصد",
@@ -61,6 +64,7 @@
   "title": "سيرة: سيرة ابن هشام وزاد المعاد",
   "domain": "seerah",
   "domain_ar": "سيرة",
+  "weak": false,
   "books": {
    "ibnhisham": {
     "title": "السيرة النبوية",
@@ -80,6 +84,7 @@
   "title": "عقيدة: الطحاوية والواسطية",
   "domain": "aqeedah",
   "domain_ar": "عقيدة",
+  "weak": false,
   "books": {
    "tahawiyya": {
     "title": "متن العقيدة الطحاوية",
@@ -93,6 +98,38 @@
   "passages": 129,
   "words": 7177,
   "bytes": 170028
+ },
+ {
+  "id": "daif",
+  "title": "ضعيف وموضوع: الموضوعات واللآلئ والفوائد والمقاصد وكشف الخفاء",
+  "domain": "hadith-weak",
+  "domain_ar": "ضعيف وموضوع",
+  "weak": true,
+  "books": {
+   "mawduat": {
+    "title": "الموضوعات",
+    "author": "ابن الجوزي (ت ٥٩٧هـ)"
+   },
+   "laali": {
+    "title": "اللآلئ المصنوعة في الأحاديث الموضوعة",
+    "author": "السيوطي (ت ٩١١هـ)"
+   },
+   "fawaid": {
+    "title": "الفوائد المجموعة في الأحاديث الموضوعة",
+    "author": "الشوكاني (ت ١٢٥٠هـ)"
+   },
+   "maqasid": {
+    "title": "المقاصد الحسنة",
+    "author": "السخاوي (ت ٩٠٢هـ)"
+   },
+   "kashf": {
+    "title": "كشف الخفاء ومزيل الإلباس",
+    "author": "العجلوني (ت ١١٦٢هـ)"
+   }
+  },
+  "passages": 12998,
+  "words": 1096076,
+  "bytes": 19690245
  },
  {
   "id": "en-quran",

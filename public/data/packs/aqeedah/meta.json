@@ -3,6 +3,7 @@
  "title": "عقيدة: الطحاوية والواسطية",
  "domain": "aqeedah",
  "domain_ar": "عقيدة",
+ "weak": false,
  "books": {
   "tahawiyya": {
    "title": "متن العقيدة الطحاوية",

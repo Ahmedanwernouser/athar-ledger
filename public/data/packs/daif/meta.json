@@ -1,0 +1,57 @@
+{
+ "id": "daif",
+ "title": "ضعيف وموضوع: الموضوعات واللآلئ والفوائد والمقاصد وكشف الخفاء",
+ "domain": "hadith-weak",
+ "domain_ar": "ضعيف وموضوع",
+ "weak": true,
+ "books": {
+  "mawduat": {
+   "title": "الموضوعات",
+   "author": "ابن الجوزي (ت ٥٩٧هـ)"
+  },
+  "laali": {
+   "title": "اللآلئ المصنوعة في الأحاديث الموضوعة",
+   "author": "السيوطي (ت ٩١١هـ)"
+  },
+  "fawaid": {
+   "title": "الفوائد المجموعة في الأحاديث الموضوعة",
+   "author": "الشوكاني (ت ١٢٥٠هـ)"
+  },
+  "maqasid": {
+   "title": "المقاصد الحسنة",
+   "author": "السخاوي (ت ٩٠٢هـ)"
+  },
+  "kashf": {
+   "title": "كشف الخفاء ومزيل الإلباس",
+   "author": "العجلوني (ت ١١٦٢هـ)"
+  }
+ },
+ "passages": 12998,
+ "words": 1096076,
+ "shards": 3,
+ "bytes": 19690245,
+ "chunk_words": 110,
+ "overlap_words": 20,
+ "index": {
+  "idx2": {
+   "keys": 299258,
+   "postings": 845636,
+   "bytes": 3187576,
+   "sha256": "898ad53de4bd01d9d22e49ab286b96cb1b45818baac2128c6e18fbacbb65de6b"
+  },
+  "idx3": {
+   "keys": 521580,
+   "postings": 984454,
+   "bytes": 4576820,
+   "sha256": "c91f8bb8cc1541357c37233dc369897beda58b29bdb2e0562c900e91121a6ecd"
+  }
+ },
+ "page_refs": {
+  "mawduat": true,
+  "laali": true,
+  "fawaid": true,
+  "maqasid": false,
+  "kashf": true
+ },
+ "editorial_words_left_out": 84
+}

@@ -30,6 +30,12 @@ get 0750AH 7c9c84d9f98581470aa2b7f8bee00ae285c5c707 0728IbnTaymiyya/0728IbnTaymi
 get 0325AH 089e665b4958e0f145a46941987fb81cf3dda1b8 0321Tahawi/0321Tahawi.MatnCaqida/0321Tahawi.MatnCaqida.JK000126-ara1 tahawiyya.txt
 get 0700AH 3d8ff4e7b035aaa4ca5dda52c7322645f3401dcf 0676Nawawi/0676Nawawi.RiyadSalihin/0676Nawawi.RiyadSalihin.Shamela0012014-ara1.mARkdown riyad.txt
 get 0875AH 5835c183b8bbf4ea454d5c1be2b168b669403771 0852IbnHajarCasqalani/0852IbnHajarCasqalani.BulughMaram/0852IbnHajarCasqalani.BulughMaram.Shamela0009111-ara1 bulugh.txt
+# ---- books about weak and fabricated hadith (pack "daif"): same pinning ----
+get 0600AH ea4bdc6517a49d07106f223aa0869aa7c21b9589 0597IbnJawzi/0597IbnJawzi.Mawducat/0597IbnJawzi.Mawducat.Shamela0000882-ara1 mawduat.txt
+get 0925AH 4f0f4562d1e13083c593e3a0ca6a19a3eb33805e 0911Suyuti/0911Suyuti.LaaliMasnuca/0911Suyuti.LaaliMasnuca.Shamela0006062-ara1 laali.txt
+get 1275AH d6d3091d7477cc4d2f4cdcd71e5873e90f5d28e8 1255Shawkani/1255Shawkani.FawaidMajmuca/1255Shawkani.FawaidMajmuca.Shamela0002671-ara1 fawaid.txt
+get 0925AH 4f0f4562d1e13083c593e3a0ca6a19a3eb33805e 0902Sakhawi/0902Sakhawi.MaqasidHasana/0902Sakhawi.MaqasidHasana.Shamela0023177-ara1 maqasid.txt
+get 1175AH 2c367f78b779757652ee59df503fdc9312ec2f06 1162IbnMuammadAbuFidaCajluni/1162IbnMuammadAbuFidaCajluni.KashfKhafa/1162IbnMuammadAbuFidaCajluni.KashfKhafa.Shamela0000856-ara1 kashf.txt
 [ -s jalalayn.json ] || curl -fsSL "$Q/ara-jalaladdinalmah.json" -o jalalayn.json
 cd ..
 # ---- English packs: published translations with the same numbering as the Arabic core ----

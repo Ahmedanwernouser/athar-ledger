@@ -3,6 +3,7 @@
  "title": "فقه: بداية المجتهد وعمدة الفقه",
  "domain": "fiqh",
  "domain_ar": "فقه",
+ "weak": false,
  "books": {
   "bidaya": {
    "title": "بداية المجتهد ونهاية المقتصد",
