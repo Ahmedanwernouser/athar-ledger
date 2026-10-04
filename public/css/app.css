@@ -949,3 +949,8 @@ html[dir=rtl] .reader-text[dir=rtl] .rt, .reader-text[dir=rtl] .rt { margin: 0 0
   .foot-in { padding-block: 0; }
   dialog:not([open]) { display: none !important; }
 }
+
+/* the opt-out for sentence-model suggestions: one quiet line under the two ways in */
+.semopt { display: flex; align-items: flex-start; gap: 10px; margin: 14px 2px 0; font-size: .84rem; line-height: 1.7; color: var(--muted); cursor: pointer; }
+.semopt input { flex: none; margin-top: .45em; accent-color: var(--indigo); }
+@media print { .semopt { display: none; } }

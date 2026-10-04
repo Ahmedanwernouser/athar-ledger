@@ -10,7 +10,7 @@ import { fork } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import os from "node:os";
 import path from "node:path";
-import { loadCorpus, EVAL, writeTiming, writeJson } from "./lib.mjs";
+import { loadCorpus, loadSem, EVAL, writeTiming, writeJson } from "./lib.mjs";
 import { buildLecture, asrNoise, asrNoiseP, delNoise, whisperNoise, rng, family, PAR_FAMILY, CUE_H } from "./gen.mjs";
 import { analyze } from "../public/js/engine.js";
 import { tokenizeTranscript, fold, norm, editDistance, wordSim } from "../public/js/text.js";
@@ -21,7 +21,15 @@ const QUICK = ARGS.includes("--quick"), WORKER = ARGS.includes("--worker"), DEV 
 // seed 101 is the DEVELOPMENT lecture (thresholds were tuned on it). The reported run uses three other lectures, and
 // three more ("fresh") that were generated only after everything was fixed.
 const SEEDS = [202, 303, 404], FRESH = [505, 606, 707];
-let corpus = null;
+let corpus = null, sem = null;
+/** the texts whose sentence vectors a run asked for: kept as eval/embed/requests/<name>.json, so the test machine can embed them */
+function writeSemRequests(name, used, missed) {
+  if (!used.length) return;
+  const f = path.join(EVAL, "embed", "requests", name + ".json"), body = JSON.stringify({ kind: "q", texts: [...new Set(used)].sort() }) + "\n";
+  let old = ""; try { old = readFileSync(f, "utf8"); } catch { /* first time */ }
+  if (old !== body) writeFileSync(f, body);
+  if (missed) console.error(`\n*** sentence vectors: ${missed} of ${new Set(used).size} stretches of speech have no vector in eval/embed/cache/${name}.bin — the "sem" rows fall back to the engine's own order for them. Push eval/embed/requests/${name}.json (GitHub Actions embeds it), then: node eval/embed/pull.mjs\n`);
+}
 
 // ---------------- noise conditions ----------------
 // "rate" is the probability that a word is hit in the SIMULATION. It is not the word error rate of any recogniser.
@@ -168,6 +176,8 @@ export const SYSTEMS = {
   notol: () => sysEngine({ tolerant: false }),
   nocues: () => sysEngine({ useCues: false }),
   novec: () => sysEngine({ useVectors: false }),
+  // candidates by meaning ordered with sentence vectors (bge-m3 through the Worker; here from the offline cache, see lib.mjs: loadSem)
+  sem: () => sysEngine(sem ? { sem: { index: sem.index, lookup: sem.lookup } } : {}),
   B0: () => sysExact, B1: () => sysTfidf, B2: () => sysFuzzy,
 };
 
@@ -372,10 +382,10 @@ function jobList() {
   const J = [];
   const add = (group, seed, gen, noise, systems, cost) => J.push({ key: `${group}/${seed}/${noise.join("+")}`, group, seed, gen, noise, systems, cost });
   for (const seed of SEEDS) {
-    for (const nz of ["clean", "std10", "std20", "std30"]) add("main", seed, {}, [nz], ["engine", "notol", "nocues", "novec", "B0", "B1", "B2"], 36);
+    for (const nz of ["clean", "std10", "std20", "std30"]) add("main", seed, {}, [nz], ["engine", "notol", "nocues", "novec", "sem", "B0", "B1", "B2"], 40);
     for (const sh of SHAPES) add("noise", seed, {}, [sh + "10", sh + "20", sh + "30"].concat(sh === "rand" ? ["two30"] : []), ["engine", "B2"], 30);
-    add("parUnseen", seed, { par: "unseen" }, ["clean"], ["engine", "novec"], 22);
-    add("parStrip", seed, { par: "strip" }, ["clean"], ["engine", "novec"], 22);
+    add("parUnseen", seed, { par: "unseen" }, ["clean"], ["engine", "novec", "sem"], 26);
+    add("parStrip", seed, { par: "strip" }, ["clean"], ["engine", "novec", "sem"], 26);
     add("noCue", seed, { cue: "none", trail: false }, ["clean", "std20"], ["engine"], 22);
     add("unseenCue", seed, { cue: "unseen", trail: false }, ["clean", "std20"], ["engine"], 22);
     add("short", seed, { short: true }, ["clean", "std20"], ["engine"], 22);
@@ -414,11 +424,14 @@ function runJob(job) {
       rows.push(row); times.push({ key: `${job.group}/${job.seed}/${nid}/${sid}`, s });
     }
   }
-  return { rows, times };
+  const out = { rows, times, semUsed: sem ? [...sem.used] : [], semMissed: sem ? [...sem.missed] : [] };
+  if (sem) { sem.used.clear(); sem.missed.clear(); }
+  return out;
 }
 
 async function initCorpus() {
   corpus = await loadCorpus();
+  sem = await loadSem(corpus);
   refToPid = new Map(corpus.P.map((p, i) => [(p.t === "q" ? "q" : "") + p.r, i]));
 }
 
@@ -426,7 +439,7 @@ async function initCorpus() {
 if (WORKER) {
   await initCorpus();
   process.on("message", job => { process.send({ key: job.key, out: runJob(job) }); });
-  process.send({ ready: true, info: { N: corpus.N, NQ: corpus.NQ, hasVectors: !!corpus.vec } });
+  process.send({ ready: true, info: { N: corpus.N, NQ: corpus.NQ, hasVectors: !!corpus.vec, sem: sem ? { model: sem.index.model, dim: sem.index.dim, rows: sem.index.rows } : null } });
 } else if (DEV) {
   // Development only (seed 101, never reported): quotations by meaning with a known opener, an unseen opener and no opener,
   // and what the same settings do to speech that quotes nothing. One line per condition; used while changing the engine.
@@ -439,6 +452,8 @@ if (WORKER) {
       const pred = SYSTEMS.engine()(nz.words, lec.blocked), ms = Date.now() - t0;
       const { m, r } = score(pred, lec.items, nz.map, lec.words, false);
       const par = k => r.par.filter(x => x.tx || (x.rank >= 0 && x.rank < k)).length;
+      if (sem) { const r2 = score(SYSTEMS.sem()(nz.words, lec.blocked), lec.items, nz.map, lec.words, false).r, p2 = k => r2.par.filter(x => x.tx || (x.rank >= 0 && x.rank < k)).length;
+        console.log(`${name}/${nid} with sentence vectors: par t1 ${p2(1)} t3 ${p2(3)} t5 ${p2(5)} /${r2.par.length}  fillerMeaning ${r2.fillerMeaning}  (vectors missing for ${sem.missed.size} stretches so far)`); }
       const st = {}; for (const e of pred) st[e.status] = (st[e.status] || 0) + 1;
       console.log(`${name}/${nid} ${ms}ms  par t1 ${par(1)} t3 ${par(3)} t5 ${par(5)} /${r.par.length} (textual ${r.par.filter(x => x.tx).length}, meaning ${r.par.filter(x => x.meaning).length})` +
         `  vq ${m.vq[1]}/${m.vq[0]} vh ${m.vh[1]}/${m.vh[0]} ph ${m.ph[1]}/${m.ph[0]}  CRIT src ${r.critWrongSource} changedVerbatim ${r.critChangedVerbatim} ooc ${r.critOOC}+${r.critOOCverbMost} fillerTextual ${r.critFiller ?? "-"}` +
@@ -446,6 +461,7 @@ if (WORKER) {
     }
   }
   console.log("absent sayings:", JSON.stringify(runAbsent()));
+  if (sem) writeSemRequests("dev", [...sem.used], sem.missed.size);
 } else if (QUICK) {
   await initCorpus();
   const lec = buildLecture(corpus, 101, SIZES, "dev");
@@ -480,11 +496,13 @@ if (WORKER) {
       ch.on("exit", code => { if (code) reject(new Error("worker exited with code " + code)); });
     }
   });
-  const rows = [], times = []; let absent = null;
-  for (const j of jobs) { const o = done.get(j.key); if (!o) throw new Error("job did not finish: " + j.key); if (o.absent) absent = o.absent; else rows.push(...o.rows); times.push(...o.times); }
+  const rows = [], times = [], semUsed = [], semMissed = new Set(); let absent = null;
+  for (const j of jobs) { const o = done.get(j.key); if (!o) throw new Error("job did not finish: " + j.key); if (o.absent) absent = o.absent; else rows.push(...o.rows); times.push(...o.times);
+    if (o.semUsed) semUsed.push(...o.semUsed); for (const t of o.semMissed || []) semMissed.add(t); }
+  writeSemRequests("eval", semUsed, semMissed.size);
   const results = {
     meta: { simulated: true, seeds: SEEDS, freshSeeds: FRESH, devSeed: 101, sizes: SIZES, corpus: info,
-      noise: Object.fromEntries(Object.entries(NOISE).map(([k, v]) => [k, { rate: v.rate, kind: v.kind }])), systems: Object.keys(SYSTEMS),
+      noise: Object.fromEntries(Object.entries(NOISE).map(([k, v]) => [k, { rate: v.rate, kind: v.kind }])), systems: Object.keys(SYSTEMS), sentenceVectors: info && info.sem ? { ...info.sem, stretchesAsked: new Set(semUsed).size, stretchesWithoutVector: semMissed.size } : null,
       cuesInGenerator: { hadith: CUE_H.length, recognisedByEngine: CUE_H.filter(c => findCues(norm(c).split(" ").map(fold)).some(x => x.kind === "hadith")).length } },
     rows, absent,
   };

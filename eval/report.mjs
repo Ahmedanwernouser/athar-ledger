@@ -101,10 +101,15 @@ export function report(res) {
   L.push("| الحالة | النظام | وُجد تطابقًا نصيًّا | أول اقتراح (غير نصي) | **المصدر أولًا** | مجال الثقة ٩٥٪ | ضمن أول ٣ | ضمن أول ٥ | اقتباسات عرف المحرك افتتاحها عبارةَ استشهاد | المصدر أولًا بمعيار العبارة المفتاحية وحدها |");
   L.push("|---|---|---|---|---|---|---|---|---|---|");
   const mrow = (label, sys, m) => m && L.push(`| ${label} | ${sys} | ${ar(m.asTextualMatch)} | ${ar(m.asFirstSuggestion)} | **${ar(m.firstShown)} من ${ar(m.n)}** | ${ci(m.ci95)} | ${ar(m.inFirst3)} | ${ar(m.inFirst5)} | ${ar(m.openerRecognisedAsCue)} | ${ar(m.firstShownByKeyPhraseOnly)} |`);
-  for (const rate of RATES) { mrow(`افتتاح يعرفه المحرك، ضجيج ${P(rate)}`, "هجين (ألفاظ + متجهات)", S.byMeaning.hybrid[rate]); mrow(`افتتاح يعرفه المحرك، ضجيج ${P(rate)}`, "ألفاظ فقط", S.byMeaning.wordsOnly[rate]); }
-  mrow("**افتتاح لا يعرفه المحرك**، نص نظيف", "هجين (ألفاظ + متجهات)", S.byMeaning.unseenOpener.hybrid); mrow("**افتتاح لا يعرفه المحرك**، نص نظيف", "ألفاظ فقط", S.byMeaning.unseenOpener.wordsOnly);
-  mrow("**بلا افتتاح**، نص نظيف", "هجين (ألفاظ + متجهات)", S.byMeaning.noOpener.hybrid); mrow("**بلا افتتاح**، نص نظيف", "ألفاظ فقط", S.byMeaning.noOpener.wordsOnly);
+  const SV = "**متجهات جُمل** (bge-m3) + ألفاظ";
+  for (const rate of RATES) { mrow(`افتتاح يعرفه المحرك، ضجيج ${P(rate)}`, SV, S.byMeaning.sentence[rate]); mrow(`افتتاح يعرفه المحرك، ضجيج ${P(rate)}`, "هجين (ألفاظ + متجهات)", S.byMeaning.hybrid[rate]); mrow(`افتتاح يعرفه المحرك، ضجيج ${P(rate)}`, "ألفاظ فقط", S.byMeaning.wordsOnly[rate]); }
+  mrow("**افتتاح لا يعرفه المحرك**، نص نظيف", SV, S.byMeaning.unseenOpener.sentence); mrow("**افتتاح لا يعرفه المحرك**، نص نظيف", "هجين (ألفاظ + متجهات)", S.byMeaning.unseenOpener.hybrid); mrow("**افتتاح لا يعرفه المحرك**، نص نظيف", "ألفاظ فقط", S.byMeaning.unseenOpener.wordsOnly);
+  mrow("**بلا افتتاح**، نص نظيف", SV, S.byMeaning.noOpener.sentence); mrow("**بلا افتتاح**، نص نظيف", "هجين (ألفاظ + متجهات)", S.byMeaning.noOpener.hybrid); mrow("**بلا افتتاح**، نص نظيف", "ألفاظ فقط", S.byMeaning.noOpener.wordsOnly);
   L.push("");
+  { const sv = S.sentenceVectors;
+    L.push(sv ? `«متجهات جُمل»: ما يفعله الموقع المنشور حين يقدّم وسيطه النموذج — الكلمات التي تلي عبارة الاستشهاد (٩ و١٦ و٢٤ كلمة) تُضمَّن بنموذج ${sv.model} (Cloudflare Workers AI) وتُقارَن بمتجهات نصوص المدونة الأساسية (${ar(sv.rows.toLocaleString("en"))} صفًّا × ${ar(sv.dim)})، ثم تُدمج قوائمها مع قائمة الألفاظ بالرتبة. في هذا التشغيل أُخذت متجهات الكلام من \`eval/embed/cache/\` (ضُمّنت مرة واحدة عبر الوسيط): ${ar(sv.stretchesAsked.toLocaleString("en"))} مقطع كلام، منها ${ar(sv.stretchesWithoutVector)} بلا متجه. «هجين»: المحرك وحده داخل المتصفح (متجهات كلمات مدرَّبة على المدونة)، وهو ما يعمل حين لا وسيط أو حين يطفئ القارئ الخيار.`
+      : "«متجهات جُمل»: الملف `public/data/sem.bin` غير موجود في هذا التشغيل، فالصف يساوي «هجين».");
+    L.push(""); }
   L.push("«افتتاح يعرفه المحرك»: كل اقتباس يبدأ بعبارة مثل «بيّن النبي صلى الله عليه وسلم أن…»، وهذه العبارات موجودة حرفيًّا في قائمة عبارات الاستشهاد في المحرك. «افتتاح لا يعرفه المحرك»: استُبدل الفعل بفعل غير موجود في القائمة (وضّح، نبّه، ذكر، أرشدنا، حثّ، منع…). «بلا افتتاح»: حُذفت العبارة كلها.\n");
 
   L.push("## أشكال ضجيج أخرى (محاكاة)\n");

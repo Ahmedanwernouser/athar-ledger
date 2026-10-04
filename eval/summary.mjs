@@ -83,14 +83,15 @@ const RATE = { clean: 0, std10: 10, std20: 20, std30: 30 };
 export function summarizeRun(res) {
   const rows = (group, noise, system) => res.rows.filter(r => r.group === group && r.noise === noise && r.system === system);
   const S = { seeds: res.meta.seeds, lectures: res.meta.seeds.length, itemsPerLecture: res.meta.sizes, corpusPassages: res.meta.corpus.N,
-    hadithQuoteLengthWordsInMainTables: "8–35", perNoise: {}, byMeaning: { hybrid: {}, wordsOnly: {} } };
+    hadithQuoteLengthWordsInMainTables: "8–35", perNoise: {}, byMeaning: { hybrid: {}, wordsOnly: {}, sentence: {} }, sentenceVectors: res.meta.sentenceVectors || null };
   for (const [nid, rate] of Object.entries(RATE)) {
     S.perNoise[rate] = Object.fromEntries(res.meta.systems.map(sys => [sys, block(rows("main", nid, sys))]).filter(x => x[1]));
     S.byMeaning.hybrid[rate] = meaning(rows("main", nid, "engine"));
     S.byMeaning.wordsOnly[rate] = meaning(rows("main", nid, "novec"));
+    S.byMeaning.sentence[rate] = meaning(rows("main", nid, "sem"));
   }
-  S.byMeaning.unseenOpener = { hybrid: meaning(rows("parUnseen", "clean", "engine")), wordsOnly: meaning(rows("parUnseen", "clean", "novec")) };
-  S.byMeaning.noOpener = { hybrid: meaning(rows("parStrip", "clean", "engine")), wordsOnly: meaning(rows("parStrip", "clean", "novec")) };
+  S.byMeaning.unseenOpener = { hybrid: meaning(rows("parUnseen", "clean", "engine")), wordsOnly: meaning(rows("parUnseen", "clean", "novec")), sentence: meaning(rows("parUnseen", "clean", "sem")) };
+  S.byMeaning.noOpener = { hybrid: meaning(rows("parStrip", "clean", "engine")), wordsOnly: meaning(rows("parStrip", "clean", "novec")), sentence: meaning(rows("parStrip", "clean", "sem")) };
   // other noise shapes (engine and B2)
   S.noiseConditions = {};
   for (const nid of Object.keys(res.meta.noise)) {
@@ -173,10 +174,11 @@ export function headline(S) {
       saidWordForWord_labelledVerbatim: l.saidWordForWord.labelledVerbatim, saidWordForWord_downgradedToPartial_priceOfStrictRule: l.saidWordForWord.downgradedToPartial,
       wordingChanged_labelledPartial: l.wordingChanged.labelledPartial, wordingChanged_labelledVerbatim_criticalError: l.wordingChanged.labelledVerbatimAlthoughChanged }]; }));
     const mg = m => m && ({ firstShown: m.firstShown, n: m.n, ci95: m.ci95, ofWhichTextualMatch: m.asTextualMatch, ofWhichFirstSuggestion: m.asFirstSuggestion, inFirst3: m.inFirst3, inFirst5: m.inFirst5 });
-    H.arabic_byMeaning = { _note: "26 paraphrases written by the same AI assistant that wrote the engine; all begin with an opener. Judged by hadith family.",
-      openerKnownToEngine_byNoisePct: Object.fromEntries(Object.keys(A.perNoise).map(rate => [rate, { hybrid: mg(A.byMeaning.hybrid[rate]), wordsOnly: mg(A.byMeaning.wordsOnly[rate]) }])),
-      openerUnknownToEngine_clean: { hybrid: mg(A.byMeaning.unseenOpener.hybrid), wordsOnly: mg(A.byMeaning.unseenOpener.wordsOnly) },
-      noOpener_clean: { hybrid: mg(A.byMeaning.noOpener.hybrid), wordsOnly: mg(A.byMeaning.noOpener.wordsOnly) } };
+    H.arabic_byMeaning = { _note: "26 paraphrases written by the same AI assistant that wrote the engine; all begin with an opener. Judged by hadith family. `sentenceVectors`: candidates ordered with sentence vectors (bge-m3 through the Worker; in this run from the offline cache) — what the deployed site does when its Worker offers the model; `hybrid`: the engine alone, in the browser.",
+      sentenceVectorsUsed: A.sentenceVectors,
+      openerKnownToEngine_byNoisePct: Object.fromEntries(Object.keys(A.perNoise).map(rate => [rate, { sentenceVectors: mg(A.byMeaning.sentence[rate]), hybrid: mg(A.byMeaning.hybrid[rate]), wordsOnly: mg(A.byMeaning.wordsOnly[rate]) }])),
+      openerUnknownToEngine_clean: { sentenceVectors: mg(A.byMeaning.unseenOpener.sentence), hybrid: mg(A.byMeaning.unseenOpener.hybrid), wordsOnly: mg(A.byMeaning.unseenOpener.wordsOnly) },
+      noOpener_clean: { sentenceVectors: mg(A.byMeaning.noOpener.sentence), hybrid: mg(A.byMeaning.noOpener.hybrid), wordsOnly: mg(A.byMeaning.noOpener.wordsOnly) } };
     H.arabic_hadithVerbatimDetectionByQuoteLength = A.hadithByQuoteLength;
     H.arabic_otherNoiseShapes_engine_vs_B2 = Object.fromEntries(Object.entries(A.noiseConditions).map(([nid, c]) => [nid, { kind: c.kind, noisePct: c.rate,
       engine: { quranDetectedPct: c.engine.quranDetected.pct, hadithVerbatimDetectedPct: c.engine.hadithVerbatimDetected.pct, hadithVerbatimDetectedCI95: c.engine.hadithVerbatimDetected.ci95, hadithChangedWordingDetectedPct: c.engine.hadithChangedDetected.pct, criticalErrorsPerLecture: c.engine.criticalPerLecture.mean },

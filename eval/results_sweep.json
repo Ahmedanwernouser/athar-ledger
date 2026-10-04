@@ -1,0 +1,215 @@
+{
+ "model": "bge-m3",
+ "dim": 384,
+ "paraphrases": 24,
+ "asOneQuery": {
+  "first": 14,
+  "in3": 19,
+  "in5": 20,
+  "in10": 20,
+  "n": 24
+ },
+ "sweep": {
+  "12": {
+   "windows": 1798,
+   "quoteNothing": 818,
+   "bestSimilarityOfThose": {
+    "median": 0.659,
+    "p99": 0.777,
+    "max": 0.815
+   },
+   "rules": [
+    {
+     "rule": "similarity >= 0.68",
+     "found": 10,
+     "wrong": 8,
+     "falseWindows": 260,
+     "falsePlaces": 172
+    },
+    {
+     "rule": "similarity >= 0.7",
+     "found": 9,
+     "wrong": 2,
+     "falseWindows": 150,
+     "falsePlaces": 117
+    },
+    {
+     "rule": "similarity >= 0.72",
+     "found": 9,
+     "wrong": 1,
+     "falseWindows": 67,
+     "falsePlaces": 60
+    },
+    {
+     "rule": "similarity >= 0.74",
+     "found": 6,
+     "wrong": 1,
+     "falseWindows": 24,
+     "falsePlaces": 22
+    },
+    {
+     "rule": "similarity >= 0.6 and 2 shared rare stems",
+     "found": 8,
+     "wrong": 3,
+     "falseWindows": 20,
+     "falsePlaces": 19
+    },
+    {
+     "rule": "similarity >= 0.66 and 2 shared rare stems",
+     "found": 7,
+     "wrong": 3,
+     "falseWindows": 13,
+     "falsePlaces": 12
+    },
+    {
+     "rule": "similarity >= 0.6, 2 shared rare stems, and the next window agrees",
+     "found": 4,
+     "wrong": 0,
+     "falseWindows": 0,
+     "falsePlaces": 0
+    },
+    {
+     "rule": "similarity >= 0.64, 2 shared rare stems, and the next window agrees",
+     "found": 4,
+     "wrong": 0,
+     "falseWindows": 0,
+     "falsePlaces": 0
+    }
+   ]
+  },
+  "20": {
+   "windows": 1078,
+   "quoteNothing": 333,
+   "bestSimilarityOfThose": {
+    "median": 0.656,
+    "p99": 0.753,
+    "max": 0.774
+   },
+   "rules": [
+    {
+     "rule": "similarity >= 0.68",
+     "found": 9,
+     "wrong": 5,
+     "falseWindows": 83,
+     "falsePlaces": 68
+    },
+    {
+     "rule": "similarity >= 0.7",
+     "found": 9,
+     "wrong": 3,
+     "falseWindows": 39,
+     "falsePlaces": 34
+    },
+    {
+     "rule": "similarity >= 0.72",
+     "found": 7,
+     "wrong": 2,
+     "falseWindows": 17,
+     "falsePlaces": 17
+    },
+    {
+     "rule": "similarity >= 0.74",
+     "found": 5,
+     "wrong": 1,
+     "falseWindows": 8,
+     "falsePlaces": 8
+    },
+    {
+     "rule": "similarity >= 0.6 and 2 shared rare stems",
+     "found": 8,
+     "wrong": 2,
+     "falseWindows": 19,
+     "falsePlaces": 18
+    },
+    {
+     "rule": "similarity >= 0.66 and 2 shared rare stems",
+     "found": 7,
+     "wrong": 2,
+     "falseWindows": 10,
+     "falsePlaces": 10
+    },
+    {
+     "rule": "similarity >= 0.6, 2 shared rare stems, and the next window agrees",
+     "found": 5,
+     "wrong": 1,
+     "falseWindows": 3,
+     "falsePlaces": 3
+    },
+    {
+     "rule": "similarity >= 0.64, 2 shared rare stems, and the next window agrees",
+     "found": 5,
+     "wrong": 1,
+     "falseWindows": 2,
+     "falsePlaces": 2
+    }
+   ]
+  },
+  "32": {
+   "windows": 674,
+   "quoteNothing": 102,
+   "bestSimilarityOfThose": {
+    "median": 0.661,
+    "p99": 0.741,
+    "max": 0.752
+   },
+   "rules": [
+    {
+     "rule": "similarity >= 0.68",
+     "found": 9,
+     "wrong": 7,
+     "falseWindows": 37,
+     "falsePlaces": 35
+    },
+    {
+     "rule": "similarity >= 0.7",
+     "found": 7,
+     "wrong": 6,
+     "falseWindows": 17,
+     "falsePlaces": 16
+    },
+    {
+     "rule": "similarity >= 0.72",
+     "found": 6,
+     "wrong": 1,
+     "falseWindows": 8,
+     "falsePlaces": 7
+    },
+    {
+     "rule": "similarity >= 0.74",
+     "found": 4,
+     "wrong": 2,
+     "falseWindows": 3,
+     "falsePlaces": 3
+    },
+    {
+     "rule": "similarity >= 0.6 and 2 shared rare stems",
+     "found": 7,
+     "wrong": 4,
+     "falseWindows": 14,
+     "falsePlaces": 14
+    },
+    {
+     "rule": "similarity >= 0.66 and 2 shared rare stems",
+     "found": 7,
+     "wrong": 3,
+     "falseWindows": 9,
+     "falsePlaces": 9
+    },
+    {
+     "rule": "similarity >= 0.6, 2 shared rare stems, and the next window agrees",
+     "found": 4,
+     "wrong": 1,
+     "falseWindows": 2,
+     "falsePlaces": 2
+    },
+    {
+     "rule": "similarity >= 0.64, 2 shared rare stems, and the next window agrees",
+     "found": 4,
+     "wrong": 1,
+     "falseWindows": 1,
+     "falsePlaces": 1
+    }
+   ]
+  }
+ }
+}

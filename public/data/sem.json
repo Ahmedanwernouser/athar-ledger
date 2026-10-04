@@ -1,0 +1,9 @@
+{
+ "model": "bge-m3",
+ "dim": 384,
+ "rows": 44618,
+ "passages": 42299,
+ "builtFromDim": 1024,
+ "textHash": "2ddfea7a08d2ca32",
+ "built": "2026-10-04T19:06:13.001Z"
+}

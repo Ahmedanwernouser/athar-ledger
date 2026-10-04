@@ -83,7 +83,7 @@ export async function asrProviders(cfg, timeout = 4000) {
     if (!a || typeof a !== "object" || !Array.isArray(a.available)) return null;
     const available = PROVIDERS.filter(p => a.available.includes(p));
     if (!available.length) return null;
-    return { default: available.includes(a.default) ? a.default : available[0], available, youtube: j.youtube === true };
+    return { default: available.includes(a.default) ? a.default : available[0], available, youtube: j.youtube === true, embed: Array.isArray(j.embed) ? j.embed.filter(x => typeof x === "string") : [] };
   } catch { return null; }
   finally { clearTimeout(timer); }
 }

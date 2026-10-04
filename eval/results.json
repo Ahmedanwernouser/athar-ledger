@@ -23,7 +23,12 @@
   "corpus": {
    "N": 42299,
    "NQ": 6236,
-   "hasVectors": true
+   "hasVectors": true,
+   "sem": {
+    "model": "bge-m3",
+    "dim": 384,
+    "rows": 44618
+   }
   },
   "noise": {
    "clean": {
@@ -112,10 +117,18 @@
    "notol",
    "nocues",
    "novec",
+   "sem",
    "B0",
    "B1",
    "B2"
   ],
+  "sentenceVectors": {
+   "model": "bge-m3",
+   "dim": 384,
+   "rows": 44618,
+   "stretchesAsked": 1604,
+   "stretchesWithoutVector": 0
+  },
   "cuesInGenerator": {
    "hadith": 5,
    "recognisedByEngine": 5
@@ -1741,6 +1754,323 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 12,
+    "startErr": 23,
+    "endErr": 29,
+    "startN": 138,
+    "iou8": 134,
+    "attrN": 17,
+    "attrOK": 17,
+    "weak": 0
+   }
+  },
+  {
+   "group": "main",
+   "seed": 202,
+   "noise": "clean",
+   "system": "sem",
+   "words": 10869,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     60,
+     58,
+     59
+    ],
+    "ph": [
+     40,
+     38,
+     38,
+     38
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      100,
+      100,
+      0
+     ],
+     "changed": [
+      38,
+      36,
+      2,
+      0
+     ]
+    },
+    "critWrongSource": 1,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 1,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      3,
+      0
+     ],
+     "meaning": [
+      4,
+      3
+     ],
+     "lead": 1,
+     "notfound": 19
+    },
+    "par": [
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 40,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 4,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      }
@@ -4344,6 +4674,323 @@
    "group": "main",
    "seed": 202,
    "noise": "std10",
+   "system": "sem",
+   "words": 10692,
+   "m": {
+    "vq": [
+     40,
+     39,
+     39,
+     39
+    ],
+    "vh": [
+     60,
+     59,
+     58,
+     59
+    ],
+    "ph": [
+     40,
+     36,
+     36,
+     36
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      98,
+      38,
+      60
+     ],
+     "changed": [
+      36,
+      35,
+      1,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      3,
+      0
+     ],
+     "meaning": [
+      2,
+      2
+     ],
+     "lead": 1,
+     "notfound": 22
+    },
+    "par": [
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 40,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 4,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 31,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 13,
+    "startErr": 75,
+    "endErr": 40,
+    "startN": 134,
+    "iou8": 122,
+    "attrN": 17,
+    "attrOK": 15,
+    "weak": 1
+   }
+  },
+  {
+   "group": "main",
+   "seed": 202,
+   "noise": "std10",
    "system": "B0",
    "words": 10692,
    "m": {
@@ -6911,6 +7558,323 @@
    "group": "main",
    "seed": 202,
    "noise": "std20",
+   "system": "sem",
+   "words": 10511,
+   "m": {
+    "vq": [
+     40,
+     39,
+     39,
+     39
+    ],
+    "vh": [
+     60,
+     59,
+     58,
+     59
+    ],
+    "ph": [
+     40,
+     37,
+     35,
+     37
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      98,
+      26,
+      72
+     ],
+     "changed": [
+      37,
+      36,
+      1,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      1,
+      0
+     ],
+     "meaning": [
+      1,
+      2
+     ],
+     "lead": 1,
+     "notfound": 25
+    },
+    "par": [
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 40,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 107,
+    "endErr": 63,
+    "startN": 135,
+    "iou8": 119,
+    "attrN": 17,
+    "attrOK": 16,
+    "weak": 0
+   }
+  },
+  {
+   "group": "main",
+   "seed": 202,
+   "noise": "std20",
    "system": "B0",
    "words": 10511,
    "m": {
@@ -9394,6 +10358,323 @@
       "rank": 0,
       "keyTx": false,
       "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 31,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 89,
+    "endErr": 89,
+    "startN": 130,
+    "iou8": 111,
+    "attrN": 17,
+    "attrOK": 11,
+    "weak": 0
+   }
+  },
+  {
+   "group": "main",
+   "seed": 202,
+   "noise": "std30",
+   "system": "sem",
+   "words": 10244,
+   "m": {
+    "vq": [
+     40,
+     39,
+     39,
+     39
+    ],
+    "vh": [
+     60,
+     59,
+     58,
+     59
+    ],
+    "ph": [
+     40,
+     32,
+     29,
+     32
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      98,
+      11,
+      87
+     ],
+     "changed": [
+      32,
+      31,
+      1,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      1,
+      0
+     ],
+     "meaning": [
+      3,
+      0
+     ],
+     "lead": 0,
+     "notfound": 26
+    },
+    "par": [
+     {
+      "id": 49,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -26669,6 +27950,323 @@
    }
   },
   {
+   "group": "parUnseen",
+   "seed": 202,
+   "noise": "clean",
+   "system": "sem",
+   "words": 10869,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     60,
+     58,
+     59
+    ],
+    "ph": [
+     40,
+     38,
+     38,
+     38
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      100,
+      100,
+      0
+     ],
+     "changed": [
+      38,
+      36,
+      2,
+      0
+     ]
+    },
+    "critWrongSource": 1,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 1,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      3,
+      0
+     ],
+     "meaning": [
+      4,
+      3
+     ],
+     "lead": 1,
+     "notfound": 19
+    },
+    "par": [
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 40,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 4,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 12,
+    "startErr": 23,
+    "endErr": 29,
+    "startN": 138,
+    "iou8": 134,
+    "attrN": 17,
+    "attrOK": 17,
+    "weak": 0
+   }
+  },
+  {
    "group": "parStrip",
    "seed": 202,
    "noise": "clean",
@@ -27311,6 +28909,323 @@
    "seed": 202,
    "noise": "clean",
    "system": "novec",
+   "words": 10711,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     60,
+     58,
+     59
+    ],
+    "ph": [
+     40,
+     38,
+     38,
+     38
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      100,
+      100,
+      0
+     ],
+     "changed": [
+      38,
+      36,
+      2,
+      0
+     ]
+    },
+    "critWrongSource": 1,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 1,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      3,
+      0
+     ],
+     "meaning": [
+      4,
+      3
+     ],
+     "lead": 1,
+     "notfound": 19
+    },
+    "par": [
+     {
+      "id": 49,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 31,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 12,
+    "startErr": 23,
+    "endErr": 29,
+    "startN": 138,
+    "iou8": 134,
+    "attrN": 17,
+    "attrOK": 17,
+    "weak": 0
+   }
+  },
+  {
+   "group": "parStrip",
+   "seed": 202,
+   "noise": "clean",
+   "system": "sem",
    "words": 10711,
    "m": {
     "vq": [
@@ -35643,6 +37558,323 @@
    "group": "main",
    "seed": 303,
    "noise": "clean",
+   "system": "sem",
+   "words": 10651,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     59,
+     59,
+     59
+    ],
+    "ph": [
+     40,
+     39,
+     38,
+     39
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      99,
+      98,
+      1
+     ],
+     "changed": [
+      39,
+      39,
+      0,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 1,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      4,
+      1
+     ],
+     "meaning": [
+      4,
+      4
+     ],
+     "lead": 2,
+     "notfound": 15
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 4,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 27,
+    "endErr": 13,
+    "startN": 138,
+    "iou8": 138,
+    "attrN": 15,
+    "attrOK": 15,
+    "weak": 0
+   }
+  },
+  {
+   "group": "main",
+   "seed": 303,
+   "noise": "clean",
    "system": "B0",
    "words": 10651,
    "m": {
@@ -38196,6 +40428,323 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 13,
+    "startErr": 77,
+    "endErr": 37,
+    "startN": 137,
+    "iou8": 131,
+    "attrN": 15,
+    "attrOK": 14,
+    "weak": 0
+   }
+  },
+  {
+   "group": "main",
+   "seed": 303,
+   "noise": "std10",
+   "system": "sem",
+   "words": 10445,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     59,
+     58,
+     59
+    ],
+    "ph": [
+     40,
+     38,
+     36,
+     38
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      99,
+      42,
+      57
+     ],
+     "changed": [
+      38,
+      38,
+      0,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 1,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      3,
+      1
+     ],
+     "meaning": [
+      5,
+      3
+     ],
+     "lead": 0,
+     "notfound": 18
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -40809,6 +43358,323 @@
    "group": "main",
    "seed": 303,
    "noise": "std20",
+   "system": "sem",
+   "words": 10308,
+   "m": {
+    "vq": [
+     40,
+     35,
+     35,
+     35
+    ],
+    "vh": [
+     60,
+     59,
+     57,
+     59
+    ],
+    "ph": [
+     40,
+     37,
+     35,
+     37
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      94,
+      23,
+      71
+     ],
+     "changed": [
+      37,
+      37,
+      0,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      2,
+      0
+     ],
+     "meaning": [
+      1,
+      2
+     ],
+     "lead": 1,
+     "notfound": 24
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 4,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 100,
+    "endErr": 57,
+    "startN": 131,
+    "iou8": 120,
+    "attrN": 15,
+    "attrOK": 12,
+    "weak": 0
+   }
+  },
+  {
+   "group": "main",
+   "seed": 303,
+   "noise": "std20",
    "system": "B0",
    "words": 10308,
    "m": {
@@ -43364,6 +46230,323 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 93,
+    "endErr": 54,
+    "startN": 121,
+    "iou8": 109,
+    "attrN": 14,
+    "attrOK": 9,
+    "weak": 1
+   }
+  },
+  {
+   "group": "main",
+   "seed": 303,
+   "noise": "std30",
+   "system": "sem",
+   "words": 10198,
+   "m": {
+    "vq": [
+     40,
+     35,
+     35,
+     35
+    ],
+    "vh": [
+     60,
+     54,
+     54,
+     54
+    ],
+    "ph": [
+     40,
+     32,
+     32,
+     32
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      89,
+      17,
+      72
+     ],
+     "changed": [
+      32,
+      31,
+      1,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 1,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 1,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      1,
+      1
+     ],
+     "meaning": [
+      4,
+      3
+     ],
+     "lead": 0,
+     "notfound": 21
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 4,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -60567,6 +63750,323 @@
    }
   },
   {
+   "group": "parUnseen",
+   "seed": 303,
+   "noise": "clean",
+   "system": "sem",
+   "words": 10651,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     59,
+     59,
+     59
+    ],
+    "ph": [
+     40,
+     39,
+     38,
+     39
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      99,
+      98,
+      1
+     ],
+     "changed": [
+      39,
+      39,
+      0,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 1,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      4,
+      1
+     ],
+     "meaning": [
+      4,
+      4
+     ],
+     "lead": 2,
+     "notfound": 15
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 4,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 27,
+    "endErr": 13,
+    "startN": 138,
+    "iou8": 138,
+    "attrN": 15,
+    "attrOK": 15,
+    "weak": 0
+   }
+  },
+  {
    "group": "parStrip",
    "seed": 303,
    "noise": "clean",
@@ -61209,6 +64709,323 @@
    "seed": 303,
    "noise": "clean",
    "system": "novec",
+   "words": 10493,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     59,
+     59,
+     59
+    ],
+    "ph": [
+     40,
+     39,
+     38,
+     39
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      99,
+      98,
+      1
+     ],
+     "changed": [
+      39,
+      39,
+      0,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 1,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      4,
+      1
+     ],
+     "meaning": [
+      4,
+      4
+     ],
+     "lead": 2,
+     "notfound": 15
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 42,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 27,
+    "endErr": 13,
+    "startN": 138,
+    "iou8": 138,
+    "attrN": 15,
+    "attrOK": 15,
+    "weak": 0
+   }
+  },
+  {
+   "group": "parStrip",
+   "seed": 303,
+   "noise": "clean",
+   "system": "sem",
    "words": 10493,
    "m": {
     "vq": [
@@ -69489,6 +73306,314 @@
    "group": "main",
    "seed": 404,
    "noise": "clean",
+   "system": "sem",
+   "words": 10837,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     60,
+     60,
+     60
+    ],
+    "ph": [
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      100,
+      99,
+      1
+     ],
+     "changed": [
+      40,
+      40,
+      0,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      3,
+      0
+     ],
+     "meaning": [
+      3,
+      2
+     ],
+     "lead": 0,
+     "notfound": 22
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 4,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 13,
+    "endErr": 22,
+    "startN": 140,
+    "iou8": 138,
+    "attrN": 17,
+    "attrOK": 17,
+    "weak": 0
+   }
+  },
+  {
+   "group": "main",
+   "seed": 404,
+   "noise": "clean",
    "system": "B0",
    "words": 10837,
    "m": {
@@ -71988,6 +76113,314 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 39,
+    "endErr": 37,
+    "startN": 140,
+    "iou8": 136,
+    "attrN": 17,
+    "attrOK": 16,
+    "weak": 0
+   }
+  },
+  {
+   "group": "main",
+   "seed": 404,
+   "noise": "std10",
+   "system": "sem",
+   "words": 10673,
+   "m": {
+    "vq": [
+     40,
+     40,
+     39,
+     39
+    ],
+    "vh": [
+     60,
+     60,
+     59,
+     60
+    ],
+    "ph": [
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      100,
+      51,
+      49
+     ],
+     "changed": [
+      40,
+      39,
+      1,
+      0
+     ]
+    },
+    "critWrongSource": 1,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      2,
+      0
+     ],
+     "meaning": [
+      1,
+      2
+     ],
+     "lead": 0,
+     "notfound": 25
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 2,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 2,
       "cue": 1,
       "meaning": 0
      }
@@ -74528,6 +78961,314 @@
    "group": "main",
    "seed": 404,
    "noise": "std20",
+   "system": "sem",
+   "words": 10414,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     58,
+     56,
+     58
+    ],
+    "ph": [
+     40,
+     37,
+     37,
+     37
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      98,
+      28,
+      70
+     ],
+     "changed": [
+      37,
+      37,
+      0,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 1,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      3,
+      0
+     ],
+     "meaning": [
+      2,
+      2
+     ],
+     "lead": 0,
+     "notfound": 23
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 83,
+    "endErr": 55,
+    "startN": 135,
+    "iou8": 126,
+    "attrN": 16,
+    "attrOK": 10,
+    "weak": 1
+   }
+  },
+  {
+   "group": "main",
+   "seed": 404,
+   "noise": "std20",
    "system": "B0",
    "words": 10414,
    "m": {
@@ -77003,6 +81744,314 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 115,
+    "endErr": 82,
+    "startN": 131,
+    "iou8": 114,
+    "attrN": 17,
+    "attrOK": 9,
+    "weak": 1
+   }
+  },
+  {
+   "group": "main",
+   "seed": 404,
+   "noise": "std30",
+   "system": "sem",
+   "words": 10346,
+   "m": {
+    "vq": [
+     40,
+     37,
+     37,
+     37
+    ],
+    "vh": [
+     60,
+     59,
+     56,
+     59
+    ],
+    "ph": [
+     40,
+     35,
+     34,
+     35
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      96,
+      9,
+      87
+     ],
+     "changed": [
+      35,
+      34,
+      1,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      0,
+      0
+     ],
+     "meaning": [
+      2,
+      3
+     ],
+     "lead": 2,
+     "notfound": 23
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": 3,
+      "keyTx": false,
+      "keyRank": 3,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 2,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 37,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 1,
+      "keyTx": false,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      }
@@ -93873,6 +98922,314 @@
    }
   },
   {
+   "group": "parUnseen",
+   "seed": 404,
+   "noise": "clean",
+   "system": "sem",
+   "words": 10837,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     60,
+     60,
+     60
+    ],
+    "ph": [
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      100,
+      99,
+      1
+     ],
+     "changed": [
+      40,
+      40,
+      0,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      3,
+      0
+     ],
+     "meaning": [
+      3,
+      2
+     ],
+     "lead": 0,
+     "notfound": 22
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": 4,
+      "keyTx": false,
+      "keyRank": 4,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 1,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": 0,
+      "keyTx": false,
+      "keyRank": 2,
+      "cue": 1,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 13,
+    "endErr": 22,
+    "startN": 140,
+    "iou8": 138,
+    "attrN": 17,
+    "attrOK": 17,
+    "weak": 0
+   }
+  },
+  {
    "group": "parStrip",
    "seed": 404,
    "noise": "clean",
@@ -94506,6 +99863,314 @@
    "seed": 404,
    "noise": "clean",
    "system": "novec",
+   "words": 10685,
+   "m": {
+    "vq": [
+     40,
+     40,
+     40,
+     40
+    ],
+    "vh": [
+     60,
+     60,
+     60,
+     60
+    ],
+    "ph": [
+     40,
+     40,
+     40,
+     40
+    ]
+   },
+   "r": {
+    "lab": {
+     "verb": [
+      100,
+      99,
+      1
+     ],
+     "changed": [
+      40,
+      40,
+      0,
+      0
+     ]
+    },
+    "critWrongSource": 0,
+    "critChangedVerbatim": 0,
+    "critOOC": 0,
+    "critOOCverbMost": 0,
+    "critFiller": 0,
+    "sideTextual": 0,
+    "fillerLead": 0,
+    "fillerMeaning": 0,
+    "ooc": {
+     "n": 30,
+     "verbMost": [
+      0,
+      0
+     ],
+     "verbShort": [
+      0,
+      0
+     ],
+     "partial": [
+      3,
+      0
+     ],
+     "meaning": [
+      3,
+      2
+     ],
+     "lead": 0,
+     "notfound": 22
+    },
+    "par": [
+     {
+      "id": 31,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 49,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 27,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 26,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 30,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 45,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 46,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 43,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 38,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 33,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 50,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 36,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 37,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 41,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 32,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 29,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 35,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 40,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 25,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 39,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 28,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 44,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 34,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 47,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     },
+     {
+      "id": 48,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
+      "cue": 0,
+      "meaning": 0
+     }
+    ],
+    "parOtherTextual": 0,
+    "cueN": 14,
+    "cueClean": 14,
+    "startErr": 13,
+    "endErr": 22,
+    "startN": 140,
+    "iou8": 138,
+    "attrN": 17,
+    "attrOK": 17,
+    "weak": 0
+   }
+  },
+  {
+   "group": "parStrip",
+   "seed": 404,
+   "noise": "clean",
+   "system": "sem",
    "words": 10685,
    "m": {
     "vq": [

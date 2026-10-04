@@ -6,6 +6,7 @@ import { llmClient } from "./asr.js";
 import { norm } from "./text.js";
 import { lookup, describeRef } from "./lookup.js";
 import { HadithDisplay, wordsOf } from "./display.js";
+import { SemIndex, fetchVectors } from "./sem.js";
 
 let corpus = null;
 let display = null;          // HadithDisplay: the original (diacritised) text of the core hadith, when data/display/ exists
@@ -468,6 +469,27 @@ function decorate(e) {
   return e;
 }
 
+// ---------------- sentence vectors (candidates by meaning for what a cue announced and no text matched) ----------------
+let semMeta = null, semIndex = null, semLoader = null, semTried = false;
+const semVectors = new Map();         // text -> vector, kept for the session (a correction re-analyses the same transcript)
+/**
+ * The engine first runs with no vectors and records the stretches of speech it would ask about (the words after a cue that
+ * announced a text no passage matched). Only those stretches are sent to the Worker. If anything is missing — no Worker, no
+ * index, the day's allowance used up — the first result stands: candidates in the engine's own order.
+ */
+async function analyzeWithSem(words, cfg, note) {
+  const want = new Set();
+  const first = analyze(words, corpus, cfg ? { sem: { want } } : {});
+  if (!cfg || !semMeta || !want.size) return { r: first, sem: null };
+  if (!semIndex && !semTried) { semTried = true; note("index"); semIndex = await SemIndex.load(semLoader, corpus); }
+  if (!semIndex || semIndex.model !== cfg.model || semIndex.dim !== cfg.dim) return { r: first, sem: null };
+  const ask = [...want].filter(t => !semVectors.has(t));
+  if (ask.length) { note("vectors"); for (const [t, v] of await fetchVectors(ask, cfg)) semVectors.set(t, v); }
+  const have = [...want].filter(t => semVectors.has(t)).length;
+  if (!have) return { r: first, sem: { asked: want.size, answered: 0 } };
+  return { r: analyze(words, corpus, { sem: { index: semIndex, lookup: t => semVectors.get(t) || null } }), sem: { asked: want.size, answered: have } };
+}
+
 let meaningCtl = null;
 async function onMessage(ev) {
   const { id, type } = ev.data;
@@ -478,18 +500,20 @@ async function onMessage(ev) {
       corpus = await Corpus.load(fetcher, p => self.postMessage({ id, progress: p }));
       corpus.ensureStems();
       display = new HadithDisplay(retryingFetcher(fetcher)); origCache.clear();      // nothing is fetched until a hadith is shown
-      self.postMessage({ id, ok: true, result: { passages: corpus.N, quran: corpus.NQ, hadith: corpus.coreN - corpus.NQ, packs: corpus.available, dense: !!corpus.vec } });
+      semLoader = fetcher; semIndex = null; semTried = false; semVectors.clear();
+      try { semMeta = await fetcher("sem.json", "json"); } catch { semMeta = null; }  // (the vectors themselves, 17 MB, only when first needed)
+      self.postMessage({ id, ok: true, result: { passages: corpus.N, quran: corpus.NQ, hadith: corpus.coreN - corpus.NQ, packs: corpus.available, dense: !!corpus.vec, sem: semMeta ? { model: semMeta.model, dim: semMeta.dim } : null } });
     } else if (type === "loadPack") {
       await corpus.loadPack(ev.data.pack, p => self.postMessage({ id, progress: p }));
       corpus.ensureStems();
       self.postMessage({ id, ok: true, result: { passages: corpus.N, loaded: corpus.packs.map(p => p.id) } });
     } else if (type === "analyze") {
-      const r = analyze(ev.data.words, corpus);
+      const { r, sem } = await analyzeWithSem(ev.data.words, ev.data.sem || null, phase => self.postMessage({ id, progress: { sem: phase } }));
       const t0 = Date.now();
       await loadDisplayFor(r.ledger.flatMap(shownSources));          // the original text of the hadith found, before anything is shown
       const t1 = Date.now();
       for (const e of r.ledger) finish(e, ev.data.words, r.tokenToWord);
-      self.postMessage({ id, ok: true, result: { ledger: r.ledger, stats: r.stats, tokenToWord: r.tokenToWord, displayMs: { load: t1 - t0, decorate: Date.now() - t1 } } });
+      self.postMessage({ id, ok: true, result: { ledger: r.ledger, stats: r.stats, tokenToWord: r.tokenToWord, sem, displayMs: { load: t1 - t0, decorate: Date.now() - t1 } } });
     } else if (type === "lookup") {
       // the corpus passages closest to one stretch of words (a selection in the transcript, or typed text)
       self.postMessage({ id, ok: true, result: await lookupWithDisplay(ev.data.words) });

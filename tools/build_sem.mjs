@@ -1,32 +1,23 @@
 // Sentence vectors of the core library (Qur'an + the nine hadith collections), for finding a quotation BY MEANING.
 //   node tools/build_sem.mjs <state dir>
 // Each passage is one row; a passage longer than 140 words is cut into rows of 120 words every 100, so that the end of a long
-// hadith can be found too. Rows are embedded by the model bge-m3 on Cloudflare Workers AI through the deployed Worker's /embed
+// hadith can be found too (public/js/sem.js: semRows). Rows are embedded by the model bge-m3 on Cloudflare Workers AI through the deployed Worker's /embed
 // route (free allowance: 10,000 neurons a day). The work is resumable: the state dir keeps what is done (rows-*.bin, state.json);
 // when the day's allowance runs out the script stops cleanly and the next run goes on from there.
 // Output when complete: <state dir>/complete (a marker). tools/pack_sem.mjs then cuts the vectors to the shipped length.
+// The state of the build that was shipped is on the branch `sem-data`.
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { loadCorpus } from "../eval/lib.mjs";
 import { embedTexts } from "./embed_client.mjs";
+import { semRows } from "../public/js/sem.js";
 
 const DIR = process.argv[2]; if (!DIR) { console.error("usage: node tools/build_sem.mjs <state dir>"); process.exit(2); }
 mkdirSync(DIR, { recursive: true });
 const WORKER = process.env.LIVE_WORKER, ORIGIN = process.env.LIVE_ORIGIN, MODEL = process.env.SEM_MODEL || "bge-m3";
-const LONG = 140, CHUNK = 120, STRIDE = 100, SHARD = 4800;
-
-/** the rows of the core: [{pid, a, b}] in passage order (exported for pack_sem.mjs and the tests) */
-export function semRows(corpus) {
-  const rows = [];
-  for (let pid = 0; pid < corpus.coreN; pid++) {
-    const n = corpus.tok(pid).length;
-    if (n <= LONG) { rows.push({ pid, a: 0, b: n }); continue; }
-    for (let a = 0; ; a += STRIDE) { const b = Math.min(n, a + CHUNK); rows.push({ pid, a: b === n ? Math.max(0, n - CHUNK) : a, b }); if (b === n) break; }
-  }
-  return rows;
-}
-if (import.meta.url === `file://${process.argv[1]}`) {
+const SHARD = 4800;
+{
   if (!WORKER || !ORIGIN) { console.error("LIVE_WORKER and LIVE_ORIGIN are needed"); process.exit(2); }
   const corpus = await loadCorpus();
   const rows = semRows(corpus), texts = rows.map(r => corpus.tok(r.pid).slice(r.a, r.b).join(" "));

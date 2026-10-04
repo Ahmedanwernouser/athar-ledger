@@ -46,8 +46,8 @@ LLM_DAILY_CAP = "150"
 LLM_IP_DAILY_CAP = "75"
 
 # ---- /embed (see the [ai] block below): the models the route offers, the first is the default.
-#   bge-m3 | qwen3 | gemma   (three are offered while they are being compared; one will stay)
-EMBED_MODELS = "bge-m3,qwen3,gemma"
+#   bge-m3 | qwen3 | gemma. The site's vectors (public/data/sem.bin) were made with bge-m3: keep it first.
+EMBED_MODELS = "bge-m3"
 
 # ---- MANDATORY: storage for the caps. Without it the Worker answers 500 server_not_configured (on purpose).
 # Create it once:   npx wrangler kv namespace create CAP

@@ -1,14 +1,12 @@
 # Sentence vectors of the core library, by the model bge-m3 on Cloudflare Workers AI, asked through the deployed Worker as the
 # site asks it (no secret). Resumable: the state lives on the branch `sem-data`; when the day's free allowance runs out the
-# run stops cleanly and the next one (a push to these files, a manual start, or the nightly schedule) goes on from there.
+# run stops cleanly and the next one (a push to these files or a manual start) goes on from there.
 name: sem-build
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths: ["tools/build_sem.mjs", "tools/embed_client.mjs", ".github/workflows/sem-build.yml"]
-  schedule:
-    - cron: "12 0 * * *"      # just after the allowance is renewed (00:00 UTC)
 permissions:
   contents: write
 concurrency:

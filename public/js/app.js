@@ -132,7 +132,7 @@ function loadCorpus() {
   S.corpus = "loading"; $("corpusBar").style.width = "0"; drawCorpusState();
   // resolves to null on failure (never rejects): the failure is shown with a retry button, and analyses check for null
   corpusReady = call("load", { base: new URL("../data/", import.meta.url).href }, p => { $("corpusBar").style.width = Math.round(100 * p) + "%"; })
-    .then(info => { S.info = info; S.corpus = "ready"; drawCorpusState(); drawPacks(info.packs || []); return info; },
+    .then(info => { S.info = info; S.corpus = "ready"; drawCorpusState(); drawPacks(info.packs || []); drawSem(); return info; },
       e => { S.info = null; S.corpus = "failed"; S.corpusErr = e.message; drawCorpusState(); return null; });
 }
 
@@ -144,7 +144,7 @@ function boot() {
   loadCorpus();
 
   if (!CFG.asrUrl) { $("drop").classList.add("off"); $("file").disabled = true; }
-  else asrProviders(CFG).then(a => { S.asr = a; drawProviders(); $("ytForm").hidden = !(a && a.youtube); });       // asked once, never waited for
+  else asrProviders(CFG).then(a => { S.asr = a; drawProviders(); $("ytForm").hidden = !(a && a.youtube); drawSem(); });       // asked once, never waited for
   $("ytForm").onsubmit = ev => { ev.preventDefault(); const id = youtubeId($("ytUrl").value.trim()); if (!id) return showError(msg("err.yt.link")); runYoutube(id); };
   $("asrProv").onchange = () => store.set("athar:asrprov", $("asrProv").value);
   fetch(new URL("../samples/manifest.json", import.meta.url)).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then(list => {
@@ -350,6 +350,15 @@ async function runSample(s) {
 }
 
 /** the transcriber choice: shown only when the Worker says it offers more than one; "both" only when two are there */
+// Sentence-model suggestions: offered when the library has the vectors AND the Worker offers the model they were made with.
+const semReady = () => !!(CFG.asrUrl && S.info && S.info.sem && S.asr && (S.asr.embed || []).includes(S.info.sem.model));
+/** what the engine's worker needs to ask for vectors, or null when it is off (not offered, or the reader unticked it) */
+const semCfg = () => (semReady() && $("semOn").checked ? { url: CFG.asrUrl, model: S.info.sem.model, dim: S.info.sem.dim } : null);
+function drawSem() {
+  $("semWrap").hidden = !semReady();
+  $("semOn").checked = store.get("athar.sem", true) !== false;
+  $("semOn").onchange = () => store.set("athar.sem", $("semOn").checked);
+}
 function drawProviders() {
   const wrap = $("asrProvWrap"), sel = $("asrProv"), a = S.asr;
   const offered = a && a.available.length > 1 ? [...a.available, "both"] : [];
@@ -579,7 +588,7 @@ function engineWords(words, fixes) {
 /** the engine's ledger for the transcript as it stands now, with every position given as an index of the transcribed words */
 async function analyse(words, fixes, extra, second = null) {
   const { run, back } = engineWords(words, fixes);
-  let ledger = (await call("analyze", { words: run })).ledger;
+  let ledger = (await call("analyze", { words: run, sem: semCfg() })).ledger;
   if (back) for (const e of ledger) {
     e.wordStart = back[e.wordStart] ?? e.wordStart; e.wordEnd = back[e.wordEnd] ?? e.wordEnd;
     if (e.diff) for (const d of e.diff) if (d.wordIdx) d.wordIdx = d.wordIdx.map(k => back[k]);
@@ -587,13 +596,13 @@ async function analyse(words, fixes, extra, second = null) {
   // a second transcription of the same recording: the two ledgers are compared word by word (corrections are the
   // reviewer's work on the primary transcript; the second one is analysed once and compared again after each of them)
   if (second) {
-    if (!second.ledger) second.ledger = (await call("analyze", { words: second.words })).ledger;
+    if (!second.ledger) second.ledger = (await call("analyze", { words: second.words, sem: semCfg() })).ledger;
     const r = compareLedgers(ledger, second.ledger, { tolerance: Math.max(timeTolerance(words), timeTolerance(second.words)) });
     applyAgreement(ledger, r);
     ledger = mergeSecondOnly(ledger, r.extra, words);
     second.stats = r.stats;
   }
-  if (extra && extra.length) ledger = mergeSecondPass(ledger, (await call("analyze", { words: extra })).ledger, words);
+  if (extra && extra.length) ledger = mergeSecondPass(ledger, (await call("analyze", { words: extra, sem: semCfg() })).ledger, words);
   return ledger;
 }
 const SRC_KEEP = ["type", "label", "short", "url", "collection", "ref", "surah", "ayah", "ayahEnd", "number"];
@@ -1165,7 +1174,7 @@ function drawEntry(e) {
       li.append(el("p", "note ok", t("e.reference", label)));
       li.append(candBlock({ ...e.reference, excerpt: e.reference.display || "" }));
     }
-    if (e.suggestions && e.suggestions.length) li.append(details(e, "suggest", t(e.suggestions[0].via === "hybrid" ? "e.suggest.hybrid" : "e.suggest.lexical"), ...e.suggestions.map(candBlock)));
+    if (e.suggestions && e.suggestions.length) li.append(details(e, "suggest", t(e.suggestions[0].via === "sentence" ? "e.suggest.sentence" : e.suggestions[0].via === "hybrid" ? "e.suggest.hybrid" : "e.suggest.lexical"), ...e.suggestions.map(candBlock)));
   } else if (note) li.append(el("p", "note", note));
   if (e.attribution) {
     const a = tOpt("attr." + e.attribution.code);       // a code this page does not know yet shows nothing rather than a raw key

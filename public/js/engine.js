@@ -12,6 +12,7 @@
 // still clears the evidence thresholds is "partial", with the differences listed in `diff`.
 import { tokenizeTranscript, stem, isLatin, wordText, fold, normMixed } from "./text.js";
 import { align, summarize } from "./align.js";
+import { SEM, semText } from "./sem.js";
 import { findCues, findGradings, findCollectionSpans, findQuranReferences, formulaMask, dhikrMask, DEVOTIONAL, FUNCTION_WORDS, QURAN_HOMOGRAPHS, OPEN_PARTICLES } from "./cues.js";
 
 export const STATUS = {
@@ -82,6 +83,8 @@ export const DEFAULTS = {
   cueLeadFree: 3,         // content words that may stand between a cue and the text it announces
   openTail: true,         // an open particle at the end of a match is not counted towards the minimum of words; off only to measure
   oneCueOneQuote: true,   // a second text within reach of the same cue must stand on its own; off only to measure
+  sem: null,            // { index: SemIndex, lookup(text) -> Int8Array | null, want: Set } — sentence vectors for candidates by meaning (sem.js);
+                        // with `want` alone the engine only records the stretches it would ask about
   blocked: null,        // Set of passage ids to ignore (used by the evaluation to hold passages out)
 };
 
@@ -878,7 +881,7 @@ export function analyze(words, corpus, options = {}) {
       source: null, parallels: [], inBooks: [], weakBooks: [], weakOnly: false, inNormalBooks: x.status === "meaning", weakSearched: corpus.hasWeak(), diff: null, cue: x.cue.kind, attribution: null,
     };
     if (x.meaning) {
-      const list = x.meaning.cands.map(k => ({ ...corpus.describe(k.pid), shared: k.shared, score: +k.score.toFixed(x.meaning.mode === "hybrid" ? 3 : 1),
+      const list = x.meaning.cands.map(k => ({ ...corpus.describe(k.pid), shared: k.shared, score: +k.score.toFixed(x.meaning.mode === "lexical" ? 1 : 3),
         via: x.meaning.mode, excerpt: excerpt(corpus, k.pid, k.sharedF) }));
       if (x.status === "meaning") {
         e.candidates = list; e.source = list[0];
@@ -1325,6 +1328,31 @@ function meaningCandidates(cue, wEnd, tok, ftok, corpus, o) {
   const lastShared = pid => (sharedOf(pid).length ? Math.max(...sharedOf(pid)) + 2 : wEnd);
 
   const lexStrong = lex.length && lex[0].sharedIdx.length >= o.meaningMinWords && lex[0].score >= o.meaningMin && (lex[0].sharedIdx.length >= 4 || lex[0].score >= o.meaningStrong);
+  // --- sentence vectors (o.sem; Arabic speech, texts of the core): the words that follow the cue, at several lengths because
+  // the end of the quotation is unknown, each embedded as one sentence. Their nearest passages and the shared-stems list are
+  // fused by rank. A stretch whose vector is not at hand is recorded in o.sem.want, and the candidates are ordered as before.
+  // Like every other order of candidates, this one never makes a citation: `strong` still comes from shared words alone.
+  if (o.sem && !en && !(cue.kind === "saying" && !cue.athar)) {
+    const span = wEnd - cue.end, lists = [], simOf = new Map();
+    let missing = false;
+    for (const L of [...new Set(SEM.PREFIXES.map(L => Math.min(L, span)))]) {
+      if (L < 4) continue;
+      const text = semText(tok.slice(cue.end, cue.end + L)), v = o.sem.index && o.sem.lookup ? o.sem.lookup(text) : null;
+      if (!v) { missing = true; if (o.sem.want) o.sem.want.add(text); continue; }
+      const hits = o.sem.index.top(v, o.denseK, ok);
+      for (const h of hits) if ((simOf.get(h.pid) ?? -2) < h.score) simOf.set(h.pid, h.score);
+      lists.push(hits.map(h => h.pid));
+    }
+    if (lists.length && !missing) {
+      const rrf = new Map();
+      for (const l of [...lists, lex.slice(0, o.denseK).map(c => c.pid)]) l.forEach((pid, r) => rrf.set(pid, (rrf.get(pid) || 0) + 1 / (60 + r)));
+      let cands = [...rrf].sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, o.rerankK).map(([pid, sc]) => pack(pid, sc, { sem: +(simOf.get(pid) ?? 0).toFixed(3) }));
+      if (lexStrong) { const k = cands.findIndex(c => c.pid === lex[0].pid); if (k > 0) cands.unshift(cands.splice(k, 1)[0]); else if (k < 0) cands.unshift(pack(lex[0].pid, 1)); }
+      if (cue.kind === "hadith" && corpus.hasBooks()) { const core = cands.filter(c => !corpus.isBook(c.pid)).slice(0, 3), books = cands.filter(c => corpus.isBook(c.pid)).slice(0, o.meaningTop - core.length); cands = [...core, ...books]; }
+      cands = cands.slice(0, o.meaningTop);
+      if (cands.length) return { mode: "sentence", te: Math.min(wEnd, lexStrong ? lastShared(cands[0].pid) : cue.end + 14), strong: !!lexStrong, cands };
+    }
+  }
   const vec = o.useVectors ? corpus.vec : null;
   // the end of the quotation is unknown, so several lengths of "what follows the cue" are tried
   const span = wEnd - cue.end;
