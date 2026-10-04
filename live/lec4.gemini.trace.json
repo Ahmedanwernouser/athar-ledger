@@ -1,0 +1,58 @@
+[
+ {
+  "method": "POST",
+  "url": "https://generativelanguage.googleapis.com/upload/v1beta/files",
+  "headers": [
+   "x-goog-api-key",
+   "X-Goog-Upload-Protocol",
+   "X-Goog-Upload-Command",
+   "X-Goog-Upload-Header-Content-Length",
+   "X-Goog-Upload-Header-Content-Type",
+   "Content-Type"
+  ],
+  "body": "{\"file\":{\"display_name\":\"audio\"}}",
+  "status": 200,
+  "ms": 345,
+  "resHeaders": {
+   "content-type": "text/plain; charset=utf-8",
+   "x-goog-upload-status": "active",
+   "x-goog-upload-url": "https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=<…>&upload_protocol=resumable"
+  },
+  "resBytes": 0,
+  "res": ""
+ },
+ {
+  "method": "POST",
+  "url": "https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=<…>&upload_protocol=resumable",
+  "headers": [
+   "X-Goog-Upload-Offset",
+   "X-Goog-Upload-Command",
+   "Content-Type"
+  ],
+  "body": "<3600879 bytes>",
+  "status": 200,
+  "ms": 783,
+  "resHeaders": {
+   "content-type": "application/json; charset=UTF-8",
+   "x-goog-upload-status": "final"
+  },
+  "resBytes": 534,
+  "res": "{\n  \"file\": {\n    \"name\": \"files/xv52tb2zc8mk\",\n    \"displayName\": \"audio\",\n    \"mimeType\": \"audio/mpeg\",\n    \"sizeBytes\": \"3600879\",\n    \"createTime\": \"2026-10-04T14:14:44.091781Z\",\n    \"updateTime\": \"2026-10-04T14:14:44.091781Z\",\n    \"expirationTime\": \"2026-10-06T14:14:43.941937731Z\",\n    \"sha256Hash\": \"Y2ZlMjdlMGMzYTE5ODEyNDMwNWI5NjRlOWY2ZDM2MDNlNDFkZGVmMzEwOGNjYmU1NzVlZWIyNDY5ZGJiOTE1YQ==\",\n    \"uri\": \"https://generativelanguage.googleapis.com/v1beta/files/xv52tb2zc8mk\",\n    \"state\": \"ACTIVE\",\n    \"source\": \"UPLOADED\"\n  }\n}\n"
+ },
+ {
+  "method": "POST",
+  "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+  "headers": [
+   "x-goog-api-key",
+   "Content-Type"
+  ],
+  "body": "{\"model\":\"gemini-3.5-transcribe\",\"input\":[{\"type\":\"audio\",\"uri\":\"https://generativelanguage.googleapis.com/v1beta/files/xv52tb2zc8mk\",\"mime_type\":\"audio/mpeg\"}],\"generation_config\":{\"transcription_config\":{\"language_codes\":[\"ar-EG\"],\"mode\":{\"type\":\"verbatim\",\"timestamp_granularities\":[\"word\"]}}}}",
+  "status": 200,
+  "ms": 17528,
+  "resHeaders": {
+   "content-type": "application/json"
+  },
+  "resBytes": 130524,
+  "res": "{\"id\":\"v1_ChZWRl9DYXZUU0VkZUctOFlQNExDdUtBEhZWRl9DYXZUU0VkZUctOFlQNExDdUtB\",\"status\":\"completed\",\"usage\":{\"total_tokens\":18001,\"total_input_tokens\":18001,\"input_tokens_by_modality\":[{\"modality\":\"text\",\"tokens\":1},{\"modality\":\"audio\",\"tokens\":18000}],\"total_cached_tokens\":0,\"total_output_tokens\":0,\"total_tool_use_tokens\":0,\"total_thought_tokens\":0,\"raw_prompt_token\":20928,\"model_invocation_token_counts\":[{\"prompt_tokens_details\":[{\"modality\":\"text\",\"tokens\":2928},{\"modality\":\"audio\",\"tokens\":18000}],\"candidates_tokens_details\":[{\"modality\":\"text\",\"tokens\":1776}]}],\"non_grounding_model_invocation_token_counts\":[{\"prompt_tokens_details\":[{\"modality\":\"text\",\"tokens\":2928},{\"modality\":\"audio\",\"tokens\":18000}],\"candidates_tokens_details\":[{\"modality\":\"text\",\"tokens\":1776}]}]},\"created\":\"2026-10-04T14:15:01Z\",\"updated\":\"2026-10-04T14:15:01Z\",\"service_tier\":\"standard\",\"steps\":[{\"content\":[{\"text\":\"اي نية الاخلاص في جميع العبادات. فينوي مثلا الوضوء وانه توضا لله. وانه توضا امتثالا لامر الله. فهذه ثلاثة اشياء. نية العبادة ونية ان تكون لله ونية انه قام بها امتثالا لامر الله. لا هذا اكمل شيء في النية. كذلك في الصلاة. تنوي الصلاة وانها الظهر او العصر او المغرب او العشاء او الفجر او ما اشبه ذلك. وتنوي انك انما تصلي لله عز وجل. لا لغيره. لا تصلي رياء ولا سمعه لا لا لا لتمدح على صلاتك. ولا لتنال شيئا من المال او الدنيا. ثالثا تستحضر انك تصلي امتثالا لامر ربك. حيث قال اقم الصلاة. فاذا اطماننتم فاقيموا الصلاة. واقيموا الصلاة واتوا الزكاة. الى غير ذلك من الاوامر. وذكر المؤلف رحمه الله عدة ايات. كلها تدل على ان النية محلها القلب. وان الله سبحانه وتعالى عالم بنية العبد. ربما يعمل العبد عملا يظهر امام الناس انه عمل صالح. وهو عمل فاسد. افسدته النية. لان الله تعالى يعلم ما في القلب. ولا يجازى الانسان يوم القيامة الا على ما في قلبه. لقول الله تعالى يوم تبلى انه على رجعه لقادر. يوم تبلى السرائر. فما له من قوة ولا ناصر. يعني يوم تختبر السرائر. البواطن، القلوب. كقوله افلا يعلم اذا بعثر ما في القبور. وحصل ما في الصدور. ففي الاخرة يكون الثواب والعقاب والعمل والاعتبار بما في القلب. اما في الدنيا فالعبرة بما ظهر. فيعامل الناس بظواهر احوالهم. ولكن هذه الظواهر ان وافقت ما في البواطن صلح ظاهره وباطنه. وسريرته وعلانيته. وان خالف فصار القلب منطويا على نية فاسدة، نعوذ بالله. فما اعظم خسارته. يعمل ويتعب ولكن لا حظ له في هذا العمل. كما جاء في الحديث الصحيح النبي صلى الله عليه وسلم ان الله قال انا اغنى الشركاء عن الشرك. من عمل عملا اشرك فيه معي غيري تركته وشانه. فالله الله ايها الاخوة. باخلاص النية لله سبحانه وتعالى. واعلم ان الشيطان قد ياتيك عند ارادة عمل الخير. فيقول لك انك انما تعمل هذا رياء. فيحبطك. يحبط همتك. ويثبطك. ولكن لا تلتفت لها. لا تطعها. اعمل. ولو قال لك انك انما تعمل رياء. او سمعة. لانك لو سئلت هل انت الان تعمل هذا العمل رياء او سمعة؟ قلت لا. اذا فهذا الوسواس الذي ادخله الشيطان في قلبك لا تلتفت له. افعل الخير. ولا تقل اني ارائي او ما اشبه ذلك. والله الموفق. بسم الله الرحمن الرحيم. الحمد لله رب العالمين. والصلاة والسلام على نبينا محمد وعلى اله وصحبه اجمعين. قال المؤلف رحمه الله تعالى عن امير المؤمنين عمر بن الخطاب رضي الله عنهم قال سمعت رسول الله صلى الله عليه وسلم يقول انم"
+ }
+]

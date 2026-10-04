@@ -1,0 +1,58 @@
+[
+ {
+  "method": "POST",
+  "url": "https://generativelanguage.googleapis.com/upload/v1beta/files",
+  "headers": [
+   "x-goog-api-key",
+   "X-Goog-Upload-Protocol",
+   "X-Goog-Upload-Command",
+   "X-Goog-Upload-Header-Content-Length",
+   "X-Goog-Upload-Header-Content-Type",
+   "Content-Type"
+  ],
+  "body": "{\"file\":{\"display_name\":\"audio\"}}",
+  "status": 200,
+  "ms": 261,
+  "resHeaders": {
+   "content-type": "text/plain; charset=utf-8",
+   "x-goog-upload-status": "active",
+   "x-goog-upload-url": "https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=<…>&upload_protocol=resumable"
+  },
+  "resBytes": 0,
+  "res": ""
+ },
+ {
+  "method": "POST",
+  "url": "https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=<…>&upload_protocol=resumable",
+  "headers": [
+   "X-Goog-Upload-Offset",
+   "X-Goog-Upload-Command",
+   "Content-Type"
+  ],
+  "body": "<3673716 bytes>",
+  "status": 200,
+  "ms": 671,
+  "resHeaders": {
+   "content-type": "application/json; charset=UTF-8",
+   "x-goog-upload-status": "final"
+  },
+  "resBytes": 534,
+  "res": "{\n  \"file\": {\n    \"name\": \"files/hdwltm285mgo\",\n    \"displayName\": \"audio\",\n    \"mimeType\": \"audio/mpeg\",\n    \"sizeBytes\": \"3673716\",\n    \"createTime\": \"2026-10-04T14:14:00.794309Z\",\n    \"updateTime\": \"2026-10-04T14:14:00.794309Z\",\n    \"expirationTime\": \"2026-10-06T14:14:00.577400043Z\",\n    \"sha256Hash\": \"YjQyNjI3YWZjYTY4NDRhMWQ3ZWNjYjkwODFmMmYzYjFiNzIwOTY2YTUxMGQ3MWYyNDdhNzkwZDhmMWVkMjE2MA==\",\n    \"uri\": \"https://generativelanguage.googleapis.com/v1beta/files/hdwltm285mgo\",\n    \"state\": \"ACTIVE\",\n    \"source\": \"UPLOADED\"\n  }\n}\n"
+ },
+ {
+  "method": "POST",
+  "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+  "headers": [
+   "x-goog-api-key",
+   "Content-Type"
+  ],
+  "body": "{\"model\":\"gemini-3.5-transcribe\",\"input\":[{\"type\":\"audio\",\"uri\":\"https://generativelanguage.googleapis.com/v1beta/files/hdwltm285mgo\",\"mime_type\":\"audio/mpeg\"}],\"generation_config\":{\"transcription_config\":{\"language_codes\":[\"ar-EG\"],\"mode\":{\"type\":\"verbatim\",\"timestamp_granularities\":[\"word\"]}}}}",
+  "status": 200,
+  "ms": 17605,
+  "resHeaders": {
+   "content-type": "application/json"
+  },
+  "resBytes": 145457,
+  "res": "{\"id\":\"v1_ChdLRl9DYXVhdVBNLTgzOUlQcnRteXVBVRIXS0ZfQ2F1YXVQTS04MzlJUHJ0bXl1QVU\",\"status\":\"completed\",\"usage\":{\"total_tokens\":18001,\"total_input_tokens\":18001,\"input_tokens_by_modality\":[{\"modality\":\"audio\",\"tokens\":18000},{\"modality\":\"text\",\"tokens\":1}],\"total_cached_tokens\":0,\"total_output_tokens\":0,\"total_tool_use_tokens\":0,\"total_thought_tokens\":0,\"raw_prompt_token\":20928,\"model_invocation_token_counts\":[{\"prompt_tokens_details\":[{\"modality\":\"text\",\"tokens\":2928},{\"modality\":\"audio\",\"tokens\":18000}],\"candidates_tokens_details\":[{\"modality\":\"text\",\"tokens\":1828}]}],\"non_grounding_model_invocation_token_counts\":[{\"prompt_tokens_details\":[{\"modality\":\"text\",\"tokens\":2928},{\"modality\":\"audio\",\"tokens\":18000}],\"candidates_tokens_details\":[{\"modality\":\"text\",\"tokens\":1828}]}]},\"created\":\"2026-10-04T14:14:18Z\",\"updated\":\"2026-10-04T14:14:18Z\",\"service_tier\":\"standard\",\"steps\":[{\"content\":[{\"text\":\"مع ان رسول الله استقبل اناسا كثيرين يؤمنون بكتاب الله واستقبل اناسا كثيرين يكفرون بما انزل الله وكانوا يريدون ان يقيموا الحجه على رسول الله في انه اتى بشيء هراء كلام مجانين فهل سمعنا ان كافرا من الكفار العتاه قال للقوم وهم بلغاء فصحاء يجيدون العربيه ملكه لا صناعه هل سمعنا من واحد من الكفار ان قال ماذا يعني الف لام ميم وماذا تعني حاميم عين سين قاف كيف يمر على المكابر المنكر مثل هذه الفواتح للصور ولا يجد فيها ما ينقض على رسول الله شيئا من امره لا شك انه انفعلا لها وان لم يؤمن بها ولم يجد فيها اي شيء يمكن ان ينقض به على رسول الله ليهدم قرانه هذا اذا فلا المؤمنون به سالوه عنها ولا الكافرون به سالوه عنها مع انهم كانوا حريصين على ان ينقضوا رسول الله باي شيء من الاشياء فلو كان في ذلك شيء مما يريدون لقالوا للناس ما هذا ولكنهم كانوا يقولون لا تسمعوا لهذا القران ومعنى لا تسمعوا لهذا القران انهم يعتقدون مع انهم كافرون به ان الذي يسمع القران سيجد له الاخذ وسيجد له الاسر وسيجد له الحلاوه وسيجد له التاثير فالكفار يخافون ان سمع الكفار القران ان يميلوا الى القران ولو كان القران لا يعطي شيئا من هذا لما همهم ان يسمعوا لهذا القران او لا يسمعوا ولا يكتفون بان يمنعوا السماع للقران بل يقولون والغو فيه الغو فيه يعني شوشروا عليه لا يمكن ان يكون ذلك الا اذا كانوا اصحاب ملكه يفهمون تاثير القران في الملكه العربيه الرسول صلى الله عليه وسلم ترك القران فيما يتعلق بغير التكليف للزمن لماذا؟ لان القران كلام الله والكون خلق الله وفي الكون ايات يسميها الله ايات ومن اياته الليل والنهار والشمس والقمر ومن اياتك انك ترى الارض خاشعه كل هذه ايات يسميها الله ايات ويسمي ما ينزل من القران ايات اذا ففي الكون ايات وفي القران ايات الكون اياته تفسر ايه القران اذا فعدم تفسير رسول الله لكونيات القران هو التفسير لكونيات القران لانه وسع عطاء العقول وكل من يستطيع ان ياخذ شيئا من الممكن ان يقوله اذا فقد يكون في المنع عين العطاء هذا القران كلمه قران دي ساعه ما نسمعها نقوم نفهم المقروء لان قران مصدر قرا قرانا زي غفر غفرانا واصبح علما على الكميه الكلاميه النازله من الله على محمد صلى الله عليه وسلم بقصد التحدي ويسميه الله كتابا اذا هو قرآن وهو فان لاحظت القراءة فهو قرآن وان لاحظت الكتابة تسجيلية فهو كتاب القراءة تستلزم حافظا يقرا انما الكتابه لا تستلزم حافظا مستقبلا لمسجل فيه بالكتابه وبعد ذلك يقرا من الكتابه اذا ف"
+ }
+]
