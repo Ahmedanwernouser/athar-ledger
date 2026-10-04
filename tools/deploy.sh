@@ -74,7 +74,8 @@ cd "$WORK"
 $WR pages deploy public --project-name "$PROJECT" --branch main --commit-dirty=true >"$WORK/p.out" 2>&1 && say "site deployed" || { say "FAILED: pages deploy"; tail -25 "$WORK/p.out" | tee -a "$LOG"; fail=1; }
 
 # ---- 6. checks from outside ----
-sleep 20
+# a new workers.dev address can take a minute to answer: try for up to 3 minutes
+for i in 1 2 3 4 5 6 7 8 9 10 11 12; do h="$(curl -sS -m 20 "$WORKER/health" 2>/dev/null)"; case "$h" in *'"ok":true'*) break;; esac; sleep 15; done
 say "site HTTP $(curl -sS -m 30 -o /dev/null -w '%{http_code}' "$SITE/")  config: $(curl -sS -m 30 "$SITE/config.js" | grep asrUrl | tr -s ' ')"
 say "core data HTTP $(curl -sS -m 60 -o /dev/null -w '%{http_code} %{size_download} bytes' "$SITE/data/meta.json")"
 say "Worker /health: $(curl -sS -m 30 "$WORKER/health")"
@@ -82,4 +83,3 @@ say "Worker refuses another origin: $(curl -sS -m 30 -X POST -H 'Origin: https:/
 # never leave an identifier in the published log
 sed -i "s#$CLOUDFLARE_API_TOKEN#<TOKEN>#g; s#$CLOUDFLARE_ACCOUNT_ID#<ACCOUNT>#g; s#$KV#<KV>#g" "$LOG"
 exit $fail
-# run

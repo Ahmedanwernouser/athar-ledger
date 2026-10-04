@@ -338,8 +338,8 @@ async function groqTranscribe(file, lang, env) {
 }
 
 // ---- provider 2: Gemini 3.5 Transcribe ---------------------------------------------------------------
-// NOT TESTED AGAINST THE LIVE API. Written on 4 Oct 2026 from Google's documentation
-// (ai.google.dev/gemini-api/docs/transcribe) and exercised only against the stub in worker/test.mjs.
+// TESTED AGAINST THE LIVE API on 4 Oct 2026 (eval/RESULTS_LIVE.md): 6 clips of 8–13 minutes, all answered with word
+// timestamps; written from Google's documentation (ai.google.dev/gemini-api/docs/transcribe) and exercised in worker/test.mjs.
 // Every detail that depends on Google's API is in one of the small functions below (URLs, header names,
 // request body, response shape, offset format, mime types). If the live API answers differently, these are
 // the functions to adjust; nothing else in the Worker knows about Gemini's formats.

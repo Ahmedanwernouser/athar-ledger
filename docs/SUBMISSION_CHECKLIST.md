@@ -2,8 +2,8 @@
 
 - [ ] المستودع **Public**، بلا أي مفتاح (`git grep -n "gsk_\\|AIza"` يجب ألا يُرجع شيئًا).
 - [x] المستودع أُنشئ ورُفعت نسخة البداية (commit `409e390`، فرع `baseline-v0`).
-- [ ] أنشئوا الوسم من GitHub: Releases ← Draft a new release ← Choose a tag: `baseline-v0` ← Target: الفرع `baseline-v0` ← Publish.
-- [ ] الوسم `baseline-v0` موجود و`BASELINE.md` مملوء (بما فيه جدول «ما أُنجز داخل النافذة»).
+- [x] الوسم `v0-baseline` أُنشئ من GitHub (Releases) على الفرع `baseline-v0` ويشير إلى `409e390`.
+- [x] الوسم `v0-baseline` موجود و`BASELINE.md` مملوء (بما فيه جدول «ما أُنجز داخل النافذة»).
 - [ ] الموقع المنشور يعمل من متصفح خاص (Incognito): المثال، لصق نص، رفع مقطع قصير.
 - [ ] `eval/RESULTS_REAL.md` موجود من تسجيلات حقيقية، وأرقامه هي المذكورة في العرض والفيديو.
 - [ ] `docs/SOURCES_AND_LICENSES.md`: كل علامة ⚠ إمّا حُلّت أو ذُكرت في العرض كحدّ.

@@ -5,7 +5,7 @@
 ## ١) GitHub (مستودع عام)
 1. أنشئ مستودعًا **Public** باسم `athar-ledger` (بلا README تلقائي).
 2. ارفع محتويات هذا المجلد (ما عدا `data/raw/` — مستثنى في `.gitignore`).
-3. أنشئ الوسم: `git tag baseline-v0 && git push origin baseline-v0` وسجّل الـ hash في `BASELINE.md`.
+3. أنشئ الوسم: `git tag v0-baseline && git push origin v0-baseline` وسجّل الـ hash في `BASELINE.md`.
 
 ## ٢) Cloudflare Pages (الواجهة) — قبل الـ Worker
 1. Cloudflare Dashboard ← Workers & Pages ← Create ← Pages ← Connect to Git ← اختر المستودع.
