@@ -28,20 +28,26 @@ say("embedding models visible: " + models.join(", "));
 const MODEL = process.env.EMBED_MODEL || ["gemini-embedding-2", "gemini-embedding-001", "text-embedding-004"].find(m => models.includes(m)) || models[0];
 say("model used: " + MODEL);
 
-let keyAt = 0, calls = 0;
-async function embed(texts, taskType, dim) {
+let keyAt = 0, calls = 0; const statuses = {}; const T_START = Date.now(), BUDGET_MS = 14 * 60 * 1000;
+/** embeds as many of `texts` as the time budget allows, the keys taken in turn; -> vectors (shorter than texts when time ran out) */
+async function embed(texts, taskType, dim, label) {
   const out = [];
-  for (let i = 0; i < texts.length; i += 100) {
-    const body = { requests: texts.slice(i, i + 100).map(t => ({ model: "models/" + MODEL, content: { parts: [{ text: t }] }, taskType, ...(dim ? { outputDimensionality: dim } : {}) })) };
-    for (let tries = 0; ; tries++) {
+  for (let i = 0; i < texts.length; i += 50) {
+    if (Date.now() - T_START > BUDGET_MS) { say(`${label}: time budget reached at ${out.length}/${texts.length}`); break; }
+    const body = { requests: texts.slice(i, i + 50).map(t => ({ model: "models/" + MODEL, content: { parts: [{ text: t }] }, taskType, ...(dim ? { outputDimensionality: dim } : {}) })) };
+    let done = false;
+    for (let tries = 0; tries < 3 * KEYS.length + 6 && !done; tries++) {
+      keyAt = (keyAt + 1) % KEYS.length;
       const r = await fetch(`${BASE}/models/${MODEL}:batchEmbedContents`, { method: "POST", headers: { "x-goog-api-key": KEYS[keyAt], "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      calls++;
-      if (r.ok) { const j = await r.json(); for (const e of j.embeddings) out.push(Float32Array.from(e.values)); break; }
-      const txt = (await r.text()).slice(0, 300);
-      if (tries > 12) throw new Error(`embed failed ${r.status}: ${txt}`);
-      if (r.status === 429 || r.status === 503 || r.status === 500) { keyAt = (keyAt + 1) % KEYS.length; await sleep(tries < KEYS.length ? 1500 : 20000); continue; }
-      throw new Error(`embed failed ${r.status}: ${txt}`);
+      calls++; statuses[r.status] = (statuses[r.status] || 0) + 1;
+      if (r.ok) { const j = await r.json(); for (const e of j.embeddings) out.push(Float32Array.from(e.values)); done = true; break; }
+      const txt = (await r.text()).slice(0, 400);
+      if (!statuses["first_" + r.status]) { statuses["first_" + r.status] = 1; say(`first HTTP ${r.status} from the embedding API: ${txt.replace(/\s+/g, " ")}`); }
+      if (r.status === 429 || r.status === 503 || r.status === 500) { await sleep(tries % KEYS.length === KEYS.length - 1 ? 15000 : 800); continue; }
+      break;
     }
+    if (!done) { say(`${label}: gave up at ${out.length}/${texts.length}`); break; }
+    if (i % 500 === 0) console.log(`${label}: ${out.length}/${texts.length} after ${Math.round((Date.now() - T_START) / 1000)} s`);
   }
   return out;
 }
@@ -66,16 +72,18 @@ const pool = new Set();
 for (const it of par) for (const p of it.accept) pool.add(p);
 const lexRank = [];
 queries.forEach((q, i) => { const top = lexTop(q); top.forEach(p => pool.add(p)); const acc = new Set(par[i].accept); lexRank.push(top.findIndex(p => acc.has(p))); });
-while (pool.size < 4600) { const pid = corpus.NQ + Math.floor(rnd() * (corpus.coreN - corpus.NQ)); if (!lec.blocked.has(pid)) pool.add(pid); }
-for (let k = 0; k < 600; k++) pool.add(Math.floor(rnd() * corpus.NQ));
-const pids = [...pool], texts = pids.map(p => corpus.P[p].n.split(" ").slice(0, 220).join(" "));
+while (pool.size < 2200) { const pid = corpus.NQ + Math.floor(rnd() * (corpus.coreN - corpus.NQ)); if (!lec.blocked.has(pid)) pool.add(pid); }
+for (let k = 0; k < 200; k++) pool.add(Math.floor(rnd() * corpus.NQ));
+let pids = [...pool]; const texts0 = pids.map(p => corpus.P[p].n.split(" ").slice(0, 160).join(" "));
 say(`queries ${queries.length}, fillers ${fillers.length}, pool ${pids.length} passages`);
 
 const t0 = Date.now();
-const D = await embed(texts, "RETRIEVAL_DOCUMENT", 768);
-const Q = await embed(queries, "RETRIEVAL_QUERY", 768);
-const F = await embed(fillers, "RETRIEVAL_QUERY", 768);
-say(`embedded in ${Math.round((Date.now() - t0) / 1000)} s with ${calls} calls; vector length ${D[0].length}`);
+const Q = await embed(queries, "RETRIEVAL_QUERY", 768, "queries");
+const F = await embed(fillers.slice(0, 60), "RETRIEVAL_QUERY", 768, "fillers");
+const D = await embed(texts0, "RETRIEVAL_DOCUMENT", 768, "passages");
+pids = pids.slice(0, D.length);          // (the accepted sources and the hard negatives come first in the pool)
+say(`embedded ${Q.length} queries, ${F.length} fillers, ${D.length}/${texts0.length} passages in ${Math.round((Date.now() - t0) / 1000)} s with ${calls} calls; HTTP statuses ${JSON.stringify(statuses)}; vector length ${D[0] ? D[0].length : "-"}`);
+if (Q.length < queries.length || D.length < 300) { save("SUMMARY.txt", lines.join("\n")); process.exit(0); }
 
 const report = {};
 for (const [name, dim, quant] of [["768 float", 768, false], ["256 float", 256, false], ["256 int8", 256, true], ["128 int8", 128, true]]) {
@@ -84,7 +92,7 @@ for (const [name, dim, quant] of [["768 float", 768, false], ["256 float", 256, 
   const ranks = [], top1 = [], gold = [];
   q.forEach((qv, i) => {
     const acc = new Set(par[i].accept), sims = d.map((dv, k) => [dot(qv, dv), k]).sort((a, b) => b[0] - a[0]);
-    const r = sims.findIndex(([, k]) => acc.has(pids[k])); ranks.push(r); top1.push(+sims[0][0].toFixed(3)); gold.push(+sims[r][0].toFixed(3));
+    const r = sims.findIndex(([, k]) => acc.has(pids[k])); ranks.push(r); top1.push(+sims[0][0].toFixed(3)); gold.push(r >= 0 ? +sims[r][0].toFixed(3) : 0);
   });
   const fmax = f.map(fv => { let m = -1; for (const dv of d) { const s = dot(fv, dv); if (s > m) m = s; } return +m.toFixed(3); }).sort((a, b) => a - b);
   const at = k => ranks.filter(r => r >= 0 && r < k).length;
