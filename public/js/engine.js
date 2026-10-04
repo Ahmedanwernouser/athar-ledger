@@ -717,7 +717,7 @@ export function analyze(words, corpus, options = {}) {
     if (mm && mm.strong) {
       extra.push({ ts: cue.pos, te: mm.te, cue, status: "meaning", meaning: mm });
       for (let i = cue.pos; i < mm.te; i++) taken[i] = 1;
-    } else if (commentaryAt(ftok, cue.end, wEnd, tok) || (tok[cue.pos] === "عن" && (tok[cue.pos - 2] === "عن" || tok[cue.pos - 3] === "عن"))) {      // (a name in the middle of a chain that is being recited is not a cue)
+    } else if (commentaryAt(ftok, cue.end, wEnd, tok) || (tok[cue.pos] === "عن" && (tok[cue.pos - 2] === "عن" || tok[cue.pos - 3] === "عن" || (wEnd - cue.end <= 5 && sentenceEnd[wEnd - 1])))) {      // (a name in the middle of a chain that is being recited is not a cue; nor is "عن معاذ بن جبل رضي الله عنه." when the sentence ends there)
       continue;   // the words after the cue are the speaker explaining ("أما الثاني فهو ..."), not an announced quotation
     } else {
       // stop the span at a sentence-ish length; the quotation boundary is unknown

@@ -64,6 +64,7 @@ test("the grading of a different hadith far away is not attached", () => {
 test("a cue followed by a verdict on the chain, or by the chain itself, announces no text", () => {
   for (const t of ["عن معاذ بن جبل رضي الله عنه وطبعا الإسناد هنا منقطع ليه لأن مكحولا لم يسمع من معاذ",
                    "عن معاذ عن مكحول عن معاذ وطبعا مكحول لم يدرك معاذا",
+                   "رواه مكحول عن معاذ بن جبل رضي عنه. وطبعا الإسناد هنا منقطع ليه؟ لأن مكحولا متأخر.",
                    "قال رسول الله صلى الله عليه وسلم وهذا مرسل لا يثبت عند أهل العلم"]) {
     assert.deepEqual(run(t).filter(e => e.status === "notfound" || (e.suggestions || []).length), [], t);
   }
