@@ -3,7 +3,7 @@
 // needs are written to eval/embed/requests/<name>.json ({ kind: "q" | "d", texts: [...] }), this script — run by GitHub
 // Actions — asks the DEPLOYED Worker for their vectors as the site would, and the answers go to the branch `embed-results`
 // (<name>.bin: int8, n × dim; <name>.json: { n, dim, model, hash }). No secret is involved.
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,8 +17,14 @@ for (let i = 0; i < 40; i++) {       // the Worker may be mid-deployment (the sa
   try { const h = await (await fetch(WORKER + "/health", { signal: AbortSignal.timeout(15000) })).json(); if ((h.embed || []).includes(MODEL)) break; } catch { /* not yet */ }
   await new Promise(r => setTimeout(r, 15000));
 }
-for (const f of readdirSync(REQ).filter(x => x.endsWith(".json")).sort()) {
-  const name = f.replace(/\.json$/, ""), req = JSON.parse(readFileSync(path.join(REQ, f), "utf8"));
+// request files: the ones in the code, and the ones on the branch `embed-requests` (windows of real transcripts, which are
+// kept out of the code; the workflow checks that branch out into EXTRA_REQUESTS)
+const files = readdirSync(REQ).filter(x => x.endsWith(".json")).map(x => path.join(REQ, x));
+if (process.env.EXTRA_REQUESTS && existsSync(process.env.EXTRA_REQUESTS)) files.push(...readdirSync(process.env.EXTRA_REQUESTS).filter(x => x.endsWith(".json")).map(x => path.join(process.env.EXTRA_REQUESTS, x)));
+const ONLY = String(process.env.ONLY_REQUESTS || "").split(/[\s,]+/).filter(Boolean);
+for (const file of files.sort()) {
+  const name = path.basename(file).replace(/\.json$/, ""); if (ONLY.length && !ONLY.includes(name)) continue;
+  const req = JSON.parse(readFileSync(file, "utf8"));
   const hash = createHash("sha256").update(JSON.stringify([req.kind, req.texts])).digest("hex").slice(0, 16);
   const t0 = Date.now();
   const r = await embedTexts(req.texts, { worker: WORKER, origin: ORIGIN, model: MODEL, kind: req.kind || "q" });

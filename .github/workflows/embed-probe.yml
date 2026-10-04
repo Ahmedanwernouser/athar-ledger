@@ -19,8 +19,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
+      - name: extra requests (windows of real transcripts are kept on a branch, not in the code)
+        run: |
+          if git fetch -q origin embed-requests:embed-requests 2>/dev/null; then git worktree add -q /tmp/req embed-requests; else mkdir -p /tmp/req; fi
+          ls /tmp/req
       - name: probe
         env:
+          EXTRA_REQUESTS: /tmp/req
           LIVE_WORKER: https://athar-asr.athar-7399079d.workers.dev
           LIVE_ORIGIN: https://athar-ledger.pages.dev
         run: node eval/embed/cache.mjs
