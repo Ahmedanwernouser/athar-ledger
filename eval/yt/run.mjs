@@ -37,21 +37,31 @@ globalThis.fetch = async (url, init = {}) => {
 
 const corpus = await loadCorpusWith(["daif"]);
 const VIDEOS = String(process.env.YT_VIDEOS || "1foxMsRygJg").split(/[\s,]+/).filter(Boolean);
-// a longer one from the same public playlist, to exercise more than one window: the first whose length (asked through the
-// Worker, as the site does) is 11–40 minutes
+// ---- is the length the Worker reports (countTokens: audio tokens / 32) the real length, for short AND long videos? ----
+// Ground truth: "lengthSeconds" in the video's own watch page, read from this machine. Candidates: the owner's playlist and a
+// search for long lectures. One video of 11–40 minutes is then transcribed in full, to exercise several windows.
+const page = async (url) => (await realFetch(url, { headers: { "Accept-Language": "en", "Cookie": "CONSENT=YES+1; SOCS=CAI" } })).text();
+const trueLength = async (id) => { try { const m = /"lengthSeconds":"(\d+)"/.exec(await page("https://www.youtube.com/watch?v=" + id + "&hl=en")); return m ? +m[1] : null; } catch { return null; } };
+const askLength = async (id) => { const r = await globalThis.fetch("https://w.dev/yt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video: id }) }); const j = await r.json().catch(() => ({})); return j.seconds ?? j.error; };
 try {
-  const html = await (await realFetch("https://www.youtube.com/playlist?list=PLZbyN8Td38XgDoErS9Ca3jIxwVsGKizxT&hl=en", { headers: { "Accept-Language": "en", "Cookie": "CONSENT=YES+1" } })).text();
-  const ids = [...new Set([...html.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map(m => m[1]))].filter(id => !VIDEOS.includes(id));
-  say(`playlist: ${ids.length} other videos seen`);
-  const lens = [];
-  for (const id of ids.slice(0, 25)) {
-    const r = await globalThis.fetch("https://w.dev/yt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video: id }) });
-    const j = await r.json().catch(() => ({}));
-    lens.push(`${id}:${j.seconds ?? j.error}`);
-    if (j.seconds >= 660 && j.seconds <= 2400) { VIDEOS.push(id); say(`longer video picked: ${id} (${j.seconds} s)`); break; }
+  const cand = [];
+  const pl = await page("https://www.youtube.com/playlist?list=PLZbyN8Td38XgDoErS9Ca3jIxwVsGKizxT&hl=en");
+  cand.push(...[...new Set([...pl.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map(m => m[1]))].slice(0, 6));
+  for (const q of ["محاضرة كاملة الشيخ الحويني", "خطبة الجمعة كاملة", "شرح الأربعين النووية الدرس الأول"]) {
+    const sr = await page("https://www.youtube.com/results?search_query=" + encodeURIComponent(q) + "&sp=EgIYAg%253D%253D&hl=en");
+    cand.push(...[...new Set([...sr.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map(m => m[1]))].slice(0, 5));
   }
-  say("lengths asked: " + lens.join(" "));
-} catch (e) { say("playlist not readable from here: " + (e && e.message)); }
+  const rows = []; let picked = false;
+  for (const id of [...new Set([VIDEOS[0], ...cand])].slice(0, 22)) {
+    const truth = await trueLength(id), got = await askLength(id);
+    rows.push({ id, truth, worker: got, diff: typeof got === "number" && truth ? got - truth : null });
+    if (!picked && truth >= 660 && truth <= 2400 && typeof got === "number" && Math.abs(got - truth) <= 5) { VIDEOS.push(id); picked = true; }
+  }
+  save("lengths.json", rows);
+  const num = rows.filter(r => r.diff != null);
+  say(`length check on ${rows.length} videos (${num.length} comparable): worst difference ${num.length ? Math.max(...num.map(r => Math.abs(r.diff))) : "-"} s; ` + rows.map(r => `${r.id}: page ${r.truth} / worker ${r.worker}`).join(", "));
+  say(picked ? `longer video picked for a full run: ${VIDEOS.at(-1)}` : "no video of 11–40 minutes with a confirmed length was found");
+} catch (e) { say("length check could not run: " + (e && e.message)); }
 
 for (const id of VIDEOS) {
   const t0 = Date.now(); upstream.length = 0;
