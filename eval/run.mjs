@@ -17,7 +17,7 @@ import { tokenizeTranscript, fold, norm, editDistance, wordSim } from "../public
 import { findCues } from "../public/js/cues.js";
 
 const ARGS = process.argv.slice(2);
-const QUICK = ARGS.includes("--quick"), WORKER = ARGS.includes("--worker");
+const QUICK = ARGS.includes("--quick"), WORKER = ARGS.includes("--worker"), DEV = ARGS.includes("--dev");
 // seed 101 is the DEVELOPMENT lecture (thresholds were tuned on it). The reported run uses three other lectures, and
 // three more ("fresh") that were generated only after everything was fixed.
 const SEEDS = [202, 303, 404], FRESH = [505, 606, 707];
@@ -427,6 +427,25 @@ if (WORKER) {
   await initCorpus();
   process.on("message", job => { process.send({ key: job.key, out: runJob(job) }); });
   process.send({ ready: true, info: { N: corpus.N, NQ: corpus.NQ, hasVectors: !!corpus.vec } });
+} else if (DEV) {
+  // Development only (seed 101, never reported): quotations by meaning with a known opener, an unseen opener and no opener,
+  // and what the same settings do to speech that quotes nothing. One line per condition; used while changing the engine.
+  await initCorpus();
+  for (const [name, gen] of [["known", {}], ["unseen", { par: "unseen" }], ["strip", { par: "strip" }]]) {
+    const lec = buildLecture(corpus, 101, SIZES, "dev", gen);
+    for (const it of lec.items) if (it.kind === "par") it.cueSeen = findCues(it.frag.map(fold)).some(c => c.kind === "hadith");
+    for (const nid of ["clean", "std20"]) {
+      const nz = NOISE[nid].fn(lec.words, 101), t0 = Date.now();
+      const pred = SYSTEMS.engine()(nz.words, lec.blocked), ms = Date.now() - t0;
+      const { m, r } = score(pred, lec.items, nz.map, lec.words, false);
+      const par = k => r.par.filter(x => x.tx || (x.rank >= 0 && x.rank < k)).length;
+      const st = {}; for (const e of pred) st[e.status] = (st[e.status] || 0) + 1;
+      console.log(`${name}/${nid} ${ms}ms  par t1 ${par(1)} t3 ${par(3)} t5 ${par(5)} /${r.par.length} (textual ${r.par.filter(x => x.tx).length}, meaning ${r.par.filter(x => x.meaning).length})` +
+        `  vq ${m.vq[1]}/${m.vq[0]} vh ${m.vh[1]}/${m.vh[0]} ph ${m.ph[1]}/${m.ph[0]}  CRIT src ${r.critWrongSource} changedVerbatim ${r.critChangedVerbatim} ooc ${r.critOOC}+${r.critOOCverbMost} fillerTextual ${r.critFiller ?? "-"}` +
+        `  fillerLead ${r.fillerLead} fillerMeaning ${r.fillerMeaning}  cueClean ${r.cueClean}/${r.cueN}  entries ${JSON.stringify(st)}`);
+    }
+  }
+  console.log("absent sayings:", JSON.stringify(runAbsent()));
 } else if (QUICK) {
   await initCorpus();
   const lec = buildLecture(corpus, 101, SIZES, "dev");

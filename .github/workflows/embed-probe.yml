@@ -1,0 +1,39 @@
+# Development probe: sentence embeddings for quotations by meaning (see eval/embed/probe.mjs).
+# Keys are repository secrets; never printed, never written. Results go to the branch `embed-results`.
+name: embed-probe
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["eval/embed/**", ".github/workflows/embed-probe.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: embed-probe
+  cancel-in-progress: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: probe
+        env:
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+        run: node eval/embed/probe.mjs
+      - name: publish results
+        if: always()
+        run: |
+          set -e
+          cp -r eval/embed/out /tmp/out
+          git config user.name "embed-probe"
+          git config user.email "embed-probe@users.noreply.github.com"
+          git checkout --orphan embed-results
+          git rm -rfq --cached .
+          rm -rf embed && mkdir embed && cp -r /tmp/out/. embed/
+          echo "${GITHUB_SHA}" > embed/COMMIT
+          git add -f embed
+          git commit -qm "embed probe for ${GITHUB_SHA}"
+          git push -f origin embed-results
