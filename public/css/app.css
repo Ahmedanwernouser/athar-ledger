@@ -918,3 +918,18 @@ html[dir=ltr] .entry[data-rv="unsure"] .ord::after { content: " ?"; }
 @media (max-width: 560px) { .ytrow { flex-wrap: wrap; } .ytrow .btn { flex: 1 1 100%; } }
 .wb-kind { display: inline-block; margin-inline-start: 8px; padding: 0 8px; border: 1px solid rgba(122,90,18,.35); border-radius: var(--r-pill); font-size: var(--fs-micro); font-weight: 500; color: var(--warn-ink); }
 .wb-book:empty { display: none; }
+
+/* ---- the whole transcript: tools on the side panel, and a wide reading window ---- */
+.tr-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 10px; font-size: var(--fs-note); }
+.tr-tools .btn.small { min-height: 30px; }
+dialog.reader { width: min(860px, 94vw); max-height: 92vh; }
+dialog.reader .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 14px; }
+.reader-text { font-size: var(--fs-lead); line-height: 2.1; color: var(--ink); }
+.reader-text .rp { margin: 0 0 1em; }
+.reader-text .rt { display: inline-block; margin: 0 10px 0 0; font-size: var(--fs-micro); color: var(--ink-3); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+.reader-text .c { border-bottom: 2px solid var(--c); cursor: pointer; }
+.reader-text .c:hover { background: var(--row-on); }
+.reader-text .c.s-verbatim { --c: var(--verbatim); } .reader-text .c.s-partial { --c: var(--partial); } .reader-text .c.s-meaning { --c: var(--meaning); }
+.reader-text .c.s-lead { --c: var(--lead); } .reader-text .c.s-notfound { --c: var(--notfound); border-bottom-style: dashed; }
+@media print { .tr-tools { display: none !important; } }
+html[dir=rtl] .reader-text[dir=rtl] .rt, .reader-text[dir=rtl] .rt { margin: 0 0 0 10px; }

@@ -4,7 +4,7 @@ import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProvi
 import { compareLedgers, applyAgreement, marksOf, statusOf, timeTolerance } from "./agree.js";
 import { flagsOf } from "./flags.js";
 import { toCsv, toJson, download } from "./exporter.js";
-import { citedDocx, toSession, fromSession, parseStampedText, youtubeId, cleanManual, cleanFixes, committeeSummary, summaryLines, descriptionIndex } from "./report.js";
+import { citedDocx, toSession, fromSession, parseStampedText, youtubeId, cleanManual, cleanFixes, committeeSummary, summaryLines, descriptionIndex, transcriptParagraphs, transcriptText, transcriptSrt } from "./report.js";
 import { t, tOpt, has, num, setLang, getLang, srcLabel, transcriberLabel, LANGS } from "./i18n.js";
 
 const CFG = window.ATHAR_CONFIG || {};
@@ -180,6 +180,17 @@ function boot() {
   $("btnJson").onclick = () => download("athar-ledger.json", toJson(S.ledger, activeReviews(), { source: titleNow(), words: S.words.length, corrections: fixCount() ? { ...S.fixes } : undefined,
     transcribers: S.transcribers.length ? S.transcribers.map(transcriberLabel) : undefined, twoTranscriptions: S.two || undefined }), "application/json");
   $("btnPrint").onclick = () => window.print();
+  // the whole transcript: to keep (text, or subtitles with its times) and to read comfortably
+  const saveTxt = () => download("athar-transcript.txt", transcriptText(finalWords(), { timed: S.hasTimes }), "text/plain;charset=utf-8");
+  const saveSrt = () => { const srt = transcriptSrt(finalWords()); if (srt) download("athar-transcript.srt", srt, "application/x-subrip;charset=utf-8"); };
+  for (const id of ["btnTxt", "btnTxt2", "readerTxt"]) $(id).onclick = saveTxt;
+  for (const id of ["btnSrt", "btnSrt2", "readerSrt"]) $(id).onclick = saveSrt;
+  $("btnRead").onclick = openReader;
+  $("readerCopy").onclick = async () => {
+    let ok = true; try { await navigator.clipboard.writeText(transcriptText(finalWords(), { timed: S.hasTimes })); } catch { ok = false; }
+    $("readerMsg").textContent = t(ok ? "reader.copied" : "reader.nocopy");
+  };
+  $("readerText").addEventListener("click", ev => { const c = ev.target.closest(".c"); if (!c) return; const e = S.ledger[c.dataset.id - 1]; if (e) { $("reader").close(); selectAndFocus(e); } });
   $("btnDocx").onclick = () => {
     const { bytes } = citedDocx({ words: shownWords(), ledger: S.ledger, reviews: activeReviews(), title: titleNow(), fixed: fixCount(), transcribers: S.transcribers.map(transcriberLabel),
       mushaf: !$("optMushafWrap").hidden && $("optMushaf").checked,
@@ -1273,8 +1284,38 @@ function refreshEntry(e, was) {
  *  a change in one place does not make the browser lay out a whole lecture again. */
 const TR_BLOCK = 220, TR_BLOCK_MIN = 110, SENTENCE_END = /[.!?؟…]["'»”)]*$/;
 let trJob = 0;
+/** the transcript as it stands now: the reviewer's corrections applied, a word he removed left out */
+function finalWords() {
+  const out = [];
+  S.words.forEach((w, i) => { const text = wordAt(i); if (text) out.push({ ...w, w: text }); });
+  return out;
+}
+/** the whole transcript in a wide window: paragraphs with the time each begins at, citations underlined in their status colour */
+function openReader() {
+  const box = $("readerText"), n = S.words.length; box.textContent = "";
+  const sample = S.words.slice(0, 40).map(w => w.w).join(" "); box.dir = dirOf(sample); box.lang = scriptOf(sample);
+  const owner = new Array(n).fill(null);
+  for (const strong of [false, true]) for (const e of S.ledger) if ((textual(e) || !!e.manual) === strong) for (let i = Math.max(0, e.wordStart); i <= Math.min(e.wordEnd, n - 1); i++) owner[i] = e;
+  const f = document.createDocumentFragment();
+  for (const p of transcriptParagraphs(S.words)) {
+    const para = el("p", "rp");
+    if (S.hasTimes && S.words[p.from].start != null) para.append(el("span", "rt", fmtTime(S.words[p.from].start)));
+    for (let i = p.from; i < p.to;) {
+      const e = owner[i];
+      if (!e) { const w = wordAt(i); if (w) para.append(w + " "); i++; continue; }
+      const c = el("span", "c s-" + st(e)); c.dataset.id = e.id; c.title = markTitle(e);
+      const ws = []; for (; i < p.to && owner[i] === e; i++) { const w = wordAt(i); if (w) ws.push(w); }
+      c.textContent = ws.join(" "); para.append(c, " ");
+    }
+    f.append(para);
+  }
+  box.append(f); $("readerMsg").textContent = "";
+  $("btnSrt").hidden = $("btnSrt2").hidden = $("readerSrt").hidden = !S.hasTimes;
+  if (!$("reader").open) $("reader").showModal();
+}
 function drawTranscript() {
   const T = $("transcript"), job = ++trJob, n = S.words.length; T.textContent = "";
+  $("btnSrt").hidden = $("btnSrt2").hidden = !S.hasTimes;
   const sample = S.words.slice(0, 40).map(w => w.w).join(" "); T.dir = dirOf(sample); T.lang = scriptOf(sample);
   T.classList.toggle("big", n > 3000);
   const owner = new Array(n).fill(null);

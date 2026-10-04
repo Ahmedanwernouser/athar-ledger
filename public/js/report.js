@@ -362,3 +362,43 @@ export function youtubeId(url) {
   const m = String(url || "").trim().match(/^(?:https?:\/\/)?(?:www\.|m\.|music\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[?&#/].*)?$/);
   return m ? m[1] : null;
 }
+
+// ---------------- the whole transcript, to read or to keep ----------------
+const SENT_END = /[.!?؟…]["'»”)]*$/;
+/**
+ * The transcript cut into paragraphs for reading: at a sentence end once a paragraph has 40 words, at a pause of 2.5 s
+ * once it has 12, and at 90 words whatever comes. -> [{from, to}] (word indexes, `to` exclusive)
+ */
+export function transcriptParagraphs(words) {
+  const out = []; let from = 0;
+  for (let i = 0; i < words.length; i++) {
+    const n = i - from + 1, last = i === words.length - 1;
+    const pause = !last && Number.isFinite(words[i].end) && Number.isFinite(words[i + 1].start) && words[i + 1].start - words[i].end >= 2.5;
+    if (last || n >= 90 || (n >= 40 && SENT_END.test(words[i].w)) || (n >= 12 && pause)) { out.push({ from, to: i + 1 }); from = i + 1; }
+  }
+  return out;
+}
+/** plain text, one paragraph per line; with `timed`, each paragraph begins with the time of its first word: "[12:05] ..." */
+export function transcriptText(words, { timed = false } = {}) {
+  return transcriptParagraphs(words).map(p => {
+    const text = words.slice(p.from, p.to).map(w => w.w).join(" "), at = words[p.from].start;
+    return timed && Number.isFinite(at) ? `[${fmtTime(at)}] ${text}` : text;
+  }).join("\n\n") + (words.length ? "\n" : "");
+}
+const srtTime = s => { const ms = Math.max(0, Math.round(s * 1000)), p = (x, n = 2) => String(x).padStart(n, "0");
+  return `${p(Math.floor(ms / 3600000))}:${p(Math.floor(ms / 60000) % 60)}:${p(Math.floor(ms / 1000) % 60)},${p(ms % 1000, 3)}`; };
+/** subtitles (SRT): cues of at most 10 words and 6 seconds, closed early at a sentence end or a pause. "" when the words carry no times. */
+export function transcriptSrt(words) {
+  if (!words.length || !words.every(w => Number.isFinite(w.start) && Number.isFinite(w.end))) return "";
+  const cues = []; let from = 0;
+  for (let i = 0; i < words.length; i++) {
+    const n = i - from + 1, last = i === words.length - 1;
+    const long = words[i].end - words[from].start >= 6, pause = !last && words[i + 1].start - words[i].end >= 1.2;
+    if (last || n >= 10 || long || pause || (n >= 4 && SENT_END.test(words[i].w))) { cues.push([from, i + 1]); from = i + 1; }
+  }
+  return cues.map(([a, b], k) => {
+    const start = words[a].start, next = k + 1 < cues.length ? words[cues[k + 1][0]].start : Infinity;
+    const end = Math.min(Math.max(words[b - 1].end, start + 0.4), Math.max(next, start + 0.1));      // a cue never runs into the next one
+    return `${k + 1}\n${srtTime(start)} --> ${srtTime(end)}\n${words.slice(a, b).map(w => w.w).join(" ")}\n`;
+  }).join("\n");
+}

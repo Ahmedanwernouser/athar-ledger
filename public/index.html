@@ -146,6 +146,8 @@
             <div class="menu-box">
               <button type="button" class="menu-item" id="btnPrint">اطبع التقرير</button>
               <button type="button" class="menu-item" id="btnIndex">فهرس زمني لوصف الفيديو</button>
+              <button type="button" class="menu-item" id="btnTxt2">النص المفرَّغ كاملًا (TXT)</button>
+              <button type="button" class="menu-item" id="btnSrt2">النص بأزمنته (SRT)</button>
               <button type="button" class="menu-item" id="btnCsv">جدول (CSV)</button>
               <button type="button" class="menu-item" id="btnJson">بيانات (JSON)</button>
             </div>
@@ -202,6 +204,11 @@
         <aside class="transcript-wrap">
           <div class="video" id="video" hidden><iframe id="videoFrame" title="video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
           <h2 id="transcriptTitle">النص المفرَّغ</h2>
+          <p class="tr-tools" id="trTools">
+            <button type="button" class="btn small line" id="btnRead">اقرأه كاملًا</button>
+            <button type="button" class="link" id="btnTxt">نزّله (TXT)</button>
+            <button type="button" class="link" id="btnSrt">بأزمنته (SRT)</button>
+          </p>
           <form class="csearch" id="csearch" role="search">
             <input type="text" enterkeyhint="search" id="csearchQ" dir="auto" placeholder="ابحث في المصادر" aria-label="ابحث في المصادر عن نص" autocomplete="off">
             <button type="submit" class="btn small" id="csearchGo">ابحث</button>
@@ -378,6 +385,19 @@
   <p class="note warn" id="lookupClash" hidden><span id="lookupClashMsg"></span> <button type="button" class="link" id="lookupClashOpen">افتح ذلك الاستشهاد</button></p>
   <ol class="lookup-list" id="lookupList"></ol>
   <p class="note" id="lookupScope"></p>
+</dialog>
+
+<dialog id="reader" class="reader" aria-labelledby="readerTitle">
+  <form method="dialog"><button class="x" aria-label="إغلاق">×</button></form>
+  <h2 id="readerTitle">النص المفرَّغ كاملًا</h2>
+  <p class="note" id="readerHint">كل ما قيل في التسجيل. ما تحته خط استشهاد وُجد له مصدر أو أُعلن عنه: اضغطه لتفتح بطاقته في السجل.</p>
+  <div class="row">
+    <button type="button" class="btn small line" id="readerTxt">نزّله (TXT)</button>
+    <button type="button" class="btn small line" id="readerSrt">بأزمنته (SRT)</button>
+    <button type="button" class="btn small line" id="readerCopy">انسخه</button>
+    <span class="note" id="readerMsg" role="status"></span>
+  </div>
+  <div class="reader-text" id="readerText"></div>
 </dialog>
 
 <dialog id="indexDlg" aria-labelledby="indexTitle">
