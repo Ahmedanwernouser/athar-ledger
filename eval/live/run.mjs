@@ -2,6 +2,8 @@
 // Runs on the test machine (GitHub Actions); the keys come from repository secrets and are never printed:
 // every line written to disk passes through redact().
 //   GEMINI_API_KEYS  one or more keys, separated by commas / spaces / new lines (tried in order on 429/403)
+//   COHERE_API_KEY   optional; Cohere Transcribe Arabic (text only, no timestamps) called directly: it is a
+//                    candidate, not yet a provider of the Worker
 //   GROQ_API_KEY     optional; when present the same audio is also transcribed with Whisper and compared
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -15,7 +17,8 @@ const AUDIO = path.join(HERE, "audio"), OUT = path.join(HERE, "out");
 mkdirSync(OUT, { recursive: true });
 const GEM_KEYS = String(process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "").split(/[\s,;]+/).filter(k => k.length > 10);
 const GROQ = String(process.env.GROQ_API_KEY || "").trim();
-const SECRETS = [...GEM_KEYS, GROQ].filter(Boolean);
+const COHERE = String(process.env.COHERE_API_KEY || "").trim();
+const SECRETS = [...GEM_KEYS, GROQ, COHERE].filter(Boolean);
 const redact = (s) => { let t = String(s); for (const k of SECRETS) t = t.split(k).join("<KEY>"); return t.replace(/([?&](?:key|upload_id)=)[^&\s"]+/g, "$1<…>"); };
 const save = (name, data) => writeFileSync(path.join(OUT, name), redact(typeof data === "string" ? data : JSON.stringify(data, null, 1)) + "\n");
 const summary = []; const say = (s) => { console.log(redact(s)); summary.push(redact(s)); };
@@ -118,6 +121,20 @@ for (const clip of clips) {
     say(`${name} groq via Worker: HTTP ${res.status} in ${Math.round((Date.now() - t0) / 1000)} s` + (res.status === 200 ? "" : " " + JSON.stringify(res.j)));
     flush(name + ".groq");
     if (res.status === 200) { save(name + ".groq.json", res.j); say(`   ${res.j.model}: ${tsCheck(res.j)}`); say("   " + ledgerOf(name, res.j, "groq")); }
+  }
+  if (COHERE) {
+    // Written from Cohere's API reference (POST /v2/audio/transcriptions: model, language, file -> {text}); trial keys: 5 requests a minute.
+    const fd = new FormData();
+    fd.append("model", process.env.COHERE_ASR_MODEL || "cohere-transcribe-arabic-07-2026"); fd.append("language", "ar");
+    fd.append("file", new Blob([bytes], { type: "audio/mpeg" }), clip);
+    const t0 = Date.now();
+    try {
+      const r = await fetch("https://api.cohere.com/v2/audio/transcriptions", { method: "POST", headers: { Authorization: "Bearer " + COHERE }, body: fd, signal: AbortSignal.timeout(300000) });
+      const j = await r.json().catch(() => null);
+      say(`${name} cohere direct: HTTP ${r.status} in ${Math.round((Date.now() - t0) / 1000)} s` + (r.ok ? "" : " " + JSON.stringify(j).slice(0, 400)));
+      if (r.ok && j && typeof j.text === "string") { save(name + ".cohere.json", { text: j.text, words: [], provider: "cohere" }); say(`   ${j.text.split(/\s+/).length} words, no timestamps`); say("   " + ledgerOf(name, { text: j.text, words: [] }, "cohere")); }
+    } catch (e) { say(`${name} cohere direct failed: ${e.message}`); }
+    trace = []; await new Promise((r) => setTimeout(r, 13000));
   }
 }
 if (!clips.length) say("no audio clips were prepared (see audio.log)");

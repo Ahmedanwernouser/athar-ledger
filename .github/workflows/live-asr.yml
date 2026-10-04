@@ -28,6 +28,7 @@ jobs:
         env:
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
         run: node eval/live/run.mjs
       - name: publish results
         if: always()
