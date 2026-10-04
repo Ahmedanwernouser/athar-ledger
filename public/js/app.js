@@ -433,7 +433,8 @@ async function runYoutube(id) {
   const who = { provider: "gemini-yt", model: res.model }, warnings = [msg("warn.yt", () => transcriberLabel(who))];
   if (res.truncated) warnings.push(msg("warn.yt.cut"));
   if (res.partial) { const why = asrMsg(res.partial.why), upTo = res.partial.upTo; warnings.push(msg("warn.yt.partial", () => fmtTime(upTo), () => fmtTime(res.seconds), () => say(why))); }
-  await runWords(run, res.words, { title: t("yt.title", id), video: id, warnings, transcribers: [who] });
+  const title = res.title ? (res.author ? `${res.title} — ${res.author}` : res.title) : t("yt.title", id);
+  await runWords(run, res.words, { title, video: id, warnings, transcribers: [who], fromLink: true });
 }
 
 class InputError extends Error { constructor(key) { super(key); this.key = key; } }
@@ -673,7 +674,7 @@ function redrawInPlace() {
 }
 
 /** the common path of every input. `run` was started (and the busy screen shown) before the first await. */
-async function runWords(run, words, { title = "", titleKey = null, audioFile = null, estimated = false, extra = null, warnings = [], review = null, video = null, manual = null, fixes = null, second = null, transcribers = [] }) {
+async function runWords(run, words, { title = "", titleKey = null, audioFile = null, estimated = false, extra = null, warnings = [], review = null, video = null, manual = null, fixes = null, second = null, transcribers = [], fromLink = false }) {
   words = (Array.isArray(words) ? words : []).map(cleanWord).filter(Boolean);
   if (words.length < 4) return fail(run, msg("err.tooshort"));
   if (extra) extra = extra.map(cleanWord).filter(Boolean);
@@ -735,7 +736,7 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
   S.meaning = { state: "idle", done: 0, total: 0, hit: 0 };
   const a = $("audio");
   if (audioFile) { S.audioUrl = URL.createObjectURL(audioFile); a.src = S.audioUrl; a.hidden = false; S.noAudio = ""; }
-  else S.noAudio = !S.hasTimes ? "na.notimes" : estimated ? "na.est" : video ? "na.video" : "na.file";
+  else S.noAudio = !S.hasTimes ? "na.notimes" : estimated ? "na.est" : video ? (fromLink ? "na.link" : "na.video") : "na.file";
   if (video && !audioFile) { S.video = video; $("videoFrame").src = "https://www.youtube-nocookie.com/embed/" + video; $("video").hidden = false; }
   S.busy = null;
   render(); screen("results"); window.scrollTo(0, 0);

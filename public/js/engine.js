@@ -29,6 +29,7 @@ export const DEFAULTS = {
   cueReach: 45,         // tokens after a cue in which a quotation is expected
   gradeReach: 40,       // tokens after a hadith in which a spoken grading ("هذا حديث ضعيف") is attached to it
   gradeAhead: 8,        // ... and before the next hadith, when the grading comes first
+  restartReach: 60,     // a quotation begun, broken off and begun again within this many tokens is one quotation
   cueAnswer: 16,        // a citation must begin within this many tokens after a cue to count as its quotation
   margin: 25,           // transcript tokens added around a cluster before aligning
   band: 16,             // the alignment is computed within this many words of the diagonals on which speech and source share word pairs (0 = everywhere)
@@ -713,7 +714,25 @@ export function analyze(words, corpus, options = {}) {
     for (let i = cue.end + 2; i < reach; i++) if (sentenceEnd[i]) { reach = i + 1; break; }
     for (let i = cue.end; i < reach; i++) if (taken[i]) { covered = true; break; }
     if (covered) continue;
+    // The speaker began the quotation, broke off to explain something and began it again ("... قال: لقد رأيتني — وطبعا أنتم
+    // عارفين سعيد بن زيد ... — قال: لقد رأيتني وإن عمر لموثقي على الإسلام"): the first words after this cue are the first
+    // words of a citation found a little later. That citation answers the cue, and what was said about the source here
+    // ("في صحيح البخاري") is said about it.
+    let restart = null;
+    {
+      // (two words that are the same in both places, one of them a word that is rare in the sources: "O you who ..." begins many verses)
+      const sameStart = (a, b) => ftok[a] === ftok[b] && ftok[a + 1] === ftok[b + 1] && ftok[a + 1] !== undefined && !(formMask[a] && formMask[a + 1]) &&
+        Math.max(idf(ftok[a]), idf(ftok[a + 1])) >= 4.5 && idf(ftok[a]) + idf(ftok[a + 1]) >= 7;
+      const again = cites.find(c => c.ts > cue.end && c.ts - cue.end <= o.restartReach && (cue.kind === "quran") === !!c.best.isQ &&
+        Array.from({ length: Math.max(0, Math.min(wEnd, cue.end + 12) - cue.end) }, (_, d) => cue.end + d).some(a => sameStart(a, c.ts)));
+      restart = again || null;
+    }
     const mm = cue.kind === "saying" && !corpus.hasBooks() ? null : meaningCandidates(cue, wEnd, tok, ftok, corpus, o);
+    // (a strong match by meaning stands when none of its candidates is that citation's text: then this cue announced something else that merely begins alike)
+    if (restart && !(mm && mm.strong && ![restart.best, ...restart.alts, ...restart.others].some(m => mm.cands.some(k => k.pid === m.pidA)))) {
+      if (!restart.colBefore.length && !restart.colAfter.length) for (const sp of colSpans) if (sp.type !== "bare" && sp.end <= cue.end + 1 && sp.pos >= cue.pos - 12) restart.colBefore.push(...sp.cols);
+      continue;
+    }
     if (mm && mm.strong) {
       extra.push({ ts: cue.pos, te: mm.te, cue, status: "meaning", meaning: mm });
       for (let i = cue.pos; i < mm.te; i++) taken[i] = 1;

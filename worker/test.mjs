@@ -587,10 +587,16 @@ sec("/yt: a YouTube video from its link (Gemini)");
   { const env = Y(); up.calls = []; up.impl = count(5101);
     const r = await call(yt({ video: VID }), env);
     ok(r.status === 200 && r.j.seconds === 159, "/yt length: 5101 audio tokens / 32 = 159 s");
+    ok(r.j.title === undefined && up.calls.length === 2 && new URL(up.calls[1].url).host === "www.youtube.com" && !up.calls[1].url.includes(GKEY) && !(up.calls[1].init.headers || {})["x-goog-api-key"], "/yt the title is asked from YouTube's oEmbed without the key; an answer that is not a title is simply left out");
     const c = up.calls[0], b = JSON.parse(c.init.body);
     ok(/:countTokens$/.test(c.url) && new URL(c.url).host === "generativelanguage.googleapis.com", "/yt length is asked with countTokens on Google's host");
     eq(b.contents[0].parts[0].file_data.file_uri, "https://www.youtube.com/watch?v=" + VID, "/yt the link is built by the Worker from the id");
     eq(env.CAP.writes, 0, "/yt asking the length costs no cap unit");
+    up.impl = (url) => (String(url).includes("/oembed") ? new Response(JSON.stringify({ title: "  درس <b>في</b>\nالصبر  ", author_name: "قناة\u0000 الشيخ", html: "<iframe>" }), { status: 200 }) : count(5101)());
+    const r2 = await call(yt({ video: VID }), Y());
+    ok(r2.j.title === "درس b في /b الصبر" && r2.j.author === "قناة الشيخ" && r2.j.html === undefined, "/yt title and channel: plain text only, nothing else of the answer is passed on");
+    up.impl = (url) => (String(url).includes("/oembed") ? new Response("nope " + GKEY, { status: 401 }) : count(5101)());
+    const r3 = await call(yt({ video: VID }), Y()); ok(r3.status === 200 && r3.j.seconds === 159 && r3.j.title === undefined, "/yt a video whose title cannot be read is still measured");
     ok(!c.url.includes(GKEY) && c.init.headers["x-goog-api-key"] === GKEY, "/yt the key travels in a header, never in the URL"); }
   { up.impl = () => new Response("PERMISSION_DENIED " + GKEY, { status: 403 }); const r = await call(yt({ video: VID }), Y()); ok(r.status === 404 && r.j.error === "yt_unavailable", "/yt a private or missing video -> yt_unavailable"); }
   { up.impl = count(32 * 7 * 3600); const r = await call(yt({ video: VID }), Y()); ok(r.status === 413 && r.j.error === "too_long", "/yt a 7-hour video is refused"); }
@@ -625,7 +631,7 @@ sec("/yt: a YouTube video from its link (Gemini)");
   { up.calls = []; let n = 0; up.impl = () => (++n === 1 ? new Response("model not found", { status: 404 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
     const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 200 && up.calls.length === 2, "/yt a model that does not exist (404) is skipped, not taken for a missing video"); }
   { up.calls = []; let n = 0; up.impl = () => (++n === 1 ? new Response("model not found", { status: 404 }) : count(5101)());
-    const r = await call(yt({ video: VID }), Y()); ok(r.status === 200 && r.j.seconds === 159 && up.calls.length === 2, "/yt length: the same for countTokens"); }
+    const r = await call(yt({ video: VID }), Y()); ok(r.status === 200 && r.j.seconds === 159 && up.calls.filter((c) => c.url.includes(":countTokens")).length === 2, "/yt length: the same for countTokens"); }
   { up.impl = () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "not a list" }] } }] }), { status: 200 }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.error, "upstream", "/yt an answer that is not the list -> upstream"); }
   { up.impl = pieces([]); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 200 && r.j.words.length === 0 && r.j.text === "", "/yt a window without speech is an empty transcript, not an error"); }
   { up.impl = pieces([{ t: "00:01", x: "كلام" }], { finishReason: "MAX_TOKENS" }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.truncated, true, "/yt a cut-off answer says so"); }

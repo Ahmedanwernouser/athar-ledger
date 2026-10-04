@@ -73,3 +73,15 @@ test("... and a real hadith after the same cue is still found, and an absent one
   assert.ok(run(`عن معاذ رضي الله عنه قال قال رسول الله صلى الله عليه وسلم ${H}`).some(e => e.status === "verbatim"));
   assert.ok(run("قال رسول الله صلى الله عليه وسلم اذهبوا الى السوق فان التجارة تسعة اعشار الرزق وزرقاء الخبز تحت المنضدة").some(e => e.status === "notfound"));
 });
+test("a quotation begun, broken off for an aside and begun again is ONE citation, with the source named at the first start", () => {
+  // (the words of a real lecture, as transcribed from its link on 4 Oct 2026)
+  const l = run("في صحيح البخاري من حديث سعيد بن زيد قال لقد رأيتني، وطبعًا أنتم عارفين سعيد بن زيد أحد العشرة المبشرين بالجنة وكان زوج أخت عمر بن الخطاب وعمر لم يكن أسلم آنذاك يقول سعيد بن زيد رضي الله عنه: لقد رأيتني وإن عمر لموثقي على الإسلام عمر بن الخطاب ماسكه مكتفه هو وأخته");
+  assert.deepEqual(l.filter(e => e.status === "notfound"), []);
+  const e = l.find(x => x.source && /3862|3867|6942/.test(x.source.label));
+  assert.ok(e && ["verbatim", "partial"].includes(e.status), JSON.stringify(l.map(x => [x.status, x.source && x.source.label])));
+  assert.ok(e.attribution && e.attribution.agrees === true, "the collection named before the aside is checked against this citation");
+});
+test("... but an announced text that is NOT said again nearby is still reported as not found", () => {
+  const l = run("قال رسول الله صلى الله عليه وسلم اذهبوا الى السوق فان التجارة تسعة اعشار الرزق. ثم بعد كلام طويل في موضوع آخر تماما قال رسول الله صلى الله عليه وسلم إنما الأعمال بالنيات وإنما لكل امرئ ما نوى");
+  assert.ok(l.some(e => e.status === "notfound") && l.some(e => e.status === "verbatim"));
+});

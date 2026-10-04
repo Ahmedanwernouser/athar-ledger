@@ -933,3 +933,19 @@ dialog.reader .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8
 .reader-text .c.s-lead { --c: var(--lead); } .reader-text .c.s-notfound { --c: var(--notfound); border-bottom-style: dashed; }
 @media print { .tr-tools { display: none !important; } }
 html[dir=rtl] .reader-text[dir=rtl] .rt, .reader-text[dir=rtl] .rt { margin: 0 0 0 10px; }
+
+/* ---- print: paper is narrower than 960px, so the phone rules above apply to it; these put the report right ---- */
+@media print {
+  html, body, main, #results { min-height: 0 !important; height: auto !important; }
+  .res-head { padding-block: 8px 10px; }
+  .committee { break-inside: auto; margin-top: 8px; }
+  .committee-list { grid-template-columns: max-content minmax(0, 1fr); gap: 2px 18px; }
+  .committee-list dd { margin-bottom: 0; }
+  .map { background: none; border-bottom: 1px solid #999; }      /* the ruled ticks print as a solid bar */
+  .player { padding: 6px 0 2px; }
+  .cols { margin: 8px 0 0; }
+  .entry { padding: 14px 0; }
+  .foot { break-inside: avoid; padding-block: 10px; }
+  .foot-in { padding-block: 0; }
+  dialog:not([open]) { display: none !important; }
+}

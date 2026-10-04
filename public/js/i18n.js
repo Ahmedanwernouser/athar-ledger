@@ -283,6 +283,7 @@ const D = {
   // ---- citation index for a video description
   "idx.verse": ["آية", "Verse"], "idx.verses": ["آيات", "Verses"], "idx.surah": ["سورة {0}", "{0}"], "idx.hadith": ["حديث", "Hadith"], "idx.book": ["نص من كتاب", "Book passage"],
   "idx.intro": ["المقدمة", "Introduction"],
+  "na.link": ["الأزمنة من تفريغ الرابط (تقريبية)؛ اضغط زمن أي استشهاد ليُفتح الفيديو عنده.", "Times come from the transcription of the link (approximate); press a citation's time to open the video there."],
   "na.video": ["الأزمنة من النص الملصوق؛ اضغط زمن أي استشهاد ليُفتح الفيديو عنده.", "Times come from the pasted transcript; press a citation's time to open the video there."],
   "err.video": ["رابط الفيديو غير مفهوم. الصق رابط يوتيوب كاملًا أو اترك الخانة فارغة.", "The video link was not understood. Paste a full YouTube link or leave the field empty."],
   "err.session": ["ملف الجلسة فارغ أو تالف.", "The session file is empty or damaged."],

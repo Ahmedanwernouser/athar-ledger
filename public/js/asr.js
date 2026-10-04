@@ -319,8 +319,9 @@ export function ytStitch(A, B, cut) {
 export async function transcribeYoutube(video, language, cfg, onProgress = () => {}, signal = null) {
   if (!cfg.asrUrl) throw new AsrError("disabled");
   onProgress(0.02, { code: "yt.length" });
-  const { seconds } = await ytPost(cfg, { video }, signal);
+  const head = await ytPost(cfg, { video }, signal), seconds = head.seconds;
   if (!(seconds > 0)) throw new AsrError("yt_unavailable");
+  const about = { title: typeof head.title === "string" ? head.title.slice(0, 200) : "", author: typeof head.author === "string" ? head.author.slice(0, 100) : "" };
   const plan = ytPlan(seconds); let words = [], model = "", truncated = false;
   for (let k = 0; k < plan.length; k++) {
     onProgress(0.05 + 0.95 * (k / plan.length), { code: "yt.part", args: [k + 1, plan.length] });
@@ -330,7 +331,7 @@ export async function transcribeYoutube(video, language, cfg, onProgress = () =>
     catch (e) {
       // a later window failed: what was transcribed so far is kept and said to be partial, not thrown away
       if (!k || !words.length || (e instanceof AsrError && e.code === "aborted")) throw e;
-      return { words, provider: "gemini", model, seconds, approx: true, truncated, partial: { upTo: plan[k].cut, why: e instanceof AsrError ? e : new AsrError("unknown") } };
+      return { words, provider: "gemini", model, seconds, ...about, approx: true, truncated, partial: { upTo: plan[k].cut, why: e instanceof AsrError ? e : new AsrError("unknown") } };
     }
     if (typeof j.model === "string" && j.model) model = j.model.slice(0, 80);
     if (j.truncated) truncated = true;
@@ -339,7 +340,7 @@ export async function transcribeYoutube(video, language, cfg, onProgress = () =>
   }
   for (let i = 1; i < words.length; i++) if (words[i].start < words[i - 1].start) { words[i] = { ...words[i], start: words[i - 1].start, end: Math.max(words[i].end, words[i - 1].start) }; }   // a join never runs time backwards
   onProgress(1, { code: "asr.done" });
-  return { words, provider: "gemini", model, seconds, approx: true, truncated };
+  return { words, provider: "gemini", model, seconds, ...about, approx: true, truncated };
 }
 
 // ---------------- optional "by meaning" helper ----------------

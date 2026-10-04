@@ -597,6 +597,21 @@ function ytNormalise(j, model, from, to) {
     ...(cand.finishReason && cand.finishReason !== "STOP" ? { truncated: true } : {}) };
 }
 
+/** plain text for a title: no control characters, no markup characters, one line, at most `max` characters */
+const ytPlain = (v, max) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max) : "");
+/**
+ * The video's title and channel, from YouTube's own public oEmbed endpoint (no key; the address is built here from the
+ * validated id). Only a convenience for the report's heading: any failure answers {} and nothing depends on it.
+ */
+async function ytTitle(id) {
+  try {
+    const r = await fetch("https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent(ytUrl(id)), { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) { try { await r.body?.cancel(); } catch { /* ignore */ } return {}; }
+    const j = await r.json(), title = ytPlain(j && j.title, 200), author = ytPlain(j && j.author_name, 100);
+    return { ...(title ? { title } : {}), ...(author ? { author } : {}) };
+  } catch { return {}; }
+}
+
 async function ytRoute(req, env, cors) {
   const key = env.GEMINI_API_KEY;
   if (!key) return json({ error: "provider_unavailable", provider: "gemini" }, 400, cors);
@@ -631,7 +646,7 @@ async function ytRoute(req, env, cors) {
         const seconds = audio && Number.isFinite(audio.tokenCount) ? Math.round(audio.tokenCount / YT_AUDIO_TOKENS_PER_SECOND) : 0;
         if (!(seconds > 0)) return json({ error: "yt_unavailable" }, 404, cors);
         if (seconds > YT_MAX_SECONDS) return json({ error: "too_long", seconds, max_seconds: YT_MAX_SECONDS }, 413, cors);
-        return json({ seconds }, 200, cors);
+        return json({ seconds, ...(await ytTitle(id)) }, 200, cors);
       } catch { status = 0; }
     }
     return json({ error: "upstream", ...(status ? { upstream_status: status } : {}), stage: "count" }, 502, cors);
