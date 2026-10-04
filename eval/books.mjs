@@ -9,7 +9,7 @@
 // plus 30 long quotations from Tafsir al-Jalalayn, reported on their own line (the first version excluded that book).
 // A quotation is the quoted words only: a fragment that contains a chain of narrators, a «قال …» phrase or a «رواه …»
 // note is re-drawn, because the engine (correctly) reports only the quoted words and such an item would be a mixed span.
-import { writeFileSync, readFileSync } from "node:fs";
+import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { loadCorpusWith, EVAL, wilson, writeTiming, writeJson, ar } from "./lib.mjs";
 import { asrNoise, rng } from "./gen.mjs";
@@ -35,9 +35,29 @@ function inCore(pid, s, L) {
   for (let q = 0; q + 3 <= L; q += 3) for (const p of corpus.postings(3, F.slice(s + q, s + q + 3).join(" "))) if (p < corpus.coreN && (" " + corpus.P[p].n + " ").includes(str)) return true;
   return false;
 }
-function build(set) {
-  const r = rng(set.seed), pick = a => a[Math.floor(r() * a.length)];
+// The drawn quotations are FROZEN in eval/books_set.json (reference, first word, length, the two filler sentences), so the
+// same lectures are measured before and after any change to the engine. (The draw rejects fragments in which the engine's
+// cue list finds a cue; without the frozen file, a change to that list would silently change the test set.)
+//   node eval/books.mjs --draw   draws the sets again and rewrites the file
+const SET_FILE = path.join(EVAL, "books_set.json"), DRAW = process.argv.includes("--draw");
+const frozen = !DRAW && existsSync(SET_FILE) ? JSON.parse(readFileSync(SET_FILE, "utf8")) : null;
+const drawn = {};
+function rebuild(rows) {
+  const byRef = new Map(); for (const pk of packs) for (let p = pk.base; p < pk.base + pk.n; p++) byRef.set(corpus.P[p].r, p);
   const words = [], items = [];
+  for (const [ref, s, L, f1, f2] of rows) {
+    const pid = byRef.get(ref); if (pid == null) throw new Error("books_set.json names a passage that is not loaded: " + ref);
+    words.push(...norm(FILL[f1]).split(" "), ...norm("قال المؤلف رحمه الله").split(" "));
+    const a = words.length; words.push(...corpus.tok(pid).slice(s, s + L));
+    items.push({ pack: packs.find(pk => pid >= pk.base && pid < pk.base + pk.n).id, book: ref.split(":")[0], a, b: words.length });
+    words.push(...norm(FILL[f2]).split(" "));
+  }
+  return { words, items };
+}
+function build(set) {
+  if (frozen && frozen.sets[set.id]) return rebuild(frozen.sets[set.id]);
+  const r = rng(set.seed), pick = a => Math.floor(r() * a.length);
+  const rows = drawn[set.id] = [];
   for (const pk of packs) {
     if (set.jalalayn && pk.id !== "tafsir") continue;
     const n = pk.id === "aqeedah" ? 15 : 30;
@@ -49,14 +69,12 @@ function build(set) {
       const L = Math.min(T.length, set.min + Math.floor(r() * set.span)), s = Math.floor(r() * (T.length - L + 1));
       if (!quotedOnly(corpus.ftok(pid).slice(s, s + L))) continue;
       if (set.alsoInCore && !inCore(pid, s, L)) continue;
-      words.push(...norm(pick(FILL)).split(" "), ...norm("قال المؤلف رحمه الله").split(" "));
-      const a = words.length; words.push(...T.slice(s, s + L));
-      items.push({ pack: pk.id, book: corpus.P[pid].r.split(":")[0], a, b: words.length });
-      words.push(...norm(pick(FILL)).split(" "));
+      const f1 = pick(FILL);
+      rows.push([corpus.P[pid].r, s, L, f1, pick(FILL)]);
       k++;
     }
   }
-  return { words, items };
+  return rebuild(rows);
 }
 
 const TEXTUAL = new Set(["verbatim", "partial"]);
@@ -93,7 +111,19 @@ for (const set of SETS) {
     out.sets.push(res);
   }
 }
+// A cue followed by NO quotation: «قال … رحمه الله» and then the speaker's own words. Every filler sentence is placed right
+// after each of four cues; any textual citation there is a false one. (Added on 4 Oct 2026, with the cues known by form.)
+{
+  const CUES = ["قال المؤلف رحمه الله", "قال ابن القيم رحمه الله", "قال رسول الله صلى الله عليه وسلم", "قال ابن مسعود رضي الله عنه"];
+  const t = { cues: CUES, fillers: FILL.length, trials: 0, textual: 0, examples: [] };
+  for (const cue of CUES) for (const f of FILL) {
+    t.trials++;
+    for (const e of analyze(norm(cue + " " + f).split(" ").map(w => ({ w })), corpus).ledger) if (TEXTUAL.has(e.status)) { t.textual++; if (t.examples.length < 8) t.examples.push({ cue, status: e.status, cited: e.source.ref, spoken: e.spoken }); }
+  }
+  out.cueThenFiller = t;
+}
 writeJson("results_books.json", out);
+if (Object.keys(drawn).length) writeFileSync(SET_FILE, JSON.stringify({ _note: "The quotations of eval/books.mjs, as drawn (passage, first word, length, filler before, filler after). Frozen so that every run measures the same lectures; `node eval/books.mjs --draw` draws them again.", sets: { ...(frozen ? frozen.sets : {}), ...drawn } }) + "\n");
 writeTiming("books", times);
 
 // ---------------- report ----------------
@@ -129,6 +159,7 @@ L.push("", "## القراءة (محاكاة)\n",
   `- في المحاكاة: إذا كان النص المقتبس من الكتاب موجودًا أيضًا في القرآن أو كتب الحديث التسعة، يُعرض المصدر الأصلي أولًا — وهذا مقصود. من ${ar(c0.total.n)} اقتباسًا من هذا النوع اكتُشف ${ar(c0.total.det)}، وكان الكتاب المصدرَ الأول في ${ar(c0.total.first)}، وظهر ضمن المصادر المعروضة في ${ar(c0.total.any)}.`,
   `- في المحاكاة: من ${ar(j0.total.n)} اقتباسًا من تفسير الجلالين اكتُشف ${ar(j0.total.det)}؛ كان الجلالين المصدرَ الأول في ${ar(j0.total.first)}، ونُسب ${ar(j0.total.prim)} أولًا إلى القرآن أو الحديث.`,
   `- في المحاكاة: مجموع الاستشهادات النصية في كلام الحشو، في كل التجارب أعلاه: ${ar(fillerAll)}.` + (fillerAll ? " أمثلة منها في `eval/results_books.json` (الحقل `fillerExamples`)." : ""),
+  `- في المحاكاة: عبارة استشهاد يتبعها كلام الشيخ نفسه لا اقتباس (${ar(out.cueThenFiller.cues.length)} عبارات × ${ar(out.cueThenFiller.fillers)} جملة حشو = ${ar(out.cueThenFiller.trials)} تجربة): الاستشهادات النصية الخاطئة ${ar(out.cueThenFiller.textual)}.`,
   "- هذه الأرقام لا تقول شيئًا عن تفريغ صوتي حقيقي.", "",
   "أزمنة التشغيل في `eval/timings.json` (تتغير من تشغيل إلى آخر؛ كل ما عداها ثابت).", "");
 writeFileSync(path.join(EVAL, "RESULTS_BOOKS.md"), L.join("\n"));

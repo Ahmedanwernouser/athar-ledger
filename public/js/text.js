@@ -65,7 +65,16 @@ export function stem(w) {
   let s = w;
   let cut = false;
   for (const p of ["وال", "بال", "كال", "فال", "لل", "ال"]) if (s.startsWith(p) && s.length - p.length >= 3) { s = s.slice(p.length); cut = true; break; }
-  if (!cut && s.length >= 5 && "وفبل".includes(s[0])) { s = s.slice(1); if (s.startsWith("ال") && s.length >= 5) s = s.slice(2); }
+  if (!cut && s.length >= 5 && "وفبل".includes(s[0])) {
+    const first = s[0]; s = s.slice(1);
+    // a conjunction may carry a second particle: "فلمقام" = ف + ل + مقام, "وبالوالدين" = و + ب + ال + والدين, "وللذين" = و + لل + ذين
+    if ("وف".includes(first)) {
+      let two = false;
+      for (const p of ["بال", "كال", "لل"]) if (s.startsWith(p) && s.length - p.length >= 3) { s = s.slice(p.length); two = true; break; }
+      if (!two && s.length >= 5 && "لب".includes(s[0]) && !s.startsWith("ال")) s = s.slice(1);      // (the letters a bare word loses too, so "ولسانه" and "لسانه" meet)
+    }
+    if (s.startsWith("ال") && s.length >= 5) s = s.slice(2);
+  }
   for (const x of ["هما", "كما", "هم", "هن", "كم", "نا", "ها", "ون", "ين", "ان", "ات", "وا", "يه", "ه", "ك", "ي", "ت", "ا"])
     if (s.endsWith(x) && s.length - x.length >= 3) { s = s.slice(0, -x.length); break; }
   if (s.length >= 4 && "يتن".includes(s[0])) s = s.slice(1);

@@ -41,7 +41,12 @@ def stem(w):   # must stay identical to stem() in public/js/text.js
     for p in ["وال", "بال", "كال", "فال", "لل", "ال"]:
         if s.startswith(p) and len(s) - len(p) >= 3: s = s[len(p):]; cut = True; break
     if not cut and len(s) >= 5 and s[0] in "وفبل":
-        s = s[1:]
+        first, s = s[0], s[1:]
+        if first in "وف":       # a conjunction may carry a second particle (فلمقام, وبالوالدين, وللذين)
+            two = False
+            for p in ["بال", "كال", "لل"]:
+                if s.startswith(p) and len(s) - len(p) >= 3: s = s[len(p):]; two = True; break
+            if not two and len(s) >= 5 and s[0] in "لب" and not s.startswith("ال"): s = s[1:]
         if s.startswith("ال") and len(s) >= 5: s = s[2:]
     for x in ["هما", "كما", "هم", "هن", "كم", "نا", "ها", "ون", "ين", "ان", "ات", "وا", "يه", "ه", "ك", "ي", "ت", "ا"]:
         if s.endswith(x) and len(s) - len(x) >= 3: s = s[:-len(x)]; break

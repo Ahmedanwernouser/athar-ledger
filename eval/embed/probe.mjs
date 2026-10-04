@@ -7,8 +7,8 @@
 //      -> for each paraphrase: does some window over it put the true source first, above that level?   (found without a cue)
 //   C. two real transcripts (YouTube, from the branch yt-probe-results), windows the same way: what would be shown
 // Pool: every accepted source, the current system's best 60 candidates for each query (hard negatives), random hadith and ayahs.
-// Runs on the test machine (GitHub Actions). The Cloudflare token and account id come from repository secrets and are never
-// printed or saved.
+// Runs on the test machine (GitHub Actions) against the deployed Worker's /embed route, asked as the site asks it. No secret
+// is involved.
 import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,44 +18,58 @@ import { fold, stem, norm } from "../../public/js/text.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, "out");
 mkdirSync(OUT, { recursive: true });
-const TOKEN = String(process.env.CLOUDFLARE_API_TOKEN || "").trim(), ACCOUNT = String(process.env.CLOUDFLARE_ACCOUNT_ID || "").trim();
-const redact = s => { let t = String(s); for (const k of [TOKEN, ACCOUNT]) if (k) t = t.split(k).join("<SECRET>"); return t; };
+const redact = s => String(s);       // nothing secret is held here: the Worker is asked as the site asks it
 const save = (name, data) => writeFileSync(path.join(OUT, name), redact(typeof data === "string" ? data : JSON.stringify(data, null, 1)) + "\n");
 const lines = []; const say = s => { console.log(redact(s)); lines.push(redact(s)); save("SUMMARY.txt", lines.join("\n")); };
-if (!TOKEN || !ACCOUNT) { save("SUMMARY.txt", "no Cloudflare token / account id in the secrets"); process.exit(0); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const T_START = Date.now(), BUDGET_MS = 40 * 60 * 1000;
 
-// ---- Workers AI over its REST API ----
-const MODELS = (process.env.EMBED_MODELS || "@cf/baai/bge-m3 @cf/qwen/qwen3-embedding-0.6b @cf/google/embeddinggemma-300m").split(/\s+/).filter(Boolean);
+// ---- Workers AI through the deployed Worker's /embed route (the deploy token has no Workers AI permission of its own) ----
+const LIVE = String(process.env.LIVE_WORKER || "").replace(/\/+$/, ""), ORIGIN = String(process.env.LIVE_ORIGIN || "");
+const MODELS = (process.env.EMBED_MODELS || "bge-m3 qwen3 gemma").split(/\s+/).filter(Boolean);
 const stats = {};
+// the Worker is deployed by another workflow started by the same push: wait until it offers embeddings
+let offered = [];
+for (let i = 0; i < 60; i++) {
+  try { const h = await (await fetch(LIVE + "/health", { signal: AbortSignal.timeout(15000) })).json(); offered = h.embed || []; } catch { /* not yet */ }
+  if (offered.length) break;
+  await sleep(15000);
+}
+say(`the deployed Worker offers: ${offered.join(", ") || "no embedding model (the Workers AI binding is missing)"}`);
+if (!offered.length) { save("SUMMARY.txt", lines.join("\n")); process.exit(0); }
 async function call(model, body) {
   const st = stats[model] ||= { calls: 0, status: {}, firstError: null };
   for (let tries = 0; tries < 5; tries++) {
     let r;
-    try { r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${ACCOUNT}/ai/run/${model}`, { method: "POST", headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(60000) }); }
+    try { r = await fetch(LIVE + "/embed", { method: "POST", headers: { Origin: ORIGIN, "Content-Type": "application/json" }, body: JSON.stringify({ ...body, model }), signal: AbortSignal.timeout(90000) }); }
     catch (e) { st.status.network = (st.status.network || 0) + 1; await sleep(2000); continue; }
     st.calls++; st.status[r.status] = (st.status[r.status] || 0) + 1;
     const txt = await r.text();
-    if (r.ok) { try { const j = JSON.parse(txt); const res = j.result || j; const data = res.data || res.embeddings || (res.response && res.response.data); if (Array.isArray(data) && Array.isArray(data[0])) return data; st.firstError ||= "unexpected shape: " + txt.slice(0, 300); return null; } catch { st.firstError ||= "not JSON: " + txt.slice(0, 200); return null; } }
-    st.firstError ||= `HTTP ${r.status}: ${txt.slice(0, 400).replace(/\s+/g, " ")}`;
-    if (r.status === 429 || r.status >= 500) { await sleep(3000 * (tries + 1)); continue; }
+    if (r.ok) {
+      try {
+        const j = JSON.parse(txt);
+        if (j.model !== model) { st.firstError ||= `asked for ${model}, answered by ${j.model}`; return null; }
+        const bytes = Buffer.from(j.vectors, "base64"), out = [];
+        for (let i = 0; i < j.n; i++) out.push(Float32Array.from({ length: j.dim }, (_, k) => (bytes[i * j.dim + k] << 24) >> 24));
+        return out;
+      } catch { st.firstError ||= "not JSON: " + txt.slice(0, 200); return null; }
+    }
+    st.firstError ||= `HTTP ${r.status}: ${txt.slice(0, 300).replace(/\s+/g, " ")}`;
+    if (r.status === 429 || r.status >= 500) { await sleep(4000 * (tries + 1)); continue; }
     return null;
   }
   return null;
 }
-/** texts -> vectors, 50 per call; `kind` "q" (a query) or "d" (a passage) for the models that tell them apart */
+/** texts -> vectors, 48 per call; `kind` "q" (a query) or "d" (a passage) for the models that tell them apart */
 async function embed(model, texts, kind, label) {
   const out = [];
-  for (let i = 0; i < texts.length; i += 50) {
+  for (let i = 0; i < texts.length; i += 48) {
     if (Date.now() - T_START > BUDGET_MS) { say(`${model} ${label}: time budget reached at ${out.length}/${texts.length}`); return null; }
-    const part = texts.slice(i, i + 50);
-    let data = null;
-    if (/qwen3/.test(model)) data = await call(model, kind === "q" ? { queries: part } : { documents: part });
-    if (!data) data = await call(model, { text: part });
+    const part = texts.slice(i, i + 48).map(t => t.slice(0, 1900));
+    const data = await call(model, { texts: part, kind });
     if (!data || data.length !== part.length) { say(`${model} ${label}: gave up at ${out.length}/${texts.length} — ${stats[model].firstError || "no data"}`); return null; }
-    for (const v of data) out.push(Float32Array.from(v));
-    if (i % 1000 === 0) console.log(`${model} ${label}: ${out.length}/${texts.length} after ${Math.round((Date.now() - T_START) / 1000)} s`);
+    for (const v of data) out.push(v);
+    if (i % 960 === 0) console.log(`${model} ${label}: ${out.length}/${texts.length} after ${Math.round((Date.now() - T_START) / 1000)} s`);
   }
   return out;
 }
@@ -100,7 +114,7 @@ say(`queries ${queries.length}; lecture ${W.length} words in ${wins.length} wind
 say(`for comparison, the current lexical channel alone (shared stems): source first ${lexRank.filter(r => r === 0).length}/${lexRank.length}, in 5 ${lexRank.filter(r => r >= 0 && r < 5).length}, in 60 ${lexRank.filter(r => r >= 0).length}`);
 
 const report = {};
-for (const model of MODELS) {
+for (const model of MODELS.filter(m => offered.includes(m))) {
   const t0 = Date.now();
   const Q = await embed(model, queries, "q", "queries"); if (!Q) continue;
   const WV = await embed(model, wins.map(w => W.slice(w.a, w.b).join(" ")), "q", "windows"); if (!WV) continue;

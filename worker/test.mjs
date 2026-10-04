@@ -641,6 +641,60 @@ sec("/yt: a YouTube video from its link (Gemini)");
   { const h = await call(await asr({ method: "GET", path: "/health" }), Y()); eq(h.j.youtube, true, "/health says the link path is available"); const h2 = await call(await asr({ method: "GET", path: "/health" }), baseEnv()); eq(h2.j.youtube, false, "/health: no Gemini key, no link path"); }
 }
 
+sec("/embed: sentence embeddings (Workers AI binding)");
+{ const em = (body, o = {}) => new Request("https://w.dev/embed", { method: "POST", headers: { Origin: OK, "Content-Type": "application/json", ...(o.headers || {}) }, body: typeof body === "string" ? body : JSON.stringify(body) });
+  const seen = [];
+  const AI = (impl) => ({ run: async (model, input) => { seen.push({ model, input }); return impl(model, input); } });
+  const vec = (n, d) => ({ shape: [n, d], data: Array.from({ length: n }, (_, i) => Array.from({ length: d }, (_, k) => (k === i ? 2 : k === d - 1 ? -1 : 0.5))) });
+  const E = (o = {}) => baseEnv({ AI: AI((m, inp) => vec((inp.text || inp.queries || inp.documents).length, 8)), ...o });
+  const unpack = (j) => { const b = atob(j.vectors), out = []; for (let i = 0; i < j.n; i++) out.push(Array.from({ length: j.dim }, (_, k) => (b.charCodeAt(i * j.dim + k) << 24) >> 24)); return out; };
+
+  // -- off without the binding; nothing is counted in KV either way
+  const e0 = baseEnv();
+  let r = await call(em({ texts: ["نص"] }), e0);
+  eq(r.status, 501, "/embed without the AI binding: 501"); eq(r.j.error, "embed_disabled", "/embed without the binding: the code");
+  eq((await call(new Request("https://w.dev/health"), e0)).j.embed.length, 0, "/health: no embedding model without the binding");
+  eq(JSON.stringify((await call(new Request("https://w.dev/health"), E())).j.embed), '["bge-m3"]', "/health names the default model");
+  eq(JSON.stringify((await call(new Request("https://w.dev/health"), E({ EMBED_MODELS: "qwen3, nonsense ,gemma" }))).j.embed), '["qwen3","gemma"]', "/health: only known models, in the configured order");
+
+  // -- validation: nothing reaches the model
+  seen.length = 0;
+  for (const [body, what] of [["{not json", "broken JSON"], [{}, "no texts"], [{ texts: [] }, "empty list"], [{ texts: "نص" }, "texts is not a list"], [{ texts: ["a", 5] }, "a number among the texts"],
+    [{ texts: ["  "] }, "an empty text"], [{ texts: Array.from({ length: 65 }, () => "x") }, "too many texts"]])
+    eq((await call(em(body), E())).status, 400, "/embed rejects: " + what);
+  eq((await call(em({ texts: ["x".repeat(300000)] }), E())).status, 413, "/embed rejects an oversized body");
+  eq(seen.length, 0, "/embed: invalid requests never reach the model");
+  eq((await call(em({ texts: ["نص"] }, { headers: { Origin: "https://evil.example" } }), E())).status, 403, "/embed: another origin is refused");
+  eq(seen.length, 0, "/embed: another origin never reaches the model");
+
+  // -- the call and the answer
+  const env = E(); seen.length = 0;
+  r = await call(em({ texts: ["  إنما   الأعمال بالنيات ", "y".repeat(5000)], kind: "q" }), env);
+  eq(r.status, 200, "/embed answers 200"); eq(r.j.model, "bge-m3", "/embed: the default model"); eq(r.j.n, 2, "/embed: one vector per text"); eq(r.j.dim, 8, "/embed: the model's own length when none is asked");
+  eq(seen[0].model, "@cf/baai/bge-m3", "/embed: the model id sent"); eq(seen[0].input.text[0], "إنما الأعمال بالنيات", "/embed: white space is tidied");
+  eq(seen[0].input.text[1].length, 2000, "/embed: a long text is cut to 2,000 characters");
+  let v = unpack(r.j);
+  eq(v[0][0], 127, "/embed: each vector is scaled so that its largest number is 127"); eq(v[0][7], -63, "/embed: negative numbers keep their sign"); eq(v[0][1], 32, "/embed: the others in proportion");
+  eq(env.CAP.writes, 0, "/embed writes no counter");
+  r = await call(em({ texts: ["a", "b", "c"], dim: 16 }), baseEnv({ AI: AI((m, inp) => vec(inp.text.length, 32)) }));
+  eq(r.j.dim, 16, "/embed: the asked length"); eq(atob(r.j.vectors).length, 48, "/embed: n × dim bytes");
+  eq((await call(em({ texts: ["a"], dim: 4000 }), E())).j.dim, 8, "/embed: a length above the model's is the model's");
+  // a model that tells queries from passages
+  seen.length = 0;
+  r = await call(em({ texts: ["a"], model: "qwen3", kind: "q" }), E({ EMBED_MODELS: "bge-m3,qwen3" }));
+  eq(seen[0].model, "@cf/qwen/qwen3-embedding-0.6b", "/embed: an offered model can be asked for"); ok(Array.isArray(seen[0].input.queries), "/embed qwen3: a query goes as a query");
+  await call(em({ texts: ["a"], model: "qwen3" }), E({ EMBED_MODELS: "bge-m3,qwen3" })); ok(Array.isArray(seen[1].input.documents), "/embed qwen3: a passage goes as a document");
+  seen.length = 0; r = await call(em({ texts: ["a"], model: "gemma" }), E());
+  eq(r.j.model, "bge-m3", "/embed: a model that is not offered falls back to the default");
+
+  // -- failures are sanitized
+  r = await call(em({ texts: ["a"] }), baseEnv({ AI: AI(() => { throw new Error("10000 neurons used; account 1234567890abcdef " + KEY); }) }));
+  eq(r.status, 503, "/embed: the allowance used up -> 503"); eq(r.t.includes("neurons") || r.t.includes(KEY), false, "/embed: the upstream message is not passed on");
+  eq((await call(em({ texts: ["a", "b"] }), baseEnv({ AI: AI(() => vec(1, 8)) }))).status, 503, "/embed: fewer vectors than texts -> 503");
+  eq((await call(em({ texts: ["a"] }), baseEnv({ AI: AI(() => ({ data: "x" })) }))).status, 503, "/embed: a broken answer -> 503");
+  eq((await call(em({ texts: ["a"] }), E({ RL_EMBED: { limit: async () => ({ success: false }) } }))).status, 429, "/embed: the optional burst limiter");
+}
+
 sec("secret scan over a matrix of situations");
 { const envs = [baseEnv(), baseEnv({ GROQ_API_KEY: "" }), baseEnv({ CAP: undefined }), L(), L({ LLM_PROVIDER: "gemini", GEMINI_API_KEY: GKEY }), L({ CAP: kv({ getThrows: true }) })];
   const impls = [asrOK, chat("x"), () => new Response("err " + KEY, { status: 500 }), () => new Response("busy " + KEY, { status: 429 }), () => { throw new Error(KEY + "\n    at fetch (worker/src.js:1:1)"); }];

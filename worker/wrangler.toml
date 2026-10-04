@@ -45,6 +45,10 @@ ASR_PROVIDER = "groq"
 LLM_DAILY_CAP = "150"
 LLM_IP_DAILY_CAP = "75"
 
+# ---- /embed (see the [ai] block below): the models the route offers, the first is the default.
+#   bge-m3 | qwen3 | gemma   (three are offered while they are being compared; one will stay)
+EMBED_MODELS = "bge-m3,qwen3,gemma"
+
 # ---- MANDATORY: storage for the caps. Without it the Worker answers 500 server_not_configured (on purpose).
 # Create it once:   npx wrangler kv namespace create CAP
 # then paste the id that the command prints in place of the placeholder. The deploy fails until you do.
@@ -53,6 +57,14 @@ LLM_IP_DAILY_CAP = "75"
 [[kv_namespaces]]
 binding = "CAP"
 id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# ---- OPTIONAL: sentence embeddings for "by meaning" (Workers AI). Free up to 10,000 neurons a day on the Workers Free plan;
+# past that the route answers 503 and nothing is billed. Without this block the Worker answers /embed with 501.
+# tools/deploy.sh deploys WITHOUT it if Cloudflare refuses the binding.
+# EMBED-BEGIN
+[ai]
+binding = "AI"
+# EMBED-END
 
 # Lets you see requests and errors in the dashboard (Workers → athar-asr → Logs). The Worker itself logs
 # nothing, so only Cloudflare's standard request records appear there (no audio, no text, no keys).

@@ -142,6 +142,7 @@ export function summarizeBooks(b) {
   const o = { passagesLoaded: b.passages ?? b.meta.passages, booksInMainSample: 9, jalalaynReportedSeparately: true, sets: {} };
   for (const s of b.sets) (o.sets[s.set] ||= { lengthWords: `${s.lenMin}–${s.lenMax}` })[s.rate ? "noise15" : "clean"] =
     { detected: s.total.det, n: s.total.n, ci95: s.total.ci, firstSourceIsTheBook: s.total.first, bookAmongShownSources: s.total.any, attributedFirstToQuranOrHadith: s.total.prim, falseCitationsInFiller: s.fillerTextual };
+  if (b.cueThenFiller) o.cueFollowedByOwnWords = { trials: b.cueThenFiller.trials, falseTextualCitations: b.cueThenFiller.textual };
   return o;
 }
 export function summarizeEnglish(e) {
@@ -186,7 +187,7 @@ export function headline(S) {
       noise20: A.absentSayings.noise20 && { notFound: A.absentSayings.noise20.notFound, leadOnly: A.absentSayings.noise20.leadOnly, meaningSuggestion: A.absentSayings.noise20.meaningSuggestion, textualCitation: A.absentSayings.noise20.textualCitation } };
     H.arabic_freshSeedsCheck = { seeds: A.freshSeeds.seeds, clean: pick(A.freshSeeds.clean), noise20: pick(A.freshSeeds.noise20) };
   }
-  if (S.books) H.books_detectedByQuoteLength = S.books.sets;
+  if (S.books) { H.books_detectedByQuoteLength = S.books.sets; if (S.books.cueFollowedByOwnWords) H.books_cueFollowedByOwnWords = S.books.cueFollowedByOwnWords; }
   if (S.english) H.english_byNoisePct = Object.fromEntries(Object.entries(S.english.rows).map(([rate, c]) => [rate, {
     indexedVerses_referenceCorrect: { k: c.indexedTranslationVerses.referenceCorrect, n: c.indexedTranslationVerses.n, ci95: c.indexedTranslationVerses.ci95ReferenceCorrect },
     translatedHadith_referenceCorrect: { k: c.translatedHadith.referenceCorrect, n: c.translatedHadith.n, ci95: c.translatedHadith.ci95ReferenceCorrect },

@@ -283,7 +283,7 @@
        94,
        98
       ],
-      "boundaryIoUAtLeast80PctOfDetected": 94.1,
+      "boundaryIoUAtLeast80PctOfDetected": 94.6,
       "criticalErrorsPerLecture": 0.7,
       "criticalErrorsPerLectureRange": [
        0,
@@ -467,7 +467,7 @@
        91,
        95
       ],
-      "boundaryIoUAtLeast80PctOfDetected": 90.2,
+      "boundaryIoUAtLeast80PctOfDetected": 90.7,
       "criticalErrorsPerLecture": 0,
       "criticalErrorsPerLectureRange": [
        0,
@@ -505,17 +505,17 @@
        86,
        96
       ],
-      "firstSourceCorrectOfDetectedPct": 98,
+      "firstSourceCorrectOfDetectedPct": 97.7,
       "firstSourceCorrectOfDetectedCI95": [
        96,
        99
       ],
-      "firstSourceCorrectOfAllQuotationsPct": 93.6,
+      "firstSourceCorrectOfAllQuotationsPct": 93.3,
       "firstSourceCorrectOfAllQuotationsCI95": [
        91,
-       96
+       95
       ],
-      "boundaryIoUAtLeast80PctOfDetected": 90.8,
+      "boundaryIoUAtLeast80PctOfDetected": 91,
       "criticalErrorsPerLecture": 0,
       "criticalErrorsPerLectureRange": [
        0,
@@ -747,7 +747,7 @@
        86,
        92
       ],
-      "boundaryIoUAtLeast80PctOfDetected": 87.2,
+      "boundaryIoUAtLeast80PctOfDetected": 87.5,
       "criticalErrorsPerLecture": 0.3,
       "criticalErrorsPerLectureRange": [
        0,
@@ -975,21 +975,21 @@
    },
    "10": {
     "saidWordForWord_labelledVerbatim": {
-     "k": 130,
+     "k": 131,
      "n": 297,
-     "pct": 43.8,
+     "pct": 44.1,
      "ci95": [
-      38,
-      49
+      39,
+      50
      ]
     },
     "saidWordForWord_downgradedToPartial_priceOfStrictRule": {
-     "k": 167,
+     "k": 166,
      "n": 297,
-     "pct": 56.2,
+     "pct": 55.9,
      "ci95": [
-      51,
-      62
+      50,
+      61
      ]
     },
     "wordingChanged_labelledPartial": {
@@ -1005,21 +1005,21 @@
    },
    "20": {
     "saidWordForWord_labelledVerbatim": {
-     "k": 76,
+     "k": 77,
      "n": 290,
-     "pct": 26.2,
+     "pct": 26.6,
      "ci95": [
-      21,
+      22,
       32
      ]
     },
     "saidWordForWord_downgradedToPartial_priceOfStrictRule": {
-     "k": 214,
+     "k": 213,
      "n": 290,
-     "pct": 73.8,
+     "pct": 73.4,
      "ci95": [
       68,
-      79
+      78
      ]
     },
     "wordingChanged_labelledPartial": {
@@ -1147,55 +1147,55 @@
     },
     "30": {
      "hybrid": {
-      "firstShown": 6,
+      "firstShown": 8,
       "n": 26,
       "ci95": [
-       11,
-       42
+       17,
+       50
       ],
       "ofWhichTextualMatch": 3,
-      "ofWhichFirstSuggestion": 3,
-      "inFirst3": 6,
-      "inFirst5": 6
+      "ofWhichFirstSuggestion": 5,
+      "inFirst3": 8,
+      "inFirst5": 8
      },
      "wordsOnly": {
-      "firstShown": 4,
+      "firstShown": 5,
       "n": 26,
       "ci95": [
-       6,
-       34
+       9,
+       38
       ],
       "ofWhichTextualMatch": 3,
-      "ofWhichFirstSuggestion": 1,
-      "inFirst3": 5,
-      "inFirst5": 5
+      "ofWhichFirstSuggestion": 2,
+      "inFirst3": 7,
+      "inFirst5": 7
      }
     }
    },
    "openerUnknownToEngine_clean": {
     "hybrid": {
-     "firstShown": 4,
+     "firstShown": 13,
      "n": 26,
      "ci95": [
-      6,
-      34
+      32,
+      68
      ],
-     "ofWhichTextualMatch": 4,
-     "ofWhichFirstSuggestion": 0,
-     "inFirst3": 4,
-     "inFirst5": 4
+     "ofWhichTextualMatch": 5,
+     "ofWhichFirstSuggestion": 8,
+     "inFirst3": 15,
+     "inFirst5": 15
     },
     "wordsOnly": {
-     "firstShown": 4,
+     "firstShown": 9,
      "n": 26,
      "ci95": [
-      6,
-      34
+      19,
+      54
      ],
-     "ofWhichTextualMatch": 4,
-     "ofWhichFirstSuggestion": 0,
-     "inFirst3": 4,
-     "inFirst5": 4
+     "ofWhichTextualMatch": 5,
+     "ofWhichFirstSuggestion": 4,
+     "inFirst3": 9,
+     "inFirst5": 10
     }
    },
    "noOpener_clean": {
@@ -1269,21 +1269,21 @@
     },
     "unseenCueWording": {
      "clean": {
-      "k": 113,
+      "k": 118,
       "n": 153,
-      "pct": 73.9,
+      "pct": 77.1,
       "ci95": [
-       66,
-       80
+       70,
+       83
       ]
      },
      "noise20": {
-      "k": 80,
+      "k": 83,
       "n": 153,
-      "pct": 52.3,
+      "pct": 54.2,
       "ci95": [
-       44,
-       60
+       46,
+       62
       ]
      }
     }
@@ -1606,7 +1606,7 @@
       89,
       96
      ],
-     "hadithChangedWordingDetectedPct": 85.8,
+     "hadithChangedWordingDetectedPct": 86.7,
      "criticalErrorsPerLecture": 2
     },
     "baselineB2": {
@@ -1641,10 +1641,10 @@
     "noisePct": 20,
     "engine": {
      "quranDetectedPct": 93.3,
-     "hadithVerbatimDetectedPct": 93.3,
+     "hadithVerbatimDetectedPct": 93.9,
      "hadithVerbatimDetectedCI95": [
       89,
-      96
+      97
      ],
      "hadithChangedWordingDetectedPct": 83.3,
      "criticalErrorsPerLecture": 1.7
@@ -1661,7 +1661,7 @@
     "noisePct": 20,
     "engine": {
      "quranDetectedPct": 83.3,
-     "hadithVerbatimDetectedPct": 72.2,
+     "hadithVerbatimDetectedPct": 71.7,
      "hadithVerbatimDetectedCI95": [
       65,
       78
@@ -1706,7 +1706,7 @@
       77,
       88
      ],
-     "hadithChangedWordingDetectedPct": 63.3,
+     "hadithChangedWordingDetectedPct": 62.5,
      "criticalErrorsPerLecture": 1.3
     },
     "baselineB2": {
@@ -1746,7 +1746,7 @@
       85,
       94
      ],
-     "hadithChangedWordingDetectedPct": 70.8,
+     "hadithChangedWordingDetectedPct": 71.7,
      "criticalErrorsPerLecture": 1.3
     },
     "baselineB2": {
@@ -1761,10 +1761,10 @@
     "noisePct": 30,
     "engine": {
      "quranDetectedPct": 59.2,
-     "hadithVerbatimDetectedPct": 58.9,
+     "hadithVerbatimDetectedPct": 58.3,
      "hadithVerbatimDetectedCI95": [
-      52,
-      66
+      51,
+      65
      ],
      "hadithChangedWordingDetectedPct": 35.8,
      "criticalErrorsPerLecture": 3
@@ -1805,8 +1805,8 @@
   "arabic_outOfCorpus_byNoisePct": {
    "0": {
     "items": 90,
-    "notFound": 55,
-    "leadOnly": 4,
+    "notFound": 56,
+    "leadOnly": 3,
     "meaning": {
      "sameFamily": 11,
      "wrongSource": 9
@@ -1828,8 +1828,8 @@
    },
    "10": {
     "items": 90,
-    "notFound": 64,
-    "leadOnly": 2,
+    "notFound": 65,
+    "leadOnly": 1,
     "meaning": {
      "sameFamily": 8,
      "wrongSource": 7
@@ -1955,7 +1955,7 @@
      95,
      98
     ],
-    "boundaryIoUAtLeast80PctOfDetected": 97.4,
+    "boundaryIoUAtLeast80PctOfDetected": 96.9,
     "criticalErrorsPerLecture": 0.7,
     "criticalErrorsPerLectureRange": [
      0,
@@ -2001,7 +2001,7 @@
      91,
      95
     ],
-    "boundaryIoUAtLeast80PctOfDetected": 87.9,
+    "boundaryIoUAtLeast80PctOfDetected": 87.6,
     "criticalErrorsPerLecture": 0.7,
     "criticalErrorsPerLectureRange": [
      0,
@@ -2041,26 +2041,26 @@
    "medium": {
     "lengthWords": "8–12",
     "clean": {
-     "detected": 124,
+     "detected": 128,
      "n": 135,
      "ci95": [
-      86,
-      95
+      90,
+      97
      ],
-     "firstSourceIsTheBook": 104,
-     "bookAmongShownSources": 124,
+     "firstSourceIsTheBook": 108,
+     "bookAmongShownSources": 128,
      "attributedFirstToQuranOrHadith": 20,
      "falseCitationsInFiller": 0
     },
     "noise15": {
-     "detected": 116,
+     "detected": 123,
      "n": 135,
      "ci95": [
-      79,
-      91
+      85,
+      95
      ],
-     "firstSourceIsTheBook": 99,
-     "bookAmongShownSources": 116,
+     "firstSourceIsTheBook": 106,
+     "bookAmongShownSources": 123,
      "attributedFirstToQuranOrHadith": 17,
      "falseCitationsInFiller": 0
     }
@@ -2068,26 +2068,26 @@
    "short": {
     "lengthWords": "5–7",
     "clean": {
-     "detected": 83,
+     "detected": 99,
      "n": 135,
      "ci95": [
-      53,
-      69
+      65,
+      80
      ],
-     "firstSourceIsTheBook": 63,
-     "bookAmongShownSources": 83,
+     "firstSourceIsTheBook": 78,
+     "bookAmongShownSources": 99,
      "attributedFirstToQuranOrHadith": 20,
      "falseCitationsInFiller": 0
     },
     "noise15": {
-     "detected": 58,
+     "detected": 66,
      "n": 135,
      "ci95": [
-      35,
-      51
+      41,
+      57
      ],
-     "firstSourceIsTheBook": 47,
-     "bookAmongShownSources": 58,
+     "firstSourceIsTheBook": 55,
+     "bookAmongShownSources": 66,
      "attributedFirstToQuranOrHadith": 11,
      "falseCitationsInFiller": 0
     }
@@ -2095,26 +2095,26 @@
    "core": {
     "lengthWords": "10–19",
     "clean": {
-     "detected": 128,
+     "detected": 130,
      "n": 135,
      "ci95": [
-      90,
-      97
+      92,
+      98
      ],
-     "firstSourceIsTheBook": 1,
-     "bookAmongShownSources": 126,
+     "firstSourceIsTheBook": 2,
+     "bookAmongShownSources": 128,
      "attributedFirstToQuranOrHadith": 127,
      "falseCitationsInFiller": 0
     },
     "noise15": {
-     "detected": 125,
+     "detected": 129,
      "n": 135,
      "ci95": [
-      87,
-      96
+      91,
+      98
      ],
-     "firstSourceIsTheBook": 2,
-     "bookAmongShownSources": 124,
+     "firstSourceIsTheBook": 5,
+     "bookAmongShownSources": 128,
      "attributedFirstToQuranOrHadith": 123,
      "falseCitationsInFiller": 0
     }
@@ -2146,6 +2146,10 @@
      "falseCitationsInFiller": 0
     }
    }
+  },
+  "books_cueFollowedByOwnWords": {
+   "trials": 200,
+   "falseTextualCitations": 0
   },
   "english_byNoisePct": {
    "0": {
@@ -2625,9 +2629,9 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 414,
+      "k": 413,
       "n": 417,
-      "pct": 99.3,
+      "pct": 99,
       "min": 98.6,
       "max": 100,
       "ci95": [
@@ -2636,10 +2640,10 @@
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 414,
+      "k": 413,
       "n": 420,
-      "pct": 98.6,
-      "min": 97.9,
+      "pct": 98.3,
+      "min": 97.1,
       "max": 100,
       "ci95": [
        97,
@@ -2671,15 +2675,15 @@
       "wordingChanged": {
        "detected": 119,
        "labelledPartial": {
-        "k": 118,
+        "k": 117,
         "n": 119,
-        "pct": 99.2,
+        "pct": 98.3,
         "ci95": [
-         95,
+         94,
          100
         ]
        },
-       "labelledVerbatimOnAnUnchangedPart": 1,
+       "labelledVerbatimOnAnUnchangedPart": 2,
        "labelledVerbatimAlthoughChanged": 0
       }
      },
@@ -2687,7 +2691,7 @@
       "k": 370,
       "n": 417,
       "pct": 88.7,
-      "min": 87,
+      "min": 86.2,
       "max": 91.4,
       "ci95": [
        85,
@@ -2695,17 +2699,17 @@
       ]
      },
      "criticalPerLecture": {
-      "mean": 0.7,
+      "mean": 1,
       "min": 0,
       "max": 2,
-      "total": 2
+      "total": 3
      },
      "criticalParts": {
       "wrongSource": {
-       "mean": 0.3,
+       "mean": 0.7,
        "min": 0,
        "max": 1,
-       "total": 1
+       "total": 2
       },
       "verbatimLabelOnChangedWording": {
        "mean": 0,
@@ -2733,10 +2737,10 @@
       }
      },
      "criticalPerLectureWithoutLabelErrors": {
-      "mean": 0.7,
+      "mean": 1,
       "min": 0,
       "max": 2,
-      "total": 2
+      "total": 3
      },
      "notJudged_textualOnASmallPartFromAnotherPassage": {
       "mean": 0,
@@ -3432,21 +3436,21 @@
       "saidWordForWord": {
        "detected": 297,
        "labelledVerbatim": {
-        "k": 130,
+        "k": 131,
         "n": 297,
-        "pct": 43.8,
+        "pct": 44.1,
         "ci95": [
-         38,
-         49
+         39,
+         50
         ]
        },
        "downgradedToPartial": {
-        "k": 167,
+        "k": 166,
         "n": 297,
-        "pct": 56.2,
+        "pct": 55.9,
         "ci95": [
-         51,
-         62
+         50,
+         61
         ]
        }
       },
@@ -3466,13 +3470,13 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 387,
+      "k": 389,
       "n": 411,
-      "pct": 94.1,
-      "min": 90.3,
-      "max": 96.4,
+      "pct": 94.6,
+      "min": 91,
+      "max": 97.1,
       "ci95": [
-       91,
+       92,
        96
       ]
      },
@@ -3622,13 +3626,13 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 361,
+      "k": 363,
       "n": 400,
-      "pct": 90.2,
-      "min": 87.9,
-      "max": 91.9,
+      "pct": 90.7,
+      "min": 88.6,
+      "max": 92.6,
       "ci95": [
-       87,
+       88,
        93
       ]
      },
@@ -3719,25 +3723,25 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 404,
+      "k": 403,
       "n": 411,
-      "pct": 98.3,
+      "pct": 98.1,
       "min": 97.1,
-      "max": 99.2,
+      "max": 98.6,
       "ci95": [
-       97,
+       96,
        99
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 404,
+      "k": 403,
       "n": 420,
-      "pct": 96.2,
-      "min": 94.3,
+      "pct": 96,
+      "min": 93.6,
       "max": 98.6,
       "ci95": [
        94,
-       98
+       97
       ]
      },
      "labels": {
@@ -3778,13 +3782,13 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 357,
+      "k": 358,
       "n": 411,
-      "pct": 86.9,
-      "min": 85,
+      "pct": 87.1,
+      "min": 85.7,
       "max": 89.1,
       "ci95": [
-       83,
+       84,
        90
       ]
      },
@@ -3900,21 +3904,21 @@
       "saidWordForWord": {
        "detected": 297,
        "labelledVerbatim": {
-        "k": 130,
+        "k": 131,
         "n": 297,
-        "pct": 43.8,
+        "pct": 44.1,
         "ci95": [
-         38,
-         49
+         39,
+         50
         ]
        },
        "downgradedToPartial": {
-        "k": 167,
+        "k": 166,
         "n": 297,
-        "pct": 56.2,
+        "pct": 55.9,
         "ci95": [
-         51,
-         62
+         50,
+         61
         ]
        }
       },
@@ -3934,13 +3938,13 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 387,
+      "k": 389,
       "n": 411,
-      "pct": 94.1,
-      "min": 90.3,
-      "max": 96.4,
+      "pct": 94.6,
+      "min": 91,
+      "max": 97.1,
       "ci95": [
-       91,
+       92,
        96
       ]
      },
@@ -4501,9 +4505,9 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 393,
+      "k": 392,
       "n": 401,
-      "pct": 98,
+      "pct": 97.7,
       "min": 96.9,
       "max": 98.5,
       "ci95": [
@@ -4512,35 +4516,35 @@
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 393,
+      "k": 392,
       "n": 420,
-      "pct": 93.6,
+      "pct": 93.3,
       "min": 90.7,
       "max": 95,
       "ci95": [
        91,
-       96
+       95
       ]
      },
      "labels": {
       "saidWordForWord": {
        "detected": 290,
        "labelledVerbatim": {
-        "k": 76,
+        "k": 77,
         "n": 290,
-        "pct": 26.2,
+        "pct": 26.6,
         "ci95": [
-         21,
+         22,
          32
         ]
        },
        "downgradedToPartial": {
-        "k": 214,
+        "k": 213,
         "n": 290,
-        "pct": 73.8,
+        "pct": 73.4,
         "ci95": [
          68,
-         79
+         78
         ]
        }
       },
@@ -4560,11 +4564,11 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 364,
+      "k": 365,
       "n": 401,
-      "pct": 90.8,
+      "pct": 91,
       "min": 88.1,
-      "max": 92.6,
+      "max": 93.3,
       "ci95": [
        88,
        93
@@ -4672,7 +4676,7 @@
       "n": 420,
       "pct": 83.1,
       "min": 77.9,
-      "max": 86.4,
+      "max": 87.1,
       "ci95": [
        79,
        86
@@ -4682,20 +4686,20 @@
       "saidWordForWord": {
        "detected": 277,
        "labelledVerbatim": {
-        "k": 38,
+        "k": 39,
         "n": 277,
-        "pct": 13.7,
+        "pct": 14.1,
         "ci95": [
          10,
-         18
+         19
         ]
        },
        "downgradedToPartial": {
-        "k": 239,
+        "k": 238,
         "n": 277,
-        "pct": 86.3,
+        "pct": 85.9,
         "ci95": [
-         82,
+         81,
          90
         ]
        }
@@ -4719,7 +4723,7 @@
       "k": 295,
       "n": 362,
       "pct": 81.6,
-      "min": 78.4,
+      "min": 77.8,
       "max": 84.2,
       "ci95": [
        77,
@@ -4813,24 +4817,24 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 389,
+      "k": 388,
       "n": 398,
-      "pct": 97.7,
+      "pct": 97.5,
       "min": 96.1,
       "max": 98.5,
       "ci95": [
-       96,
+       95,
        99
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 389,
+      "k": 388,
       "n": 420,
-      "pct": 92.6,
+      "pct": 92.4,
       "min": 87.9,
       "max": 95,
       "ci95": [
-       90,
+       89,
        95
       ]
      },
@@ -4838,18 +4842,18 @@
       "saidWordForWord": {
        "detected": 288,
        "labelledVerbatim": {
-        "k": 73,
+        "k": 74,
         "n": 288,
-        "pct": 25.3,
+        "pct": 25.7,
         "ci95": [
          21,
          31
         ]
        },
        "downgradedToPartial": {
-        "k": 215,
+        "k": 214,
         "n": 288,
-        "pct": 74.7,
+        "pct": 74.3,
         "ci95": [
          69,
          79
@@ -4872,11 +4876,11 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 345,
+      "k": 346,
       "n": 398,
-      "pct": 86.7,
+      "pct": 86.9,
       "min": 83.7,
-      "max": 88.9,
+      "max": 89.6,
       "ci95": [
        83,
        90
@@ -4969,9 +4973,9 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 393,
+      "k": 392,
       "n": 401,
-      "pct": 98,
+      "pct": 97.7,
       "min": 96.9,
       "max": 98.5,
       "ci95": [
@@ -4980,35 +4984,35 @@
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 393,
+      "k": 392,
       "n": 420,
-      "pct": 93.6,
+      "pct": 93.3,
       "min": 90.7,
       "max": 95,
       "ci95": [
        91,
-       96
+       95
       ]
      },
      "labels": {
       "saidWordForWord": {
        "detected": 290,
        "labelledVerbatim": {
-        "k": 76,
+        "k": 77,
         "n": 290,
-        "pct": 26.2,
+        "pct": 26.6,
         "ci95": [
-         21,
+         22,
          32
         ]
        },
        "downgradedToPartial": {
-        "k": 214,
+        "k": 213,
         "n": 290,
-        "pct": 73.8,
+        "pct": 73.4,
         "ci95": [
          68,
-         79
+         78
         ]
        }
       },
@@ -5028,11 +5032,11 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 364,
+      "k": 365,
       "n": 401,
-      "pct": 90.8,
+      "pct": 91,
       "min": 88.1,
-      "max": 92.6,
+      "max": 93.3,
       "ci95": [
        88,
        93
@@ -5654,13 +5658,13 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 333,
+      "k": 334,
       "n": 382,
-      "pct": 87.2,
+      "pct": 87.5,
       "min": 85.4,
-      "max": 89.3,
+      "max": 90.1,
       "ci95": [
-       83,
+       84,
        90
       ]
      },
@@ -6122,13 +6126,13 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 333,
+      "k": 334,
       "n": 382,
-      "pct": 87.2,
+      "pct": 87.5,
       "min": 85.4,
-      "max": 89.3,
+      "max": 90.1,
       "ci95": [
-       83,
+       84,
        90
       ]
      },
@@ -6712,10 +6716,10 @@
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 9,
+       "firstShown": 10,
        "asTextualMatch": 4,
-       "inFirst3": 11,
-       "inFirst5": 11
+       "inFirst3": 12,
+       "inFirst5": 12
       },
       {
        "seed": 303,
@@ -6752,10 +6756,10 @@
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 9,
+       "firstShown": 10,
        "asTextualMatch": 2,
-       "inFirst3": 9,
-       "inFirst5": 9
+       "inFirst3": 10,
+       "inFirst5": 10
       },
       {
        "seed": 303,
@@ -6777,33 +6781,33 @@
     },
     "30": {
      "n": 26,
-     "firstShown": 6,
+     "firstShown": 8,
      "ci95": [
-      11,
-      42
+      17,
+      50
      ],
      "asTextualMatch": 3,
-     "asFirstSuggestion": 3,
-     "inFirst3": 6,
-     "inFirst5": 6,
+     "asFirstSuggestion": 5,
+     "inFirst3": 8,
+     "inFirst5": 8,
      "openerRecognisedAsCue": 26,
-     "firstShownByKeyPhraseOnly": 5,
+     "firstShownByKeyPhraseOnly": 6,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 8,
+       "firstShown": 9,
        "asTextualMatch": 4,
-       "inFirst3": 9,
-       "inFirst5": 9
+       "inFirst3": 10,
+       "inFirst5": 10
       },
       {
        "seed": 303,
        "n": 26,
-       "firstShown": 9,
+       "firstShown": 10,
        "asTextualMatch": 2,
-       "inFirst3": 9,
-       "inFirst5": 10
+       "inFirst3": 10,
+       "inFirst5": 11
       },
       {
        "seed": 404,
@@ -6874,10 +6878,10 @@
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 7,
+       "firstShown": 8,
        "asTextualMatch": 4,
-       "inFirst3": 7,
-       "inFirst5": 7
+       "inFirst3": 8,
+       "inFirst5": 8
       },
       {
        "seed": 303,
@@ -6939,15 +6943,15 @@
     },
     "30": {
      "n": 26,
-     "firstShown": 4,
+     "firstShown": 5,
      "ci95": [
-      6,
-      34
+      9,
+      38
      ],
      "asTextualMatch": 3,
-     "asFirstSuggestion": 1,
-     "inFirst3": 5,
-     "inFirst5": 5,
+     "asFirstSuggestion": 2,
+     "inFirst3": 7,
+     "inFirst5": 7,
      "openerRecognisedAsCue": 26,
      "firstShownByKeyPhraseOnly": 4,
      "perLecture": [
@@ -6964,16 +6968,16 @@
        "n": 26,
        "firstShown": 6,
        "asTextualMatch": 2,
-       "inFirst3": 8,
-       "inFirst5": 8
+       "inFirst3": 9,
+       "inFirst5": 9
       },
       {
        "seed": 404,
        "n": 25,
        "firstShown": 3,
        "asTextualMatch": 2,
-       "inFirst3": 3,
-       "inFirst5": 3
+       "inFirst3": 4,
+       "inFirst5": 4
       }
      ]
     }
@@ -6981,81 +6985,81 @@
    "unseenOpener": {
     "hybrid": {
      "n": 26,
-     "firstShown": 4,
+     "firstShown": 13,
      "ci95": [
-      6,
-      34
+      32,
+      68
      ],
-     "asTextualMatch": 4,
-     "asFirstSuggestion": 0,
-     "inFirst3": 4,
-     "inFirst5": 4,
-     "openerRecognisedAsCue": 0,
-     "firstShownByKeyPhraseOnly": 4,
+     "asTextualMatch": 5,
+     "asFirstSuggestion": 8,
+     "inFirst3": 15,
+     "inFirst5": 15,
+     "openerRecognisedAsCue": 25,
+     "firstShownByKeyPhraseOnly": 13,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 4,
-       "asTextualMatch": 4,
-       "inFirst3": 4,
-       "inFirst5": 4
+       "firstShown": 14,
+       "asTextualMatch": 5,
+       "inFirst3": 16,
+       "inFirst5": 16
       },
       {
        "seed": 303,
        "n": 26,
-       "firstShown": 4,
-       "asTextualMatch": 4,
-       "inFirst3": 4,
-       "inFirst5": 4
+       "firstShown": 13,
+       "asTextualMatch": 5,
+       "inFirst3": 15,
+       "inFirst5": 15
       },
       {
        "seed": 404,
        "n": 25,
-       "firstShown": 4,
-       "asTextualMatch": 4,
-       "inFirst3": 4,
-       "inFirst5": 4
+       "firstShown": 11,
+       "asTextualMatch": 5,
+       "inFirst3": 13,
+       "inFirst5": 13
       }
      ]
     },
     "wordsOnly": {
      "n": 26,
-     "firstShown": 4,
+     "firstShown": 9,
      "ci95": [
-      6,
-      34
+      19,
+      54
      ],
-     "asTextualMatch": 4,
-     "asFirstSuggestion": 0,
-     "inFirst3": 4,
-     "inFirst5": 4,
-     "openerRecognisedAsCue": 0,
-     "firstShownByKeyPhraseOnly": 4,
+     "asTextualMatch": 5,
+     "asFirstSuggestion": 4,
+     "inFirst3": 9,
+     "inFirst5": 10,
+     "openerRecognisedAsCue": 25,
+     "firstShownByKeyPhraseOnly": 8,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 4,
-       "asTextualMatch": 4,
-       "inFirst3": 4,
-       "inFirst5": 4
+       "firstShown": 8,
+       "asTextualMatch": 5,
+       "inFirst3": 9,
+       "inFirst5": 10
       },
       {
        "seed": 303,
        "n": 26,
-       "firstShown": 4,
-       "asTextualMatch": 4,
-       "inFirst3": 4,
-       "inFirst5": 4
+       "firstShown": 9,
+       "asTextualMatch": 5,
+       "inFirst3": 9,
+       "inFirst5": 9
       },
       {
        "seed": 404,
        "n": 25,
-       "firstShown": 4,
-       "asTextualMatch": 4,
-       "inFirst3": 4,
-       "inFirst5": 4
+       "firstShown": 9,
+       "asTextualMatch": 5,
+       "inFirst3": 10,
+       "inFirst5": 10
       }
      ]
     }
@@ -7208,21 +7212,21 @@
       "saidWordForWord": {
        "detected": 296,
        "labelledVerbatim": {
-        "k": 127,
+        "k": 128,
         "n": 296,
-        "pct": 42.9,
+        "pct": 43.2,
         "ci95": [
-         37,
+         38,
          49
         ]
        },
        "downgradedToPartial": {
-        "k": 169,
+        "k": 168,
         "n": 296,
-        "pct": 57.1,
+        "pct": 56.8,
         "ci95": [
          51,
-         63
+         62
         ]
        }
       },
@@ -7242,9 +7246,9 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 375,
+      "k": 376,
       "n": 409,
-      "pct": 91.7,
+      "pct": 91.9,
       "min": 91.2,
       "max": 92.5,
       "ci95": [
@@ -8190,11 +8194,11 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 370,
+      "k": 369,
       "n": 405,
-      "pct": 91.4,
+      "pct": 91.1,
       "min": 90.4,
-      "max": 92.6,
+      "max": 91.9,
       "ci95": [
        88,
        94
@@ -8561,10 +8565,10 @@
       "total": 6
      },
      "notJudged_textualOnASmallPartFromAnotherPassage": {
-      "mean": 2.3,
-      "min": 2,
+      "mean": 2,
+      "min": 1,
       "max": 3,
-      "total": 7
+      "total": 6
      }
     },
     "B2": {
@@ -8788,18 +8792,18 @@
       "saidWordForWord": {
        "detected": 285,
        "labelledVerbatim": {
-        "k": 78,
+        "k": 79,
         "n": 285,
-        "pct": 27.4,
+        "pct": 27.7,
         "ci95": [
          23,
          33
         ]
        },
        "downgradedToPartial": {
-        "k": 207,
+        "k": 206,
         "n": 285,
-        "pct": 72.6,
+        "pct": 72.3,
         "ci95": [
          67,
          77
@@ -8822,14 +8826,14 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 338,
+      "k": 339,
       "n": 391,
-      "pct": 86.5,
-      "min": 85,
+      "pct": 86.7,
+      "min": 85.7,
       "max": 87.3,
       "ci95": [
        83,
-       89
+       90
       ]
      },
      "criticalPerLecture": {
@@ -9068,22 +9072,22 @@
       ]
      },
      "hadithChangedDetected": {
-      "k": 103,
+      "k": 104,
       "n": 120,
-      "pct": 85.8,
+      "pct": 86.7,
       "min": 82.5,
       "max": 92.5,
       "ci95": [
-       78,
-       91
+       79,
+       92
       ]
      },
      "firstSourceCorrectOfDetected": {
       "k": 371,
-      "n": 384,
-      "pct": 96.6,
+      "n": 385,
+      "pct": 96.4,
       "min": 95.4,
-      "max": 97.5,
+      "max": 97,
       "ci95": [
        94,
        98
@@ -9123,29 +9127,29 @@
        }
       },
       "wordingChanged": {
-       "detected": 103,
+       "detected": 104,
        "labelledPartial": {
         "k": 101,
-        "n": 103,
-        "pct": 98.1,
+        "n": 104,
+        "pct": 97.1,
         "ci95": [
-         93,
+         92,
          99
         ]
        },
-       "labelledVerbatimOnAnUnchangedPart": 2,
+       "labelledVerbatimOnAnUnchangedPart": 3,
        "labelledVerbatimAlthoughChanged": 0
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 341,
-      "n": 384,
-      "pct": 88.8,
-      "min": 88.1,
+      "k": 340,
+      "n": 385,
+      "pct": 88.3,
+      "min": 87.4,
       "max": 90,
       "ci95": [
        85,
-       92
+       91
       ]
      },
      "criticalPerLecture": {
@@ -9689,14 +9693,14 @@
       ]
      },
      "hadithVerbatimDetected": {
-      "k": 168,
+      "k": 169,
       "n": 180,
-      "pct": 93.3,
+      "pct": 93.9,
       "min": 86.7,
       "max": 98.3,
       "ci95": [
        89,
-       96
+       97
       ]
      },
      "hadithChangedDetected": {
@@ -9712,10 +9716,10 @@
      },
      "firstSourceCorrectOfDetected": {
       "k": 369,
-      "n": 380,
-      "pct": 97.2,
+      "n": 381,
+      "pct": 96.9,
       "min": 94.1,
-      "max": 99.2,
+      "max": 98.4,
       "ci95": [
        95,
        98
@@ -9734,10 +9738,10 @@
      },
      "labels": {
       "saidWordForWord": {
-       "detected": 280,
+       "detected": 281,
        "labelledVerbatim": {
         "k": 46,
-        "n": 280,
+        "n": 281,
         "pct": 16.4,
         "ci95": [
          13,
@@ -9745,8 +9749,8 @@
         ]
        },
        "downgradedToPartial": {
-        "k": 234,
-        "n": 280,
+        "k": 235,
+        "n": 281,
         "pct": 83.6,
         "ci95": [
          79,
@@ -9771,8 +9775,8 @@
      },
      "boundaryIoUAtLeast80": {
       "k": 344,
-      "n": 380,
-      "pct": 90.7,
+      "n": 381,
+      "pct": 90.4,
       "min": 86.7,
       "max": 93.3,
       "ci95": [
@@ -10005,10 +10009,10 @@
       ]
      },
      "hadithVerbatimDetected": {
-      "k": 130,
+      "k": 129,
       "n": 180,
-      "pct": 72.2,
-      "min": 71.7,
+      "pct": 71.7,
+      "min": 70,
       "max": 73.3,
       "ci95": [
        65,
@@ -10027,8 +10031,8 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 290,
-      "n": 302,
+      "k": 289,
+      "n": 301,
       "pct": 96,
       "min": 94,
       "max": 98.1,
@@ -10038,10 +10042,10 @@
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 290,
+      "k": 289,
       "n": 420,
-      "pct": 69,
-      "min": 67.1,
+      "pct": 68.8,
+      "min": 66.4,
       "max": 72.9,
       "ci95": [
        64,
@@ -10050,20 +10054,20 @@
      },
      "labels": {
       "saidWordForWord": {
-       "detected": 230,
+       "detected": 229,
        "labelledVerbatim": {
-        "k": 36,
-        "n": 230,
-        "pct": 15.7,
+        "k": 37,
+        "n": 229,
+        "pct": 16.2,
         "ci95": [
          12,
          21
         ]
        },
        "downgradedToPartial": {
-        "k": 194,
-        "n": 230,
-        "pct": 84.3,
+        "k": 192,
+        "n": 229,
+        "pct": 83.8,
         "ci95": [
          79,
          88
@@ -10087,9 +10091,9 @@
      },
      "boundaryIoUAtLeast80": {
       "k": 179,
-      "n": 302,
-      "pct": 59.1,
-      "min": 48,
+      "n": 301,
+      "pct": 59.2,
+      "min": 47.4,
       "max": 68.3,
       "ci95": [
        54,
@@ -10402,11 +10406,11 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 309,
+      "k": 310,
       "n": 371,
-      "pct": 83.3,
+      "pct": 83.6,
       "min": 81.5,
-      "max": 86.8,
+      "max": 87.6,
       "ci95": [
        79,
        87
@@ -10648,10 +10652,10 @@
       ]
      },
      "hadithChangedDetected": {
-      "k": 76,
+      "k": 75,
       "n": 120,
-      "pct": 63.3,
-      "min": 60,
+      "pct": 62.5,
+      "min": 57.5,
       "max": 67.5,
       "ci95": [
        54,
@@ -10659,8 +10663,8 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 311,
-      "n": 324,
+      "k": 310,
+      "n": 323,
       "pct": 96.1,
       "min": 94.8,
       "max": 98,
@@ -10670,13 +10674,13 @@
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 311,
+      "k": 310,
       "n": 420,
-      "pct": 74,
-      "min": 70,
+      "pct": 73.8,
+      "min": 69.3,
       "max": 77.9,
       "ci95": [
-       70,
+       69,
        78
       ]
      },
@@ -10703,10 +10707,10 @@
        }
       },
       "wordingChanged": {
-       "detected": 76,
+       "detected": 75,
        "labelledPartial": {
-        "k": 75,
-        "n": 76,
+        "k": 74,
+        "n": 75,
         "pct": 98.7,
         "ci95": [
          93,
@@ -10718,14 +10722,14 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 278,
-      "n": 324,
-      "pct": 85.9,
-      "min": 82.6,
-      "max": 88,
+      "k": 279,
+      "n": 323,
+      "pct": 86.5,
+      "min": 83.5,
+      "max": 88.9,
       "ci95": [
        82,
-       89
+       90
       ]
      },
      "criticalPerLecture": {
@@ -11280,32 +11284,32 @@
       ]
      },
      "hadithChangedDetected": {
-      "k": 85,
+      "k": 86,
       "n": 120,
-      "pct": 70.8,
+      "pct": 71.7,
       "min": 65,
       "max": 75,
       "ci95": [
-       62,
-       78
+       63,
+       79
       ]
      },
      "firstSourceCorrectOfDetected": {
       "k": 345,
-      "n": 354,
-      "pct": 97.4,
+      "n": 355,
+      "pct": 97.2,
       "min": 96.5,
-      "max": 98.3,
+      "max": 97.6,
       "ci95": [
        95,
-       99
+       98
       ]
      },
      "firstSourceCorrectOfAll": {
       "k": 345,
       "n": 420,
       "pct": 82.1,
-      "min": 77.9,
+      "min": 78.6,
       "max": 85.7,
       "ci95": [
        78,
@@ -11316,29 +11320,29 @@
       "saidWordForWord": {
        "detected": 269,
        "labelledVerbatim": {
-        "k": 27,
+        "k": 28,
         "n": 269,
-        "pct": 10,
+        "pct": 10.4,
         "ci95": [
          7,
-         14
+         15
         ]
        },
        "downgradedToPartial": {
-        "k": 242,
+        "k": 241,
         "n": 269,
-        "pct": 90,
+        "pct": 89.6,
         "ci95": [
-         86,
+         85,
          93
         ]
        }
       },
       "wordingChanged": {
-       "detected": 85,
+       "detected": 86,
        "labelledPartial": {
-        "k": 85,
-        "n": 85,
+        "k": 86,
+        "n": 86,
         "pct": 100,
         "ci95": [
          96,
@@ -11350,14 +11354,14 @@
       }
      },
      "boundaryIoUAtLeast80": {
-      "k": 291,
-      "n": 354,
-      "pct": 82.2,
-      "min": 80.5,
-      "max": 83.9,
+      "k": 290,
+      "n": 355,
+      "pct": 81.7,
+      "min": 79.8,
+      "max": 83.1,
       "ci95": [
-       78,
-       86
+       77,
+       85
       ]
      },
      "criticalPerLecture": {
@@ -11585,14 +11589,14 @@
       ]
      },
      "hadithVerbatimDetected": {
-      "k": 106,
+      "k": 105,
       "n": 180,
-      "pct": 58.9,
-      "min": 58.3,
+      "pct": 58.3,
+      "min": 56.7,
       "max": 60,
       "ci95": [
-       52,
-       66
+       51,
+       65
       ]
      },
      "hadithChangedDetected": {
@@ -11607,10 +11611,10 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 215,
-      "n": 220,
+      "k": 214,
+      "n": 219,
       "pct": 97.7,
-      "min": 97.2,
+      "min": 97.1,
       "max": 98.7,
       "ci95": [
        95,
@@ -11618,10 +11622,10 @@
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 215,
+      "k": 214,
       "n": 420,
-      "pct": 51.2,
-      "min": 49.3,
+      "pct": 51,
+      "min": 48.6,
       "max": 54.3,
       "ci95": [
        46,
@@ -11630,20 +11634,20 @@
      },
      "labels": {
       "saidWordForWord": {
-       "detected": 177,
+       "detected": 176,
        "labelledVerbatim": {
         "k": 19,
-        "n": 177,
-        "pct": 10.7,
+        "n": 176,
+        "pct": 10.8,
         "ci95": [
          7,
          16
         ]
        },
        "downgradedToPartial": {
-        "k": 158,
-        "n": 177,
-        "pct": 89.3,
+        "k": 157,
+        "n": 176,
+        "pct": 89.2,
         "ci95": [
          84,
          93
@@ -11667,10 +11671,10 @@
      },
      "boundaryIoUAtLeast80": {
       "k": 97,
-      "n": 220,
-      "pct": 44.2,
+      "n": 219,
+      "pct": 44.4,
       "min": 41.6,
-      "max": 46.5,
+      "max": 47.1,
       "ci95": [
        38,
        51
@@ -11948,21 +11952,21 @@
       "saidWordForWord": {
        "detected": 265,
        "labelledVerbatim": {
-        "k": 28,
+        "k": 29,
         "n": 265,
-        "pct": 10.6,
+        "pct": 10.9,
         "ci95": [
-         7,
+         8,
          15
         ]
        },
        "downgradedToPartial": {
-        "k": 237,
+        "k": 236,
         "n": 265,
-        "pct": 89.4,
+        "pct": 89.1,
         "ci95": [
          85,
-         93
+         92
         ]
        }
       },
@@ -12283,21 +12287,21 @@
     },
     "unseenCueWording": {
      "clean": {
-      "k": 113,
+      "k": 118,
       "n": 153,
-      "pct": 73.9,
+      "pct": 77.1,
       "ci95": [
-       66,
-       80
+       70,
+       83
       ]
      },
      "noise20": {
-      "k": 80,
+      "k": 83,
       "n": 153,
-      "pct": 52.3,
+      "pct": 54.2,
       "ci95": [
-       44,
-       60
+       46,
+       62
       ]
      }
     }
@@ -13127,8 +13131,8 @@
   "outOfCorpus": {
    "0": {
     "items": 90,
-    "notFound": 55,
-    "leadOnly": 4,
+    "notFound": 56,
+    "leadOnly": 3,
     "meaning": {
      "sameFamily": 11,
      "wrongSource": 9
@@ -13150,8 +13154,8 @@
    },
    "10": {
     "items": 90,
-    "notFound": 64,
-    "leadOnly": 2,
+    "notFound": 65,
+    "leadOnly": 1,
     "meaning": {
      "sameFamily": 8,
      "wrongSource": 7
@@ -13659,7 +13663,7 @@
       100
      ]
     },
-    "meanStartErrorWords": 0.14,
+    "meanStartErrorWords": 0.15,
     "meanEndErrorWords": 0.15,
     "leadsInFiller": {
      "mean": 0,
@@ -13703,7 +13707,7 @@
       97
      ]
     },
-    "meanStartErrorWords": 0.49,
+    "meanStartErrorWords": 0.46,
     "meanEndErrorWords": 0.28,
     "leadsInFiller": {
      "mean": 0,
@@ -13747,7 +13751,7 @@
       88
      ]
     },
-    "meanStartErrorWords": 0.73,
+    "meanStartErrorWords": 0.72,
     "meanEndErrorWords": 0.44,
     "leadsInFiller": {
      "mean": 0,
@@ -13791,7 +13795,7 @@
       73
      ]
     },
-    "meanStartErrorWords": 0.8,
+    "meanStartErrorWords": 0.78,
     "meanEndErrorWords": 0.59,
     "leadsInFiller": {
      "mean": 0,
@@ -13914,14 +13918,14 @@
      }
     },
     "boundaryIoUAtLeast80": {
-     "k": 404,
+     "k": 402,
      "n": 415,
-     "pct": 97.4,
-     "min": 95.7,
+     "pct": 96.9,
+     "min": 94.3,
      "max": 98.6,
      "ci95": [
       95,
-      99
+      98
      ]
     },
     "criticalPerLecture": {
@@ -14070,14 +14074,14 @@
      }
     },
     "boundaryIoUAtLeast80": {
-     "k": 355,
+     "k": 354,
      "n": 404,
-     "pct": 87.9,
-     "min": 86,
+     "pct": 87.6,
+     "min": 85.3,
      "max": 89.6,
      "ci95": [
       84,
-      91
+      90
      ]
     },
     "criticalPerLecture": {
@@ -14202,26 +14206,26 @@
    "medium": {
     "lengthWords": "8–12",
     "clean": {
-     "detected": 124,
+     "detected": 128,
      "n": 135,
      "ci95": [
-      86,
-      95
+      90,
+      97
      ],
-     "firstSourceIsTheBook": 104,
-     "bookAmongShownSources": 124,
+     "firstSourceIsTheBook": 108,
+     "bookAmongShownSources": 128,
      "attributedFirstToQuranOrHadith": 20,
      "falseCitationsInFiller": 0
     },
     "noise15": {
-     "detected": 116,
+     "detected": 123,
      "n": 135,
      "ci95": [
-      79,
-      91
+      85,
+      95
      ],
-     "firstSourceIsTheBook": 99,
-     "bookAmongShownSources": 116,
+     "firstSourceIsTheBook": 106,
+     "bookAmongShownSources": 123,
      "attributedFirstToQuranOrHadith": 17,
      "falseCitationsInFiller": 0
     }
@@ -14229,26 +14233,26 @@
    "short": {
     "lengthWords": "5–7",
     "clean": {
-     "detected": 83,
+     "detected": 99,
      "n": 135,
      "ci95": [
-      53,
-      69
+      65,
+      80
      ],
-     "firstSourceIsTheBook": 63,
-     "bookAmongShownSources": 83,
+     "firstSourceIsTheBook": 78,
+     "bookAmongShownSources": 99,
      "attributedFirstToQuranOrHadith": 20,
      "falseCitationsInFiller": 0
     },
     "noise15": {
-     "detected": 58,
+     "detected": 66,
      "n": 135,
      "ci95": [
-      35,
-      51
+      41,
+      57
      ],
-     "firstSourceIsTheBook": 47,
-     "bookAmongShownSources": 58,
+     "firstSourceIsTheBook": 55,
+     "bookAmongShownSources": 66,
      "attributedFirstToQuranOrHadith": 11,
      "falseCitationsInFiller": 0
     }
@@ -14256,26 +14260,26 @@
    "core": {
     "lengthWords": "10–19",
     "clean": {
-     "detected": 128,
+     "detected": 130,
      "n": 135,
      "ci95": [
-      90,
-      97
+      92,
+      98
      ],
-     "firstSourceIsTheBook": 1,
-     "bookAmongShownSources": 126,
+     "firstSourceIsTheBook": 2,
+     "bookAmongShownSources": 128,
      "attributedFirstToQuranOrHadith": 127,
      "falseCitationsInFiller": 0
     },
     "noise15": {
-     "detected": 125,
+     "detected": 129,
      "n": 135,
      "ci95": [
-      87,
-      96
+      91,
+      98
      ],
-     "firstSourceIsTheBook": 2,
-     "bookAmongShownSources": 124,
+     "firstSourceIsTheBook": 5,
+     "bookAmongShownSources": 128,
      "attributedFirstToQuranOrHadith": 123,
      "falseCitationsInFiller": 0
     }
@@ -14307,6 +14311,10 @@
      "falseCitationsInFiller": 0
     }
    }
+  },
+  "cueFollowedByOwnWords": {
+   "trials": 200,
+   "falseTextualCitations": 0
   }
  },
  "english": {

@@ -1,5 +1,5 @@
 # Development probe: sentence embeddings for quotations by meaning (see eval/embed/probe.mjs).
-# The Cloudflare token and account id are repository secrets; never printed, never written. Results go to the branch `embed-results`.
+# It asks the deployed Worker's /embed route, as the site does; no secret is used. Results go to the branch `embed-results`.
 name: embed-probe
 on:
   workflow_dispatch:
@@ -21,8 +21,8 @@ jobs:
         with: { node-version: 22 }
       - name: probe
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE_WORKER: https://athar-asr.athar-7399079d.workers.dev
+          LIVE_ORIGIN: https://athar-ledger.pages.dev
         run: node eval/embed/probe.mjs
       - name: publish results
         if: always()

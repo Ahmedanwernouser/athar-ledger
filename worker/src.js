@@ -100,15 +100,16 @@ export default {
         const asr = asrProviders(env);          // looks at the secrets' presence only; never touches the caps
         if (!asr.available.includes(asr.default)) missing.push(ASR_KEY_NAME[asr.default]);
         if (!allowed.length) missing.push("ALLOWED_ORIGINS");
-        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!env.GEMINI_API_KEY }, 200, cors);
+        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!env.GEMINI_API_KEY, embed: embedModels(env) }, 200, cors);
       }
-      const route = req.method === "POST" && (path === "/asr" || path === "/llm" || path === "/yt") ? path : null;
+      const route = req.method === "POST" && (path === "/asr" || path === "/llm" || path === "/yt" || path === "/embed") ? path : null;
       if (!route) return json({ error: "not_found" }, 404, cors);
 
       if (!allowed.includes(origin)) return json({ error: "origin" }, 403, cors);
       // FAIL CLOSED: no counter store => no service. (Otherwise the caps would silently be off.)
       if (!env.CAP) return json({ error: "server_not_configured" }, 500, cors);
 
+      if (route === "/embed") return await embedRoute(req, env, cors);
       return route === "/asr" ? await asrRoute(req, env, cors, ctx) : route === "/yt" ? await ytRoute(req, env, cors) : await llmRoute(req, env, cors);
     } catch {
       return json({ error: "internal" }, 500, cors);   // never a stack trace, never without CORS
@@ -771,6 +772,64 @@ function cleanRecall(reply, lang) {
   if (!t) return "";
   if (lang === "en") return EN_ONLY.test(t) && /[A-Za-z]{2}/.test(t) && !/^unknown\b/i.test(t) ? t : "";
   return AR_ONLY.test(t) && /[\u0621-\u064A]{2}/.test(t) && !AR_UNKNOWN.test(t) ? t : "";
+}
+
+// =====================================================================================================
+// /embed — sentence embeddings from Cloudflare Workers AI (the binding AI)
+// =====================================================================================================
+// Free up to 10,000 "neurons" a day on the Workers Free plan; past that Cloudflare answers with an error and nothing is
+// billed (billing exists only on the paid plan). So the allowance itself is the cap, and this route writes no counter:
+// the KV free plan has 1,000 writes a day and they belong to /asr and /yt. The route is a plain text -> vectors relay,
+// limited in size, open only to the site's own origin. The answer is small: each vector is cut to `dim` numbers, scaled to
+// unit length and sent as signed bytes (base64).
+const EMBED_KNOWN = { "bge-m3": "@cf/baai/bge-m3", "qwen3": "@cf/qwen/qwen3-embedding-0.6b", "gemma": "@cf/google/embeddinggemma-300m" };
+const EMBED_MAX_TEXTS = 64, EMBED_MAX_CHARS = 2000, EMBED_MAX_BODY = 200000;
+/** the short names this deployment offers (the first is the default); [] when the AI binding is missing */
+function embedModels(env) {
+  if (!env.AI || typeof env.AI.run !== "function") return [];
+  const want = String(env.EMBED_MODELS || "bge-m3").split(",").map((x) => x.trim()).filter((x) => Object.prototype.hasOwnProperty.call(EMBED_KNOWN, x));
+  return want.length ? [...new Set(want)] : ["bge-m3"];
+}
+async function embedRoute(req, env, cors) {
+  const models = embedModels(env);
+  if (!models.length) return json({ error: "embed_disabled" }, 501, cors);
+  const raw = await readLimited(req, EMBED_MAX_BODY);
+  if (raw === null) return json({ error: "too_large" }, 413, cors);
+  let b;
+  try { b = JSON.parse(raw); } catch { return json({ error: "bad_request" }, 400, cors); }
+  if (!b || typeof b !== "object" || !Array.isArray(b.texts) || !b.texts.length || b.texts.length > EMBED_MAX_TEXTS) return json({ error: "bad_request" }, 400, cors);
+  const texts = [];
+  for (const t of b.texts) {
+    if (typeof t !== "string") return json({ error: "bad_request" }, 400, cors);
+    const x = t.replace(/\s+/g, " ").trim().slice(0, EMBED_MAX_CHARS);
+    if (!x) return json({ error: "bad_request" }, 400, cors);
+    texts.push(x);
+  }
+  const name = typeof b.model === "string" && models.includes(b.model) ? b.model : models[0];
+  const wantDim = Number.isInteger(b.dim) && b.dim >= 16 && b.dim <= 4096 ? b.dim : 0;
+  const ip = req.headers.get("CF-Connecting-IP") || "";
+  if (await burstLimited(env.RL_EMBED, "embed:" + ip)) return json({ error: "rate_limited" }, 429, { ...cors, "Retry-After": "60" });
+  let data = null;
+  try {
+    const input = name === "qwen3" ? (b.kind === "q" ? { queries: texts } : { documents: texts }) : { text: texts };
+    const r = await env.AI.run(EMBED_KNOWN[name], input);
+    data = r && (r.data || (r.result && r.result.data));
+  } catch {
+    return json({ error: "embed_unavailable" }, 503, cors);       // the day's allowance is used up, or the model is down
+  }
+  if (!Array.isArray(data) || data.length !== texts.length || !Array.isArray(data[0]) || !data[0].length) return json({ error: "embed_unavailable" }, 503, cors);
+  const full = data[0].length, dim = wantDim && wantDim < full ? wantDim : full;
+  const bytes = new Uint8Array(texts.length * dim);
+  for (let i = 0; i < data.length; i++) {
+    const v = data[i];
+    if (!Array.isArray(v) || v.length !== full) return json({ error: "embed_unavailable" }, 503, cors);
+    let m = 0;
+    for (let k = 0; k < dim; k++) { const a = Math.abs(Number(v[k]) || 0); if (a > m) m = a; }
+    for (let k = 0; k < dim; k++) bytes[i * dim + k] = Math.round(((Number(v[k]) || 0) / (m || 1)) * 127) & 255;
+  }
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+  return json({ model: name, dim, n: texts.length, vectors: btoa(bin) }, 200, cors);
 }
 
 /** read at most `max` bytes of the body; null = too large */

@@ -52,7 +52,13 @@ cp -r "$ROOT/worker" "$WORK/worker"; cd "$WORK/worker"
 GEM="$(printf '%s' "${GEMINI_API_KEYS:-}" | tr ',;\n\t' '    ' | awk '{print $1}')"
 sed -i "s#^ALLOWED_ORIGINS = .*#ALLOWED_ORIGINS = \"$SITE\"#; s#REPLACE_WITH_KV_NAMESPACE_ID#$KV#" wrangler.toml
 if [ -z "${GROQ_API_KEY:-}" ] && [ -n "$GEM" ]; then sed -i 's#^ASR_PROVIDER = .*#ASR_PROVIDER = "gemini"#' wrangler.toml; say "no Groq key: Gemini is the default transcriber"; fi
-$WR deploy >"$WORK/w.out" 2>&1 && say "Worker deployed" || { say "FAILED: wrangler deploy"; tail -25 "$WORK/w.out" | tee -a "$LOG"; fail=1; }
+if $WR deploy >"$WORK/w.out" 2>&1; then say "Worker deployed (with the Workers AI binding)"
+else
+  # the optional Workers AI binding may be refused (token without that permission): deploy without it, /embed then answers 501
+  say "deploy with the Workers AI binding was refused; trying without it"; grep -iE "error|ai" "$WORK/w.out" | head -6 | cut -c1-300 | sed "s/${CLOUDFLARE_ACCOUNT_ID:-__none__}/<account>/g" | tee -a "$LOG"
+  sed -i '/^# EMBED-BEGIN/,/^# EMBED-END/d' wrangler.toml
+  $WR deploy >"$WORK/w.out" 2>&1 && say "Worker deployed (without embeddings)" || { say "FAILED: wrangler deploy"; tail -25 "$WORK/w.out" | tee -a "$LOG"; fail=1; }
+fi
 if [ $fail = 0 ]; then
   [ -n "${GROQ_API_KEY:-}" ] && { printf '%s' "$GROQ_API_KEY" | $WR secret put GROQ_API_KEY >"$WORK/s1.out" 2>&1 && say "secret GROQ_API_KEY set" || { say "FAILED: secret GROQ_API_KEY"; fail=1; }; }
   [ -n "$GEM" ] && { printf '%s' "$GEM" | $WR secret put GEMINI_API_KEY >"$WORK/s2.out" 2>&1 && say "secret GEMINI_API_KEY set" || { say "FAILED: secret GEMINI_API_KEY"; fail=1; }; }

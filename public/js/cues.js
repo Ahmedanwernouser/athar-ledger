@@ -36,6 +36,10 @@ const SAYING = ["قال الإمام", "قال شيخ الإسلام", "قال �
   "قال ابن مسعود", "قال ابن عباس", "قال الشاعر", "قال الحكماء", "قال أحد الصالحين", "قال بعض الصالحين", "قال بعض أهل العلم",
   "قال بعض العلماء", "قال أحد العلماء", "قال الإمام الشافعي رحمه الله", "قال بعضهم"]
   .flatMap(p => [p, "و" + p, "كما " + p, p.replace(/^قال/, "يقول")]);
+// Ways of announcing somebody's words that name nobody: they hold for any speaker.
+const SAYING_GENERIC = ["مقولة", "مقولة مشهورة", "قولة مشهورة", "كلمة مشهورة", "كلمة عظيمة", "في الأثر", "جاء في الأثر", "ورد في الأثر", "وفي الأثر",
+  "كما قيل", "وقد قيل", "قيل قديما", "قال القائل", "كما قال القائل", "قال الحكيم", "من أقوال السلف", "من كلام السلف",
+  "كان يقول", "وكان يقول", "فكان يقول", "كانت تقول", "وكانت تقول", "كانوا يقولون", "وكانوا يقولون"];
 
 const TRAILING = [["صدق الله العظيم", "quran"], ["أو كما قال", "hadith"], ["رواه", "hadith"], ["أخرجه", "hadith"],
   ["متفق عليه", "hadith"], ["حديث صحيح", "hadith"], ["حديث حسن", "hadith"]];
@@ -65,13 +69,17 @@ const EN_TRAILING = [["reported by", "hadith"], ["narrated by", "hadith"], ["rel
 // The isti'adha opens a recitation but also every lecture: it lowers the bar like any Qur'an cue, yet it is too weak
 // to make a bare devotional formula ("بسم الله الرحمن الرحيم") count as a quoted ayah.
 const WEAK = new Set([F("أعوذ بالله من الشيطان الرجيم")]);
-function build(list, kind, trailing = false) {
-  return list.map(p => ({ toks: F(p).split(" "), kind, trailing, weak: WEAK.has(F(p)) })).filter(c => c.toks[0]);
+function build(list, kind, trailing = false, extra = null) {
+  return list.map(p => ({ toks: F(p).split(" "), kind, trailing, weak: WEAK.has(F(p)), ...(extra || {}) })).filter(c => c.toks[0]);
 }
 const CUES = [
   ...build([...cross(SAY, GOD), ...QURAN_FIXED], "quran"),
   ...build([...cross(SAY, PROPHET), ...HADITH_FIXED], "hadith"),
   ...build(SAYING, "saying"),
+  // `athar`: the words may be a companion's, and those are kept in the hadith collections (a scholar's are looked for in books only)
+  // (`form`: like the cues known by their form, these words also stand INSIDE narrations — "أن ابن عمر كان يقول ..." — so they
+  // announce without being taken out of the comparison)
+  ...build(SAYING_GENERIC, "saying", false, { athar: true, form: true }),
   ...TRAILING.flatMap(([p, k]) => build([p], k, true)),
   ...build(EN_QURAN, "quran"), ...build(EN_HADITH, "hadith"), ...build(EN_SAYING, "saying"),
   ...EN_TRAILING.flatMap(([p, k]) => build([p], k, true)),
@@ -102,8 +110,67 @@ export function blessingLength(ftok, i) {
   return end;
 }
 
-/** -> [{pos, end, kind, trailing, weak}] sorted by pos, non-overlapping (longest, then most specific) */
-export function findCues(ftok) {
+// ---- cues by FORM, whoever is named ----
+// "قال ابن عمر رضي الله عنهما", "يقول سفيان الثوري رحمه الله", "عن سعيد بن زيد رضي الله عنه قال": the prayer said after a name
+// tells that a person was just named, and the verb before the name that his words follow. No list of names is involved.
+const SAY_SET = new Set([...SAY, "قالت", "وقالت", "فقالت", "تقول", "وتقول", "قالوا", "وقالوا"].map(F));
+const AN = F("عن"), RADIYA = new Set(["رضي", "رضى"].map(F)), ALLAH = F("الله"), TAALA = F("تعالى");
+const ANHU = new Set(["عنه", "عنها", "عنهما", "عنهم", "عنهن"].map(F));
+const RAHIMA = new Set(["رحمه", "رحمها", "رحمهم", "رحمهما", "يرحمه"].map(F));
+/** length of a prayer for a companion ("رضي الله [تعالى] عنه") or for a scholar ("رحمه الله [تعالى]") at i, with its kind; 0 when there is none */
+function prayerAt(ftok, i) {
+  if (RADIYA.has(ftok[i]) && ftok[i + 1] === ALLAH) { const k = ftok[i + 2] === TAALA ? 3 : 2; if (ANHU.has(ftok[i + k])) return { len: k + 1, who: "companion" }; }
+  if (RADIYA.has(ftok[i]) && ANHU.has(ftok[i + 1])) return { len: 2, who: "companion" };            // "رضي عنه" as often transcribed
+  if (RAHIMA.has(ftok[i]) && ftok[i + 1] === ALLAH) return { len: ftok[i + 2] === TAALA ? 3 : 2, who: "scholar" };
+  return null;
+}
+const NAME_MAX = 6;       // "أبي عبد الرحمن عبد الله بن مسعود"
+// "<verb> النبي صلى الله عليه وسلم أن / عن / من ...": what the Prophet said, taught, forbade or warned of, reported with ANY verb
+// ("وضّح النبي ﷺ أن ...", "حثّ النبي ﷺ على ...", "زجرنا رسول الله ﷺ عن ..."). The title followed by the blessing names him; the
+// particle after it opens the reported content. A narrative ("خرج النبي ﷺ إلى ...", "كان النبي ﷺ يحب ...") has no such particle.
+const TITLES = ["رسول الله", "النبي", "نبينا", "الرسول", "رسولنا", "المصطفى", "الحبيب", "حبيبنا", "سيدنا رسول الله", "سيدنا النبي", "نبينا محمد", "سيدنا محمد"]
+  .map(p => F(p).split(" ")).sort((a, b) => b.length - a.length);
+const REPORT_OPEN = new Set(["أن", "أنه", "أنها", "أننا", "بأن", "بأنه", "عن", "من", "ما"].map(F));
+const NOT_A_VERB = new Set(["كان", "وكان", "فكان", "لما", "ولما", "فلما", "حين", "حينما", "عندما", "عند", "مع", "إلى", "على", "في", "من", "عن", "ثم", "أن", "إن", "مثل", "هو", "يا", "هذا", "ذلك", "قبل", "بعد",
+  "سنة", "هدي", "حياة", "سيرة", "زمن", "عهد", "أصحاب", "صحابة", "مسجد", "قبر", "بيت", "زوجة", "زوجات", "آل", "أهل", "حب", "محبة", "اتباع", "طاعة"].map(F));
+const HON_PEACE = F("عليه الصلاة والسلام").split(" ");
+function reportCues(ftok) {
+  const out = [];
+  for (let i = 1; i < ftok.length; i++) {
+    const title = TITLES.find(tt => tt.every((x, k) => ftok[i + k] === x));
+    if (!title) continue;
+    const j = i + title.length;
+    const bl = blessingLength(ftok, j) || (HON_PEACE.every((x, k) => ftok[j + k] === x) ? HON_PEACE.length : 0);
+    if (!bl) continue;
+    const verb = ftok[i - 1];
+    if (!verb || verb.length < 2 || NOT_A_VERB.has(verb) || SAY_SET.has(verb) || !REPORT_OPEN.has(ftok[j + bl])) continue;
+    out.push({ pos: i - 1, end: j + bl, kind: "hadith", trailing: false, weak: false, form: true });
+    i = j + bl - 1;
+  }
+  return out;
+}
+function formCues(ftok) {
+  const out = reportCues(ftok);
+  for (let i = 0; i < ftok.length; i++) {
+    const say = SAY_SET.has(ftok[i]), an = ftok[i] === AN;
+    if (!say && !an) continue;
+    for (let j = i + 2; j <= i + 1 + NAME_MAX && j < ftok.length; j++) {
+      if (SAY_SET.has(ftok[j - 1]) || ftok[j - 1] === AN) break;             // another verb / another link of a chain: not one name
+      const pr = prayerAt(ftok, j);
+      if (!pr) continue;
+      // "عن فلان رضي الله عنه" announces what he narrated (a hadith or his own words): looked for in the hadith collections;
+      // "قال فلان رضي الله عنه / رحمه الله" announces his own words
+      out.push({ pos: i, end: j + pr.len, kind: an ? "hadith" : "saying", trailing: false, weak: false, form: true, ...(!an && pr.who === "companion" ? { athar: true } : {}) });
+      break;
+    }
+  }
+  return out;
+}
+
+/** -> [{pos, end, kind, trailing, weak, mask}] sorted by pos, non-overlapping (longest, then most specific).
+ *  `mask`: the spans of a cue that are a LISTED phrase — words that announce a quotation and are never part of one. A cue
+ *  known only by its form ("قال <a name> رضي الله عنه") has none: the same words open many narrations inside the sources. */
+export function findCues(ftok, opt = {}) {
   const out = [];
   for (let i = 0; i < ftok.length; i++) {
     const cands = BY_FIRST.get(ftok[i]);
@@ -117,8 +184,11 @@ export function findCues(ftok) {
       if (!ok) continue;
       if (!best || L > best.toks.length || (L === best.toks.length && KIND_RANK[c.kind] > KIND_RANK[best.kind])) best = c;
     }
-    if (best) { out.push({ pos: i, end: i + best.toks.length, kind: best.kind, trailing: best.trailing, weak: best.weak }); i += best.toks.length - 1; }
+    if (best) { out.push({ pos: i, end: i + best.toks.length, kind: best.kind, trailing: best.trailing, weak: best.weak, ...(best.athar ? { athar: true } : {}), ...(best.form ? { form: true } : {}) }); i += best.toks.length - 1; }
   }
+  // cues recognised by their form are added where no listed cue already stands (a listed one is more specific about its kind)
+  if (opt.form !== false) for (const c of formCues(ftok)) if (!out.some(x => !x.trailing && x.pos < c.end && c.pos < x.end)) out.push(c);
+  out.sort((a, b) => a.pos - b.pos);
   // extend a hadith/quran cue over an immediately following honorific so the quote window starts after it
   const HON = [F("صلى الله عليه وسلم"), F("صلى الله عليه وآله وسلم"), F("عليه الصلاة والسلام"), F("رضي الله عنه"), F("رضي الله عنها"),
     F("رضي الله عنهما"), F("سبحانه وتعالى"), F("عز وجل"), F("تبارك وتعالى"), F("في كتابه الكريم"), F("في كتابه العزيز"), F("أنه قال"), F("قال"),
@@ -138,12 +208,20 @@ export function findCues(ftok) {
       if (!moved) { const k = blessingLength(ftok, c.end); if (k) { c.end += k; moved = true; } }
     }
   }
+  for (const c of out) c.mask = c.form ? [] : [[c.pos, c.end]];
   // drop cues that begin inside an earlier (extended) cue; merge cues that touch ("في الحديث الصحيح" + "عن النبي ...")
   const merged = [];
   for (const c of out) {
     const p = merged[merged.length - 1];
-    if (p && !p.trailing && c.pos < p.end) continue;
-    if (p && !p.trailing && !c.trailing && c.pos - p.end <= 1) { p.end = c.end; p.weak = p.weak && c.weak; if (KIND_RANK[c.kind] > KIND_RANK[p.kind]) p.kind = c.kind; continue; }
+    // (a cue reached by the honorifics of the one before it — "عن X رضي الله عنه قال" + "قال رسول الله ﷺ" — is joined to it, not lost)
+    if (p && !p.trailing && c.pos < p.end && (c.trailing || c.end <= p.end)) continue;
+    if (p && !p.trailing && !c.trailing && c.pos - p.end <= 1) {
+      p.end = c.end; p.weak = p.weak && c.weak; p.mask.push(...c.mask);
+      // a listed phrase says what follows ("قال ابن عمر رضي الله عنهما" + "قال رسول الله ﷺ" announces a hadith); a form only that somebody spoke
+      if (p.form && !c.form) { p.kind = c.kind; delete p.form; delete p.athar; if (c.athar) p.athar = true; }
+      else { if (c.athar && !(c.form && !p.form)) p.athar = true; if (!(c.form && !p.form) && KIND_RANK[c.kind] > KIND_RANK[p.kind]) p.kind = c.kind; }
+      continue;
+    }
     merged.push(c);
   }
   return merged;

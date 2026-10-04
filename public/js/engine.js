@@ -78,6 +78,10 @@ export const DEFAULTS = {
   denseK: 100, rerankK: 40, prefixLens: [6, 9, 12, 16, 24, 40], rerankMode: "mix", lexWeight: 1,   // chosen on the development paraphrases (eval/README.md)
   tolerant: true,       // ASR-aware matching (false = ablation)
   useCues: true,
+  formCues: true,         // cues known by their form ("قال <a name> رضي الله عنه"); off only to measure what they add
+  cueLeadFree: 3,         // content words that may stand between a cue and the text it announces
+  openTail: true,         // an open particle at the end of a match is not counted towards the minimum of words; off only to measure
+  oneCueOneQuote: true,   // a second text within reach of the same cue must stand on its own; off only to measure
   blocked: null,        // Set of passage ids to ignore (used by the evaluation to hold passages out)
 };
 
@@ -140,7 +144,7 @@ export function analyze(words, corpus, options = {}) {
   const n = tok.length;
   const wOf = i => wordText(words[i]);
   const wObj = i => { const x = words[i]; return x && typeof x === "object" ? x : {}; };
-  const cues = o.useCues ? findCues(ftok) : [];
+  const cues = o.useCues ? findCues(ftok, { form: o.formCues }) : [];
   const wt = fw => clamp(corpus.idf(fw) / 3, 0.3, 1);
   const idf = fw => corpus.idf(fw);
   const blocked = o.blocked;
@@ -157,7 +161,7 @@ export function analyze(words, corpus, options = {}) {
   // tokens that belong to a leading cue phrase ("قال رسول الله صلى الله عليه وسلم"): they announce a quotation,
   // they are not part of it, so they never count as evidence
   const cueMask = new Uint8Array(n);
-  for (const c of cues) if (!c.trailing) for (let i = c.pos; i < Math.min(n, c.end); i++) cueMask[i] = 1;
+  for (const c of cues) if (!c.trailing) for (const [a, b] of c.mask) for (let i = a; i < Math.min(n, b); i++) cueMask[i] = 1;
   const formMask = formulaMask(ftok), dMask = dhikrMask(ftok);
 
   // words that SAY where a text is from are not quoted words either: trailing cues ("رواه", "متفق عليه"), collection
@@ -175,12 +179,19 @@ export function analyze(words, corpus, options = {}) {
   }
 
   // "announced": a leading cue ended shortly before this token, or a trailing cue ("رواه ...") follows
-  const cueLead = new Uint8Array(n), cueTrail = new Uint8Array(n);
+  const cueLead = new Uint8Array(n), cueTrail = new Uint8Array(n), cueLeadNear = new Uint8Array(n);
   // "directly announced": the first words after a leading cue (reference words in between do not count)
   const cueDirect = new Uint8Array(n), cueDirectStrong = new Uint8Array(n);
   for (const c of cues) {
     if (c.trailing) { for (let i = Math.max(0, c.pos - 6); i <= Math.min(n - 1, c.pos + 1); i++) cueTrail[i] = KIND[c.kind]; continue; }
-    for (let i = Math.max(0, c.end - 1); i <= Math.min(n - 1, c.end + 8); i++) cueLead[i] = KIND[c.kind];
+    for (let i = Math.max(0, c.end - 1); i <= Math.min(n - 1, c.end + 8); i++) cueLead[i] = c.kind === "saying" && c.athar ? 4 : KIND[c.kind];      // 4: a saying that may be a companion's
+    // The cue announces what FOLLOWS it. A few words may stand between (an aside, a slip of the recogniser at the first words);
+    // once several content words that belong to no text have passed, those words were what it announced: a text that begins
+    // later is still "after a cue", but it needs as many content words as a text in plain speech (cueNear: the near reach).
+    for (let i = Math.max(0, c.end - 1), free = 0; i <= Math.min(n - 1, c.end + 8) && free <= o.cueLeadFree; i++) {
+      cueLeadNear[i] = 1;
+      if (i >= c.end && !metaMask[i] && !cueMask[i] && !FUNCTION_WORDS.has(tok[i])) free++;
+    }
     for (let i = c.end, free = 0; i < Math.min(n, c.end + 16) && free < 3; i++) {
       cueDirect[i] = KIND[c.kind]; if (!c.weak) cueDirectStrong[i] = KIND[c.kind];
       if (!metaMask[i] && !cueMask[i]) free++;
@@ -219,7 +230,7 @@ export function analyze(words, corpus, options = {}) {
     return v.has(d.surah + ":" + d.ayah);
   };
 
-  const X = { tok, ftok, corpus, o, wt, idf, n, cueMask, metaMask, formMask, dMask, cueLead, cueTrail, cueDirect, cueDirectStrong, sentenceEnd, context, homograph,
+  const X = { tok, ftok, corpus, o, wt, idf, n, cueMask, metaMask, formMask, dMask, cueLead, cueLeadNear, cueTrail, cueDirect, cueDirectStrong, sentenceEnd, context, homograph,
     isWord: o.tolerant && o.realWords ? w => corpus.isWord(w) : null };
 
   // ---------- 1) seeds ----------
@@ -590,6 +601,33 @@ export function analyze(words, corpus, options = {}) {
     c.tierOf = tierOf;
   }
 
+  // One cue announces one quotation. The words after a cue are looked at with a lower bar, and the first text found there is
+  // what the cue announced. A SECOND text that begins after it, still within reach of the same cue, was not announced by it:
+  // it is judged again as plain speech and kept only if it stands on its own. (The same text going on after an aside of the
+  // speaker is the same quotation; a recitation that goes on is weighed by the Qur'an rules.)
+  if (o.oneCueOneQuote) {
+    const lead = cues.filter(c => !c.trailing), X0 = { ...X, noLead: true }, owner = new Map();
+    for (const c of cites) {
+      if (!c.best.hasCue) continue;
+      let own = null;
+      for (const k of lead) { if (k.end - 1 > c.best.ts) break; if (c.best.ts <= k.end + 8) own = k; }
+      if (own) { let g = owner.get(own); if (!g) owner.set(own, g = []); g.push(c); }
+    }
+    const gone = new Set();
+    for (const g of owner.values()) {
+      if (g.length < 2) continue;
+      g.sort((x, y) => x.ts - y.ts || y.te - x.te);
+      const first = g[0], texts = new Set([first.best, ...first.alts].map(m => m.pidA));
+      for (const c of g.slice(1)) {
+        if (c.ts < first.te || c.best.isQ || [c.best, ...c.alts].some(m => texts.has(m.pidA))) continue;
+        const alone = [c.best, ...c.alts].map(m => (m.cl ? verify(m.cl, X0) : null)).filter(m => m && !m.echo && m.status !== "lead");
+        if (!alone.length) { gone.add(c); continue; }
+        c.best = alone[0]; c.alts = alone.slice(1); c.ts = c.best.ts; c.te = c.best.te;
+      }
+    }
+    if (gone.size) cites = cites.filter(c => !gone.has(c));
+  }
+
   if (weakFound.length) {
     const ovShare = (c, m) => Math.max(0, Math.min(c.te, m.te) - Math.max(c.ts, m.ts)) / Math.min(c.te - c.ts, m.te - m.ts);
     weakFound.sort((x, y) => textual(y) - textual(x) || net(y) - net(x) || rank(y) - rank(x) || y.sum.evidence - x.sum.evidence || srank(x) - srank(y) || x.ts - y.ts || x.ps - y.ps);
@@ -727,7 +765,7 @@ export function analyze(words, corpus, options = {}) {
         Array.from({ length: Math.max(0, Math.min(wEnd, cue.end + 12) - cue.end) }, (_, d) => cue.end + d).some(a => sameStart(a, c.ts)));
       restart = again || null;
     }
-    const mm = cue.kind === "saying" && !corpus.hasBooks() ? null : meaningCandidates(cue, wEnd, tok, ftok, corpus, o);
+    const mm = cue.kind === "saying" && !cue.athar && !corpus.hasBooks() ? null : meaningCandidates(cue, wEnd, tok, ftok, corpus, o);
     // (a strong match by meaning stands when none of its candidates is that citation's text: then this cue announced something else that merely begins alike)
     if (restart && !(mm && mm.strong && ![restart.best, ...restart.alts, ...restart.others].some(m => mm.cands.some(k => k.pid === m.pidA)))) {
       if (!restart.colBefore.length && !restart.colAfter.length) for (const sp of colSpans) if (sp.type !== "bare" && sp.end <= cue.end + 1 && sp.pos >= cue.pos - 12) restart.colBefore.push(...sp.cols);
@@ -1076,9 +1114,14 @@ function verify(cl, X) {
   }
 
   // a cue only lowers the bar for the kind of source it announces (a hadith cue says nothing about a verse)
-  const fits = k => (isB ? k > 0 : k === (isQ ? 1 : 2));   // a book may be announced by any cue ("قال ابن القيم", "في الحديث" ...)
-  const hasCue = fits(X.cueLead[ts]) || fits(X.cueTrail[Math.min(n - 1, te)]) || fits(X.cueTrail[te - 1]);
-  const direct = fits(X.cueDirectStrong[ts]);
+  // a book may be announced by any cue ("قال ابن القيم", "في الحديث" ...); a text of the hadith collections by a hadith cue or by
+  // a companion's saying ("قال ابن عمر رضي الله عنهما": the collections keep the words of the companions too): code 4
+  const fits = k => (isB ? k > 0 : isQ ? k === 1 : k === 2 || k === 4);
+  // (X.noLead: judged as if no cue stood before it — see "one cue announces one quotation")
+  const trailCue = fits(X.cueTrail[Math.min(n - 1, te)]) || fits(X.cueTrail[te - 1]);
+  const hasCue = (!X.noLead && fits(X.cueLead[ts])) || trailCue;
+  const nearCue = (!X.noLead && fits(X.cueLead[ts]) && X.cueLeadNear[ts] === 1) || trailCue;      // the text begins where the cue said it would
+  const direct = !X.noLead && fits(X.cueDirectStrong[ts]);
   // devotional formulas are said all the time and prove nothing — except right after "قال الله تعالى", where
   // "الحمد لله رب العالمين" is the ayah being quoted
   // (ctx: how the matched words are presented — 2 announced as Qur'an, 1 in quotation marks / brackets, 0 plain speech)
@@ -1117,7 +1160,7 @@ function verify(cl, X) {
     if (ts !== cl.a || te !== cl.b || exactN !== cl.b - cl.a || edgeN !== (edge ? ops.length - exactN : 0)) return null;
     let pidA = cl.pid, pidB = cl.pid;
     if (bnd) { const find = x => { let k = 0; while (k + 1 < bnd.length && bnd[k + 1] <= x) k++; return k; }; pidA = win.first + find(S); pidB = win.first + find(E - 1); }
-    return { pid: cl.pid, pidA, pidB, ts, te, ps: S, pe: E, sum, det, status: edge ? "partial" : "verbatim", ops, tOff: a, P, FP, peLocal: pe, whole, wholeAyah, isQ, isB, edge, echo: false, frag: true, hasCue,
+    return { pid: cl.pid, pidA, pidB, ts, te, ps: S, pe: E, sum, det, status: edge ? "partial" : "verbatim", ops, tOff: a, P, FP, peLocal: pe, whole, wholeAyah, isQ, isB, edge, echo: false, frag: true, hasCue, cl,
       head: !atStart(ps), tail: !atEnd(pe) };
   }
 
@@ -1148,15 +1191,26 @@ function verify(cl, X) {
   // (the Qur'an is small and fixed: words of it in a row, letter for letter, need no third content word — the evidence
   // rule below decides; a hadith or a book is weighed by all its matched words, as before)
   const exactRun = isQ && changedN === 0 && sum.asr + sum.near + sum.join === 0;
-  const minC = announced || exactRun ? o.minContentCue : isQ && o.minContentChanged != null ? o.minContentChanged : o.minContent;
+  const minC = nearCue || (isQ ? ctx > 0 : ctx === 1) || exactRun ? o.minContentCue : isQ && o.minContentChanged != null ? o.minContentChanged : o.minContent;
   const ev = m => (announced || !isQ ? m.evidence : m.contentEvidence + o.funcWeight * (m.evidence - m.contentEvidence));
+  // An open particle at the very end of the matched words ("... والمقصود من هذا كله أن") belongs to the clause that follows, and
+  // that clause is not in the source: it is no part of the count of words that makes a short match a quotation. This is for
+  // BOOKS: their prose is written in the register of a lecture and shares its connectives with any speaker; the wording of an
+  // ayah or of a hadith does not.
+  let openTail = 0;
+  if (o.openTail && isB && te < n && !atEnd(pe)) for (let k = ops.length - 1; k >= 0; k--) {
+    const op = ops[k];
+    if (op.ti < 0) continue;
+    if (solid(op) && op.ti2 == null && OPEN_PARTICLES.has(tok[a + op.ti])) openTail++; else break;
+  }
+  const words = det.inf - openTail;
   let status = null;
   if (dhikrOnly) ;
   else if (det.q >= o.qVerbatim && (det.diff + det.ins + det.del) / det.cols <= o.nearExact && det.longestRun >= Math.min(4, det.matched)) {
-    if (det.inf >= o.minWords && det.content >= minC && ev(det) >= eMin) status = strict ? "verbatim" : "partial";
+    if (words >= o.minWords && det.content >= minC && ev(det) >= eMin) status = strict ? "verbatim" : "partial";
     else if (isQ && whole && hasCue && det.evidence >= 2.5) status = strict ? "verbatim" : "partial";   // short ayah recited whole after a cue
   }
-  if (!status && !dhikrOnly && det.q >= o.qPartial && det.longestRun >= 3 && det.inf >= o.minWords + 1 && det.content >= minC && ev(det) >= eMin * 1.25) status = "partial";
+  if (!status && !dhikrOnly && det.q >= o.qPartial && det.longestRun >= 3 && words >= o.minWords + 1 && det.content >= minC && ev(det) >= eMin * 1.25) status = "partial";
   // A short canonical text right after its cue: exact, from the first word of the matn, and closed by the end of the
   // sentence or by "رواه ...". The beginning of a longer hadith is a partial quotation; a whole text is verbatim.
   if (!status && !dhikrOnly && !isQ && !isB && direct && changedN === 0 && sum.asr + sum.near === 0 && sum.evidence >= o.shortEvidence) {
@@ -1165,7 +1219,7 @@ function verify(cl, X) {
     // ... or at least three exact words with real evidence from inside a narration ("من غشنا فليس منا")
     if (closed && ts - cueEndBefore(X, ts) <= 1 && (startsMatn || (sum.inf >= 3 && sum.evidence >= o.eMinCue))) status = whole ? "verbatim" : "partial";
   }
-  if (!status && !dhikrOnly && !cl.anchored && det.q >= 0.4 && det.longestRun >= 3 && det.inf >= o.minWords && det.content >= minC && ev(det) >= eMin * 1.5) status = "lead";
+  if (!status && !dhikrOnly && !cl.anchored && det.q >= 0.4 && det.longestRun >= 3 && words >= o.minWords && det.content >= minC && ev(det) >= eMin * 1.5) status = "lead";
   // The exact words of a Qur'anic phrase inside a hadith, below the bar for a hadith citation but above the one for an
   // ayah: kept only to be listed as a parallel when the ayah itself is found on the same words (see grouping).
   let echo = false;
@@ -1178,7 +1232,7 @@ function verify(cl, X) {
     pidA = win.first + find(S); pidB = win.first + find(E - 1);
   }
   // head: the quotation begins after the first word of the ayah / of the hadith's text; tail: the source goes on after it
-  return { pid: cl.pid, pidA, pidB, ts, te, ps: S, pe: E, sum, det, status, ops, tOff: a, P, FP, peLocal: pe, whole, wholeAyah, isQ, isB, edge, echo, hasCue,
+  return { pid: cl.pid, pidA, pidB, ts, te, ps: S, pe: E, sum, det, status, ops, tOff: a, P, FP, peLocal: pe, whole, wholeAyah, isQ, isB, edge, echo, hasCue, cl,
     head: bnd ? !atStart(ps) : S > lead, tail: !atEnd(pe) };
 }
 /** index of the first token after the masked (cue / reference) run that ends right before `ts` */
@@ -1237,7 +1291,8 @@ function commentaryAt(ftok, i, wEnd = i + 20, tok = null) {
 }
 function meaningCandidates(cue, wEnd, tok, ftok, corpus, o) {
   corpus.ensureStems();
-  const kindOk = cue.kind === "quran" ? pid => corpus.quranLike(pid) : cue.kind === "saying" ? pid => corpus.isBook(pid) : pid => !corpus.quranLike(pid);
+  // (a saying announced as a companion's, or with no name at all, may be an athar kept in the hadith collections; a scholar's is in a book)
+  const kindOk = cue.kind === "quran" ? pid => corpus.quranLike(pid) : cue.kind === "saying" && !cue.athar ? pid => corpus.isBook(pid) : pid => !corpus.quranLike(pid);
   // English speech is compared with the English translations, Arabic speech with the Arabic texts
   let latin = 0; for (let i = cue.end; i < wEnd; i++) if (isLatin(tok[i])) latin++;
   const en = latin * 2 > wEnd - cue.end;

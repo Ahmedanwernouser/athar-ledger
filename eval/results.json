@@ -732,7 +732,7 @@
     ],
     "cueN": 14,
     "cueClean": 12,
-    "startErr": 21,
+    "startErr": 23,
     "endErr": 29,
     "startN": 138,
     "iou8": 134,
@@ -1114,7 +1114,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 12,
-    "startErr": 21,
+    "startErr": 23,
     "endErr": 29,
     "startN": 138,
     "iou8": 134,
@@ -1145,8 +1145,8 @@
     "ph": [
      40,
      39,
-     39,
-     39
+     38,
+     38
     ]
    },
    "r": {
@@ -1158,12 +1158,12 @@
      ],
      "changed": [
       39,
-      38,
-      1,
+      37,
+      2,
       0
      ]
     },
-    "critWrongSource": 0,
+    "critWrongSource": 1,
     "critChangedVerbatim": 0,
     "critOOC": 0,
     "critOOCverbMost": 0,
@@ -1431,10 +1431,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 121,
-    "endErr": 27,
+    "startErr": 123,
+    "endErr": 29,
     "startN": 138,
-    "iou8": 120,
+    "iou8": 119,
     "attrN": 17,
     "attrOK": 17,
     "weak": 0
@@ -1748,7 +1748,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 12,
-    "startErr": 21,
+    "startErr": 23,
     "endErr": 29,
     "startN": 138,
     "iou8": 134,
@@ -2738,8 +2738,8 @@
     "lab": {
      "verb": [
       98,
-      37,
-      61
+      38,
+      60
      ],
      "changed": [
       36,
@@ -2880,11 +2880,11 @@
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 37,
@@ -3318,10 +3318,10 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 80,
+    "startErr": 75,
     "endErr": 40,
     "startN": 134,
-    "iou8": 121,
+    "iou8": 122,
     "attrN": 17,
     "attrOK": 15,
     "weak": 1
@@ -3561,11 +3561,11 @@
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 37,
@@ -3697,10 +3697,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 86,
+    "startErr": 81,
     "endErr": 59,
     "startN": 132,
-    "iou8": 116,
+    "iou8": 117,
     "attrN": 17,
     "attrOK": 15,
     "weak": 1
@@ -3728,7 +3728,7 @@
     "ph": [
      40,
      36,
-     36,
+     35,
      36
     ]
    },
@@ -4014,7 +4014,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 121,
+    "startErr": 123,
     "endErr": 39,
     "startN": 133,
     "iou8": 115,
@@ -4053,8 +4053,8 @@
     "lab": {
      "verb": [
       98,
-      37,
-      61
+      38,
+      60
      ],
      "changed": [
       36,
@@ -4195,11 +4195,11 @@
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 37,
@@ -4331,10 +4331,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 80,
+    "startErr": 75,
     "endErr": 40,
     "startN": 134,
-    "iou8": 121,
+    "iou8": 122,
     "attrN": 17,
     "attrOK": 15,
     "weak": 1
@@ -5313,7 +5313,7 @@
     "ph": [
      40,
      37,
-     36,
+     35,
      37
     ]
    },
@@ -5535,9 +5535,9 @@
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -5901,7 +5901,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 106,
+    "startErr": 107,
     "endErr": 63,
     "startN": 135,
     "iou8": 119,
@@ -5977,9 +5977,9 @@
     ],
     "ph": [
      40,
-     29,
-     27,
-     28
+     28,
+     26,
+     27
     ]
    },
    "r": {
@@ -5990,8 +5990,8 @@
       84
      ],
      "changed": [
-      29,
-      29,
+      28,
+      28,
       0,
       0
      ]
@@ -6001,7 +6001,7 @@
     "critOOC": 0,
     "critOOCverbMost": 0,
     "critFiller": 0,
-    "sideTextual": 0,
+    "sideTextual": 1,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -6200,9 +6200,9 @@
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -6264,9 +6264,9 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 135,
-    "endErr": 107,
-    "startN": 123,
+    "startErr": 131,
+    "endErr": 105,
+    "startN": 122,
     "iou8": 101,
     "attrN": 16,
     "attrOK": 15,
@@ -6295,7 +6295,7 @@
     "ph": [
      40,
      37,
-     36,
+     35,
      37
     ]
    },
@@ -6581,7 +6581,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 143,
+    "startErr": 144,
     "endErr": 63,
     "startN": 135,
     "iou8": 113,
@@ -6612,7 +6612,7 @@
     "ph": [
      40,
      37,
-     36,
+     35,
      37
     ]
    },
@@ -6898,7 +6898,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 106,
+    "startErr": 107,
     "endErr": 63,
     "startN": 135,
     "iou8": 119,
@@ -7958,9 +7958,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -8631,9 +8631,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -10659,11 +10659,11 @@
      {
       "id": 29,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 40,
@@ -11515,11 +11515,11 @@
      {
       "id": 39,
       "tx": false,
-      "rank": 1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 42,
@@ -11569,9 +11569,9 @@
      {
       "id": 37,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -11587,9 +11587,9 @@
      {
       "id": 41,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -11998,7 +11998,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 100,
+    "startErr": 101,
     "endErr": 82,
     "startN": 132,
     "iou8": 115,
@@ -12470,9 +12470,9 @@
      {
       "id": 39,
       "tx": false,
-      "rank": 3,
+      "rank": 4,
       "keyTx": false,
-      "keyRank": 3,
+      "keyRank": 4,
       "cue": 1,
       "meaning": 0
      },
@@ -14863,7 +14863,7 @@
     ],
     "cueN": 14,
     "cueClean": 12,
-    "startErr": 52,
+    "startErr": 53,
     "endErr": 43,
     "startN": 136,
     "iou8": 128,
@@ -15470,9 +15470,9 @@
      {
       "id": 30,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -16263,9 +16263,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -16407,9 +16407,9 @@
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 1,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      },
@@ -18326,11 +18326,11 @@
      {
       "id": 45,
       "tx": false,
-      "rank": 0,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": -1,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 30,
@@ -19290,9 +19290,9 @@
      {
       "id": 30,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -20593,10 +20593,10 @@
     ],
     "cueN": 14,
     "cueClean": 12,
-    "startErr": 55,
+    "startErr": 57,
     "endErr": 39,
     "startN": 136,
-    "iou8": 126,
+    "iou8": 125,
     "attrN": 17,
     "attrOK": 15,
     "weak": 1
@@ -20953,23 +20953,23 @@
     ],
     "vh": [
      60,
-     57,
-     57,
-     57
+     58,
+     58,
+     58
     ],
     "ph": [
      40,
      29,
-     28,
+     27,
      29
     ]
    },
    "r": {
     "lab": {
      "verb": [
-      96,
+      97,
       14,
-      82
+      83
      ],
      "changed": [
       29,
@@ -21002,10 +21002,10 @@
      ],
      "meaning": [
       4,
-      0
+      1
      ],
      "lead": 0,
-     "notfound": 25
+     "notfound": 24
     },
     "par": [
      {
@@ -21191,11 +21191,11 @@
      {
       "id": 45,
       "tx": false,
-      "rank": 0,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": -1,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 30,
@@ -21468,7 +21468,7 @@
      [
       9,
       1,
-      0
+      1
      ],
      [
       24,
@@ -21548,9 +21548,9 @@
     ],
     "cueN": 14,
     "cueClean": 11,
-    "startErr": 73,
+    "startErr": 78,
     "endErr": 39,
-    "startN": 125,
+    "startN": 126,
     "iou8": 115,
     "attrN": 17,
     "attrOK": 16,
@@ -21915,7 +21915,7 @@
     "ph": [
      40,
      26,
-     24,
+     23,
      25
     ]
    },
@@ -22502,11 +22502,11 @@
      ]
     ],
     "cueN": 14,
-    "cueClean": 14,
-    "startErr": 117,
+    "cueClean": 13,
+    "startErr": 119,
     "endErr": 68,
     "startN": 118,
-    "iou8": 99,
+    "iou8": 98,
     "attrN": 17,
     "attrOK": 6,
     "weak": 4
@@ -22948,9 +22948,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -23101,9 +23101,9 @@
      {
       "id": 45,
       "tx": false,
-      "rank": 1,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },
@@ -23458,7 +23458,7 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 184,
+    "startErr": 185,
     "endErr": 139,
     "startN": 125,
     "iou8": 97,
@@ -23818,9 +23818,9 @@
     ],
     "vh": [
      60,
-     43,
-     41,
-     42
+     42,
+     40,
+     41
     ],
     "ph": [
      40,
@@ -23832,9 +23832,9 @@
    "r": {
     "lab": {
      "verb": [
-      74,
+      73,
       11,
-      63
+      62
      ],
      "changed": [
       24,
@@ -23903,9 +23903,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -24055,10 +24055,10 @@
      },
      {
       "id": 45,
-      "tx": false,
-      "rank": -1,
-      "keyTx": false,
-      "keyRank": -1,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -24113,7 +24113,7 @@
      [
       34,
       1,
-      1
+      0
      ],
      [
       15,
@@ -24414,10 +24414,10 @@
     "cueN": 14,
     "cueClean": 13,
     "startErr": 358,
-    "endErr": 216,
-    "startN": 98,
-    "iou8": 47,
-    "attrN": 12,
+    "endErr": 208,
+    "startN": 97,
+    "iou8": 46,
+    "attrN": 11,
     "attrOK": 8,
     "weak": 1
    },
@@ -24858,9 +24858,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -25789,7 +25789,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25798,25 +25798,25 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 44,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25825,7 +25825,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25834,7 +25834,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25843,16 +25843,16 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 42,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25867,10 +25867,10 @@
      {
       "id": 38,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25879,17 +25879,17 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 37,
@@ -25897,7 +25897,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25906,7 +25906,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25915,52 +25915,52 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 26,
       "tx": false,
-      "rank": -1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 4,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 50,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 29,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 40,
-      "tx": false,
-      "rank": -1,
-      "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 2,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25969,16 +25969,16 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 30,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25987,7 +25987,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -25996,16 +25996,16 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 31,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26014,7 +26014,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      }
     ],
@@ -26323,7 +26323,7 @@
     ],
     "cueN": 14,
     "cueClean": 12,
-    "startErr": 21,
+    "startErr": 23,
     "endErr": 29,
     "startN": 138,
     "iou8": 134,
@@ -26427,7 +26427,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26436,7 +26436,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26445,7 +26445,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26454,7 +26454,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26463,7 +26463,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26472,7 +26472,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26481,7 +26481,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26490,7 +26490,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26505,10 +26505,10 @@
      {
       "id": 38,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26517,17 +26517,17 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 37,
@@ -26535,7 +26535,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26544,16 +26544,16 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 41,
       "tx": false,
-      "rank": -1,
+      "rank": 4,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26562,34 +26562,34 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 50,
       "tx": false,
-      "rank": -1,
+      "rank": 1,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 1,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 29,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 40,
-      "tx": false,
-      "rank": -1,
-      "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26598,7 +26598,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26607,7 +26607,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26616,7 +26616,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26625,7 +26625,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26634,7 +26634,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26643,7 +26643,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -26652,14 +26652,14 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      }
     ],
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 12,
-    "startErr": 21,
+    "startErr": 23,
     "endErr": 29,
     "startN": 138,
     "iou8": 134,
@@ -27278,7 +27278,7 @@
     ],
     "cueN": 14,
     "cueClean": 12,
-    "startErr": 21,
+    "startErr": 23,
     "endErr": 29,
     "startN": 138,
     "iou8": 134,
@@ -27614,7 +27614,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 12,
-    "startErr": 21,
+    "startErr": 23,
     "endErr": 29,
     "startN": 138,
     "iou8": 134,
@@ -28433,11 +28433,11 @@
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 37,
@@ -28870,7 +28870,7 @@
      ]
     ],
     "cueN": 14,
-    "cueClean": 14,
+    "cueClean": 13,
     "startErr": 55,
     "endErr": 63,
     "startN": 132,
@@ -28976,7 +28976,7 @@
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 33,
@@ -28990,9 +28990,9 @@
      {
       "id": 44,
       "tx": false,
-      "rank": 3,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 3,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -29614,7 +29614,7 @@
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 33,
@@ -30146,7 +30146,7 @@
      ]
     ],
     "cueN": 14,
-    "cueClean": 12,
+    "cueClean": 11,
     "startErr": 54,
     "endErr": 59,
     "startN": 133,
@@ -30886,11 +30886,11 @@
      {
       "id": 29,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 38,
@@ -32742,9 +32742,9 @@
     ],
     "vh": [
      60,
-     43,
-     41,
-     43
+     44,
+     42,
+     44
     ],
     "ph": [
      40,
@@ -32756,8 +32756,8 @@
    "r": {
     "lab": {
      "verb": [
-      83,
-      83,
+      84,
+      84,
       0
      ],
      "changed": [
@@ -33072,7 +33072,7 @@
      [
       8,
       1,
-      0
+      1
      ],
      [
       6,
@@ -33339,8 +33339,8 @@
     "cueClean": 14,
     "startErr": 14,
     "endErr": 28,
-    "startN": 122,
-    "iou8": 119,
+    "startN": 123,
+    "iou8": 120,
     "attrN": 0,
     "attrOK": 0,
     "weak": 0
@@ -33380,9 +33380,9 @@
     ],
     "vh": [
      60,
+     33,
      31,
-     29,
-     31
+     33
     ],
     "ph": [
      40,
@@ -33394,9 +33394,9 @@
    "r": {
     "lab": {
      "verb": [
-      70,
+      72,
       32,
-      38
+      40
      ],
      "changed": [
       36,
@@ -33510,9 +33510,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -33695,7 +33695,7 @@
      [
       8,
       1,
-      0
+      1
      ],
      [
       6,
@@ -33710,7 +33710,7 @@
      [
       8,
       1,
-      0
+      1
      ],
      [
       6,
@@ -33977,11 +33977,11 @@
     "cueClean": 14,
     "startErr": 42,
     "endErr": 61,
-    "startN": 106,
-    "iou8": 94,
+    "startN": 108,
+    "iou8": 96,
     "attrN": 0,
     "attrOK": 0,
-    "weak": 1
+    "weak": 2
    },
    "cueShare": {
     "vq": [
@@ -34069,8 +34069,8 @@
       4,
       4
      ],
-     "lead": 3,
-     "notfound": 14
+     "lead": 2,
+     "notfound": 15
     },
     "par": [
      {
@@ -34751,11 +34751,11 @@
       0
      ],
      "meaning": [
-      6,
+      5,
       4
      ],
-     "lead": 3,
-     "notfound": 15
+     "lead": 2,
+     "notfound": 17
     },
     "par": [
      {
@@ -35388,8 +35388,8 @@
       4,
       4
      ],
-     "lead": 3,
-     "notfound": 14
+     "lead": 2,
+     "notfound": 15
     },
     "par": [
      {
@@ -36656,8 +36656,8 @@
       5,
       3
      ],
-     "lead": 1,
-     "notfound": 17
+     "lead": 0,
+     "notfound": 18
     },
     "par": [
      {
@@ -37345,8 +37345,8 @@
       6,
       3
      ],
-     "lead": 1,
-     "notfound": 19
+     "lead": 0,
+     "notfound": 20
     },
     "par": [
      {
@@ -37979,8 +37979,8 @@
       5,
       3
      ],
-     "lead": 1,
-     "notfound": 17
+     "lead": 0,
+     "notfound": 18
     },
     "par": [
      {
@@ -41946,11 +41946,11 @@
      {
       "id": 45,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 30,
@@ -42366,10 +42366,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 100,
+    "startErr": 93,
     "endErr": 54,
     "startN": 121,
-    "iou8": 108,
+    "iou8": 109,
     "attrN": 14,
     "attrOK": 9,
     "weak": 1
@@ -42492,11 +42492,11 @@
       0
      ],
      "meaning": [
-      5,
+      4,
       3
      ],
      "lead": 0,
-     "notfound": 21
+     "notfound": 22
     },
     "par": [
      {
@@ -42619,11 +42619,11 @@
      {
       "id": 45,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 30,
@@ -43145,7 +43145,7 @@
      {
       "id": 38,
       "tx": false,
-      "rank": 0,
+      "rank": 1,
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
@@ -43253,11 +43253,11 @@
      {
       "id": 45,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 30,
@@ -43371,10 +43371,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 100,
+    "startErr": 93,
     "endErr": 54,
     "startN": 121,
-    "iou8": 108,
+    "iou8": 109,
     "attrN": 14,
     "attrOK": 9,
     "weak": 1
@@ -44520,10 +44520,10 @@
      },
      {
       "id": 45,
-      "tx": true,
-      "rank": 0,
-      "keyTx": true,
-      "keyRank": 0,
+      "tx": false,
+      "rank": 2,
+      "keyTx": false,
+      "keyRank": 2,
       "cue": 1,
       "meaning": 0
      },
@@ -45349,11 +45349,11 @@
       0
      ],
      "meaning": [
-      3,
+      4,
       1
      ],
      "lead": 1,
-     "notfound": 23
+     "notfound": 22
     },
     "par": [
      {
@@ -46503,9 +46503,9 @@
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -48214,11 +48214,11 @@
       1
      ],
      "meaning": [
-      4,
+      3,
       5
      ],
      "lead": 1,
-     "notfound": 18
+     "notfound": 19
     },
     "par": [
      {
@@ -48413,11 +48413,11 @@
      {
       "id": 25,
       "tx": false,
-      "rank": 2,
+      "rank": 1,
       "keyTx": false,
-      "keyRank": 2,
+      "keyRank": 1,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 43,
@@ -48449,9 +48449,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -49127,9 +49127,9 @@
     ],
     "ph": [
      40,
-     33,
+     34,
      31,
-     33
+     34
     ]
    },
    "r": {
@@ -49140,9 +49140,9 @@
       74
      ],
      "changed": [
-      33,
+      34,
       31,
-      2,
+      3,
       0
      ]
     },
@@ -49296,11 +49296,11 @@
      {
       "id": 45,
       "tx": false,
-      "rank": 0,
+      "rank": 1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": 2,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 30,
@@ -49332,9 +49332,9 @@
      {
       "id": 50,
       "tx": false,
-      "rank": 0,
+      "rank": 1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      },
@@ -49368,9 +49368,9 @@
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 1,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      },
@@ -49717,8 +49717,8 @@
     "cueN": 14,
     "cueClean": 13,
     "startErr": 87,
-    "endErr": 24,
-    "startN": 119,
+    "endErr": 29,
+    "startN": 120,
     "iou8": 105,
     "attrN": 12,
     "attrOK": 7,
@@ -50082,9 +50082,9 @@
     ],
     "ph": [
      40,
-     24,
      23,
-     23
+     22,
+     22
     ]
    },
    "r": {
@@ -50095,8 +50095,8 @@
       65
      ],
      "changed": [
-      24,
       23,
+      22,
       1,
       0
      ]
@@ -50124,11 +50124,11 @@
       0
      ],
      "meaning": [
-      2,
+      3,
       2
      ],
-     "lead": 0,
-     "notfound": 26
+     "lead": 1,
+     "notfound": 24
     },
     "par": [
      {
@@ -50165,7 +50165,7 @@
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 42,
@@ -50197,9 +50197,9 @@
      {
       "id": 41,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -50233,11 +50233,11 @@
      {
       "id": 39,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 32,
@@ -50670,10 +50670,10 @@
      ]
     ],
     "cueN": 14,
-    "cueClean": 13,
-    "startErr": 59,
+    "cueClean": 12,
+    "startErr": 52,
     "endErr": 30,
-    "startN": 100,
+    "startN": 99,
     "iou8": 88,
     "attrN": 13,
     "attrOK": 5,
@@ -51075,7 +51075,7 @@
       0
      ],
      "partial": [
-      1,
+      0,
       1
      ],
      "meaning": [
@@ -51083,7 +51083,7 @@
       2
      ],
      "lead": 0,
-     "notfound": 22
+     "notfound": 23
     },
     "par": [
      {
@@ -51268,10 +51268,10 @@
      },
      {
       "id": 40,
-      "tx": false,
-      "rank": -1,
-      "keyTx": false,
-      "keyRank": -1,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -52242,11 +52242,11 @@
      {
       "id": 43,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 44,
@@ -53940,15 +53940,15 @@
       0
      ],
      "partial": [
-      2,
+      1,
       0
      ],
      "meaning": [
       3,
       6
      ],
-     "lead": 2,
-     "notfound": 17
+     "lead": 1,
+     "notfound": 19
     },
     "par": [
      {
@@ -54107,9 +54107,9 @@
      {
       "id": 50,
       "tx": false,
-      "rank": -1,
+      "rank": 3,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -54895,7 +54895,7 @@
       0
      ],
      "partial": [
-      3,
+      2,
       0
      ],
      "meaning": [
@@ -54903,7 +54903,7 @@
       1
      ],
      "lead": 1,
-     "notfound": 22
+     "notfound": 23
     },
     "par": [
      {
@@ -54945,9 +54945,9 @@
      {
       "id": 42,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -55035,9 +55035,9 @@
      {
       "id": 30,
       "tx": false,
-      "rank": 0,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },
@@ -55048,7 +55048,7 @@
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 37,
@@ -55812,9 +55812,9 @@
     ],
     "ph": [
      40,
-     29,
-     27,
-     29
+     30,
+     28,
+     30
     ]
    },
    "r": {
@@ -55825,8 +55825,8 @@
       75
      ],
      "changed": [
-      29,
-      29,
+      30,
+      30,
       0,
       0
      ]
@@ -55854,11 +55854,11 @@
       0
      ],
      "meaning": [
-      2,
+      1,
       2
      ],
      "lead": 0,
-     "notfound": 25
+     "notfound": 26
     },
     "par": [
      {
@@ -55936,9 +55936,9 @@
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 1,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      },
@@ -55983,7 +55983,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 3,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },
@@ -56402,8 +56402,8 @@
     "cueN": 14,
     "cueClean": 14,
     "startErr": 105,
-    "endErr": 74,
-    "startN": 113,
+    "endErr": 81,
+    "startN": 114,
     "iou8": 91,
     "attrN": 11,
     "attrOK": 4,
@@ -56791,7 +56791,7 @@
     "critOOC": 0,
     "critOOCverbMost": 0,
     "critFiller": 0,
-    "sideTextual": 2,
+    "sideTextual": 1,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -56828,9 +56828,9 @@
      {
       "id": 38,
       "tx": false,
-      "rank": -1,
+      "rank": 1,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      },
@@ -56918,11 +56918,11 @@
      {
       "id": 39,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 32,
@@ -57764,8 +57764,8 @@
       0
      ],
      "meaning": [
-      5,
-      1
+      4,
+      2
      ],
      "lead": 0,
      "notfound": 23
@@ -59677,36 +59677,36 @@
       4,
       4
      ],
-     "lead": 3,
-     "notfound": 14
+     "lead": 2,
+     "notfound": 15
     },
     "par": [
      {
       "id": 31,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 38,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 29,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 27,
@@ -59714,16 +59714,16 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 42,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59732,7 +59732,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59741,7 +59741,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59750,17 +59750,17 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 33,
@@ -59768,7 +59768,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59777,7 +59777,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59786,7 +59786,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59795,7 +59795,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59804,16 +59804,16 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 30,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59822,8 +59822,8 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 37,
@@ -59831,25 +59831,25 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 50,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 26,
       "tx": false,
-      "rank": -1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 4,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59858,25 +59858,25 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 40,
-      "tx": false,
-      "rank": -1,
-      "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 2,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59885,7 +59885,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59894,7 +59894,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -59909,10 +59909,10 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      }
     ],
@@ -60315,8 +60315,8 @@
       4,
       4
      ],
-     "lead": 3,
-     "notfound": 14
+     "lead": 2,
+     "notfound": 15
     },
     "par": [
      {
@@ -60325,26 +60325,26 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 38,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 29,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 27,
@@ -60352,7 +60352,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60361,7 +60361,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60370,7 +60370,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60379,7 +60379,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60388,17 +60388,17 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 33,
@@ -60406,7 +60406,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60415,7 +60415,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60424,7 +60424,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60433,7 +60433,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60442,7 +60442,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60451,7 +60451,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60460,8 +60460,8 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 37,
@@ -60469,16 +60469,16 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 50,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60487,7 +60487,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60496,16 +60496,16 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 40,
-      "tx": false,
-      "rank": -1,
-      "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60514,7 +60514,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60523,7 +60523,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60532,7 +60532,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -60550,7 +60550,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      }
     ],
@@ -60632,8 +60632,8 @@
       4,
       4
      ],
-     "lead": 3,
-     "notfound": 14
+     "lead": 2,
+     "notfound": 15
     },
     "par": [
      {
@@ -61270,8 +61270,8 @@
       4,
       4
      ],
-     "lead": 3,
-     "notfound": 14
+     "lead": 2,
+     "notfound": 15
     },
     "par": [
      {
@@ -62421,11 +62421,11 @@
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 3,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 3,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 43,
@@ -62434,7 +62434,7 @@
       "keyTx": true,
       "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 44,
@@ -62768,7 +62768,7 @@
      ]
     ],
     "cueN": 14,
-    "cueClean": 13,
+    "cueClean": 12,
     "startErr": 46,
     "endErr": 62,
     "startN": 131,
@@ -62856,15 +62856,15 @@
       0
      ],
      "partial": [
-      2,
+      3,
       1
      ],
      "meaning": [
       1,
-      0
+      2
      ],
      "lead": 1,
-     "notfound": 25
+     "notfound": 22
     },
     "par": [
      {
@@ -63499,10 +63499,10 @@
      ],
      "meaning": [
       1,
-      1
+      2
      ],
      "lead": 0,
-     "notfound": 28
+     "notfound": 27
     },
     "par": [
      {
@@ -64139,8 +64139,8 @@
       4,
       4
      ],
-     "lead": 3,
-     "notfound": 14
+     "lead": 2,
+     "notfound": 15
     },
     "par": [
      {
@@ -66640,9 +66640,9 @@
     ],
     "vh": [
      60,
-     45,
-     45,
-     45
+     47,
+     47,
+     47
     ],
     "ph": [
      40,
@@ -66654,8 +66654,8 @@
    "r": {
     "lab": {
      "verb": [
+      87,
       85,
-      83,
       2
      ],
      "changed": [
@@ -66684,15 +66684,15 @@
       0
      ],
      "partial": [
-      2,
+      3,
       1
      ],
      "meaning": [
       1,
-      0
+      2
      ],
      "lead": 1,
-     "notfound": 25
+     "notfound": 22
     },
     "par": [
      {
@@ -67175,7 +67175,7 @@
      [
       5,
       1,
-      0
+      1
      ],
      [
       8,
@@ -67200,7 +67200,7 @@
      [
       5,
       1,
-      0
+      1
      ],
      [
       7,
@@ -67237,8 +67237,8 @@
     "cueClean": 11,
     "startErr": 16,
     "endErr": 13,
-    "startN": 124,
-    "iou8": 124,
+    "startN": 126,
+    "iou8": 126,
     "attrN": 0,
     "attrOK": 0,
     "weak": 0
@@ -67284,9 +67284,9 @@
     ],
     "ph": [
      40,
+     35,
      34,
-     33,
-     34
+     35
     ]
    },
    "r": {
@@ -67297,9 +67297,9 @@
       36
      ],
      "changed": [
+      35,
       34,
-      34,
-      0,
+      1,
       0
      ]
     },
@@ -67327,10 +67327,10 @@
      ],
      "meaning": [
       1,
-      0
+      2
      ],
      "lead": 0,
-     "notfound": 27
+     "notfound": 25
     },
     "par": [
      {
@@ -67462,9 +67462,9 @@
      {
       "id": 30,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -67874,8 +67874,8 @@
     "cueN": 14,
     "cueClean": 12,
     "startErr": 34,
-    "endErr": 58,
-    "startN": 103,
+    "endErr": 65,
+    "startN": 104,
     "iou8": 96,
     "attrN": 0,
     "attrOK": 0,
@@ -68502,7 +68502,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 11,
+    "startErr": 13,
     "endErr": 22,
     "startN": 140,
     "iou8": 138,
@@ -68860,7 +68860,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 11,
+    "startErr": 13,
     "endErr": 22,
     "startN": 140,
     "iou8": 138,
@@ -69168,10 +69168,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 125,
+    "startErr": 117,
     "endErr": 22,
     "startN": 140,
-    "iou8": 123,
+    "iou8": 124,
     "attrN": 17,
     "attrOK": 17,
     "weak": 0
@@ -69367,7 +69367,7 @@
      {
       "id": 41,
       "tx": false,
-      "rank": 1,
+      "rank": 2,
       "keyTx": false,
       "keyRank": 3,
       "cue": 1,
@@ -69476,7 +69476,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 11,
+    "startErr": 13,
     "endErr": 22,
     "startN": 140,
     "iou8": 138,
@@ -71010,10 +71010,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 46,
+    "startErr": 39,
     "endErr": 37,
     "startN": 140,
-    "iou8": 135,
+    "iou8": 136,
     "attrN": 17,
     "attrOK": 16,
     "weak": 0
@@ -71379,10 +71379,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 66,
+    "startErr": 59,
     "endErr": 69,
     "startN": 136,
-    "iou8": 125,
+    "iou8": 126,
     "attrN": 17,
     "attrOK": 16,
     "weak": 2
@@ -71687,10 +71687,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 137,
+    "startErr": 129,
     "endErr": 37,
     "startN": 140,
-    "iou8": 119,
+    "iou8": 120,
     "attrN": 17,
     "attrOK": 16,
     "weak": 0
@@ -71886,7 +71886,7 @@
      {
       "id": 41,
       "tx": false,
-      "rank": 1,
+      "rank": 2,
       "keyTx": false,
       "keyRank": 4,
       "cue": 1,
@@ -71995,10 +71995,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 46,
+    "startErr": 39,
     "endErr": 37,
     "startN": 140,
-    "iou8": 135,
+    "iou8": 136,
     "attrN": 17,
     "attrOK": 16,
     "weak": 0
@@ -72958,8 +72958,8 @@
     "lab": {
      "verb": [
       98,
-      27,
-      71
+      28,
+      70
      ],
      "changed": [
       37,
@@ -73529,10 +73529,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 86,
+    "startErr": 83,
     "endErr": 55,
     "startN": 135,
-    "iou8": 125,
+    "iou8": 126,
     "attrN": 16,
     "attrOK": 10,
     "weak": 1
@@ -73621,21 +73621,21 @@
     ],
     "ph": [
      40,
+     29,
      28,
-     27,
-     28
+     29
     ]
    },
    "r": {
     "lab": {
      "verb": [
       97,
-      15,
-      82
+      16,
+      81
      ],
      "changed": [
-      28,
-      28,
+      29,
+      29,
       0,
       0
      ]
@@ -73645,7 +73645,7 @@
     "critOOC": 0,
     "critOOCverbMost": 0,
     "critFiller": 0,
-    "sideTextual": 1,
+    "sideTextual": 0,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -73718,11 +73718,11 @@
      {
       "id": 45,
       "tx": false,
-      "rank": 0,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": -1,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 46,
@@ -73899,9 +73899,9 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 139,
-    "endErr": 103,
-    "startN": 125,
+    "startErr": 145,
+    "endErr": 105,
+    "startN": 126,
     "iou8": 98,
     "attrN": 16,
     "attrOK": 10,
@@ -73938,8 +73938,8 @@
     "lab": {
      "verb": [
       98,
-      26,
-      72
+      27,
+      71
      ],
      "changed": [
       37,
@@ -74207,10 +74207,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 115,
+    "startErr": 109,
     "endErr": 55,
     "startN": 135,
-    "iou8": 120,
+    "iou8": 121,
     "attrN": 16,
     "attrOK": 10,
     "weak": 1
@@ -74246,8 +74246,8 @@
     "lab": {
      "verb": [
       98,
-      27,
-      71
+      28,
+      70
      ],
      "changed": [
       37,
@@ -74515,10 +74515,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 86,
+    "startErr": 83,
     "endErr": 55,
     "startN": 135,
-    "iou8": 125,
+    "iou8": 126,
     "attrN": 16,
     "attrOK": 10,
     "weak": 1
@@ -76702,7 +76702,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 121,
+    "startErr": 120,
     "endErr": 79,
     "startN": 128,
     "iou8": 110,
@@ -76901,9 +76901,9 @@
      {
       "id": 41,
       "tx": false,
-      "rank": -1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -77973,8 +77973,8 @@
     "lab": {
      "verb": [
       100,
-      43,
-      57
+      44,
+      56
      ],
      "changed": [
       38,
@@ -78544,10 +78544,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 77,
+    "startErr": 75,
     "endErr": 46,
     "startN": 138,
-    "iou8": 126,
+    "iou8": 127,
     "attrN": 17,
     "attrOK": 16,
     "weak": 0
@@ -78910,8 +78910,8 @@
     "lab": {
      "verb": [
       96,
-      26,
-      70
+      27,
+      69
      ],
      "changed": [
       37,
@@ -78944,10 +78944,10 @@
      ],
      "meaning": [
       2,
-      1
+      0
      ],
      "lead": 1,
-     "notfound": 25
+     "notfound": 26
     },
     "par": [
      {
@@ -79481,10 +79481,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 131,
+    "startErr": 124,
     "endErr": 59,
     "startN": 133,
-    "iou8": 113,
+    "iou8": 114,
     "attrN": 16,
     "attrOK": 12,
     "weak": 1
@@ -80047,7 +80047,7 @@
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 25,
@@ -80418,10 +80418,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 132,
+    "startErr": 129,
     "endErr": 82,
     "startN": 121,
-    "iou8": 105,
+    "iou8": 106,
     "attrN": 16,
     "attrOK": 9,
     "weak": 1
@@ -80784,8 +80784,8 @@
     "lab": {
      "verb": [
       91,
-      5,
-      86
+      6,
+      85
      ],
      "changed": [
       30,
@@ -80872,11 +80872,11 @@
      {
       "id": 45,
       "tx": false,
-      "rank": 0,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": -1,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 46,
@@ -80890,11 +80890,11 @@
      {
       "id": 43,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 38,
@@ -81354,8 +81354,8 @@
      ]
     ],
     "cueN": 14,
-    "cueClean": 14,
-    "startErr": 149,
+    "cueClean": 13,
+    "startErr": 151,
     "endErr": 119,
     "startN": 121,
     "iou8": 91,
@@ -81764,9 +81764,9 @@
      {
       "id": 31,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -81836,9 +81836,9 @@
      {
       "id": 38,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -81971,9 +81971,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -82292,7 +82292,7 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 77,
+    "startErr": 74,
     "endErr": 29,
     "startN": 139,
     "iou8": 129,
@@ -82908,9 +82908,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -83229,10 +83229,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 98,
+    "startErr": 103,
     "endErr": 36,
     "startN": 135,
-    "iou8": 119,
+    "iou8": 118,
     "attrN": 17,
     "attrOK": 12,
     "weak": 1
@@ -84166,10 +84166,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 91,
+    "startErr": 88,
     "endErr": 54,
     "startN": 115,
-    "iou8": 95,
+    "iou8": 96,
     "attrN": 16,
     "attrOK": 9,
     "weak": 5
@@ -85103,7 +85103,7 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 83,
+    "startErr": 79,
     "endErr": 62,
     "startN": 137,
     "iou8": 125,
@@ -86440,10 +86440,10 @@
      ],
      "meaning": [
       2,
-      1
+      2
      ],
      "lead": 0,
-     "notfound": 26
+     "notfound": 25
     },
     "par": [
      {
@@ -86983,7 +86983,7 @@
     "iou8": 66,
     "attrN": 12,
     "attrOK": 4,
-    "weak": 0
+    "weak": 1
    },
    "cueShare": {
     "vq": [
@@ -87593,9 +87593,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -87914,7 +87914,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 81,
+    "startErr": 83,
     "endErr": 37,
     "startN": 136,
     "iou8": 123,
@@ -88422,11 +88422,11 @@
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 37,
@@ -89217,8 +89217,8 @@
     "lab": {
      "verb": [
       93,
-      7,
-      86
+      8,
+      85
      ],
      "changed": [
       30,
@@ -89304,10 +89304,10 @@
      },
      {
       "id": 45,
-      "tx": true,
-      "rank": 0,
-      "keyTx": true,
-      "keyRank": 0,
+      "tx": false,
+      "rank": -1,
+      "keyTx": false,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },
@@ -89788,7 +89788,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 113,
+    "startErr": 111,
     "endErr": 74,
     "startN": 123,
     "iou8": 101,
@@ -90242,11 +90242,11 @@
      {
       "id": 45,
       "tx": false,
-      "rank": 0,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": -1,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 46,
@@ -90725,7 +90725,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 222,
+    "startErr": 224,
     "endErr": 104,
     "startN": 124,
     "iou8": 94,
@@ -91091,8 +91091,8 @@
     "lab": {
      "verb": [
       78,
-      13,
-      65
+      14,
+      64
      ],
      "changed": [
       22,
@@ -91269,9 +91269,9 @@
      {
       "id": 29,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -91662,10 +91662,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 214,
+    "startErr": 208,
     "endErr": 207,
     "startN": 100,
-    "iou8": 61,
+    "iou8": 62,
     "attrN": 14,
     "attrOK": 9,
     "weak": 2
@@ -92013,9 +92013,9 @@
     ],
     "vh": [
      60,
-     35,
-     33,
-     35
+     34,
+     32,
+     34
     ],
     "ph": [
      40,
@@ -92027,9 +92027,9 @@
    "r": {
     "lab": {
      "verb": [
-      58,
+      57,
       5,
-      53
+      52
      ],
      "changed": [
       13,
@@ -92414,7 +92414,7 @@
      [
       11,
       1,
-      1
+      0
      ],
      [
       14,
@@ -92599,12 +92599,12 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 238,
+    "startErr": 230,
     "endErr": 173,
-    "startN": 71,
+    "startN": 70,
     "iou8": 33,
-    "attrN": 12,
-    "attrOK": 5,
+    "attrN": 11,
+    "attrOK": 4,
     "weak": 3
    },
    "cueShare": {
@@ -93008,10 +93008,10 @@
      {
       "id": 31,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93020,7 +93020,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93029,16 +93029,16 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 26,
       "tx": false,
-      "rank": -1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 4,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93047,7 +93047,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93056,7 +93056,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93074,16 +93074,16 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 38,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93092,26 +93092,26 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 50,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 37,
@@ -93119,7 +93119,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93128,7 +93128,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93137,17 +93137,17 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 29,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 35,
@@ -93155,25 +93155,25 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 40,
-      "tx": false,
-      "rank": -1,
-      "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 2,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93182,7 +93182,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93191,7 +93191,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93200,7 +93200,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93209,16 +93209,16 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93227,7 +93227,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      }
     ],
@@ -93536,7 +93536,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 11,
+    "startErr": 13,
     "endErr": 22,
     "startN": 140,
     "iou8": 138,
@@ -93640,7 +93640,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93649,7 +93649,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93658,7 +93658,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93667,7 +93667,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93676,7 +93676,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93685,7 +93685,7 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93703,16 +93703,16 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 38,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93721,26 +93721,26 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 50,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 37,
@@ -93748,16 +93748,16 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 41,
       "tx": false,
-      "rank": -1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "keyRank": 3,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93766,17 +93766,17 @@
       "rank": 0,
       "keyTx": true,
       "keyRank": 0,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 29,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
-      "meaning": 0
+      "keyRank": 0,
+      "cue": 1,
+      "meaning": 1
      },
      {
       "id": 35,
@@ -93784,16 +93784,16 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
       "id": 40,
-      "tx": false,
-      "rank": -1,
-      "keyTx": false,
-      "keyRank": -1,
-      "cue": 0,
+      "tx": true,
+      "rank": 0,
+      "keyTx": true,
+      "keyRank": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93802,7 +93802,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93811,7 +93811,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93820,7 +93820,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93829,7 +93829,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93838,7 +93838,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93847,7 +93847,7 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      },
      {
@@ -93856,14 +93856,14 @@
       "rank": -1,
       "keyTx": false,
       "keyRank": -1,
-      "cue": 0,
+      "cue": 1,
       "meaning": 0
      }
     ],
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 11,
+    "startErr": 13,
     "endErr": 22,
     "startN": 140,
     "iou8": 138,
@@ -94473,7 +94473,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 11,
+    "startErr": 13,
     "endErr": 22,
     "startN": 140,
     "iou8": 138,
@@ -94800,7 +94800,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 11,
+    "startErr": 13,
     "endErr": 22,
     "startN": 140,
     "iou8": 138,
@@ -96130,11 +96130,11 @@
       0
      ],
      "meaning": [
-      0,
-      0
+      1,
+      3
      ],
      "lead": 0,
-     "notfound": 27
+     "notfound": 23
     },
     "par": [
      {
@@ -96759,11 +96759,11 @@
       0
      ],
      "meaning": [
-      0,
-      0
+      1,
+      2
      ],
-     "lead": 0,
-     "notfound": 28
+     "lead": 1,
+     "notfound": 24
     },
     "par": [
      {
@@ -98018,10 +98018,10 @@
      ],
      "meaning": [
       2,
-      3
+      2
      ],
      "lead": 0,
-     "notfound": 24
+     "notfound": 25
     },
     "par": [
      {
@@ -98555,10 +98555,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 78,
+    "startErr": 71,
     "endErr": 53,
     "startN": 117,
-    "iou8": 100,
+    "iou8": 101,
     "attrN": 15,
     "attrOK": 6,
     "weak": 3
@@ -99856,27 +99856,27 @@
     ],
     "vh": [
      60,
-     46,
-     45,
-     45
+     48,
+     47,
+     47
     ],
     "ph": [
      40,
+     39,
      38,
-     37,
-     38
+     39
     ]
    },
    "r": {
     "lab": {
      "verb": [
-      86,
-      85,
+      88,
+      87,
       1
      ],
      "changed": [
-      38,
-      38,
+      39,
+      39,
       0,
       0
      ]
@@ -99886,7 +99886,7 @@
     "critOOC": 0,
     "critOOCverbMost": 0,
     "critFiller": 0,
-    "sideTextual": 0,
+    "sideTextual": 1,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -99904,11 +99904,11 @@
       0
      ],
      "meaning": [
-      0,
-      0
+      1,
+      1
      ],
      "lead": 0,
-     "notfound": 27
+     "notfound": 25
     },
     "par": [
      {
@@ -100172,7 +100172,7 @@
      [
       6,
       1,
-      0
+      1
      ],
      [
       6,
@@ -100287,7 +100287,7 @@
      [
       5,
       1,
-      0
+      1
      ],
      [
       6,
@@ -100442,10 +100442,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 9,
+    "startErr": 10,
     "endErr": 26,
-    "startN": 124,
-    "iou8": 120,
+    "startN": 127,
+    "iou8": 123,
     "attrN": 0,
     "attrOK": 0,
     "weak": 0
@@ -100485,9 +100485,9 @@
     ],
     "vh": [
      60,
-     31,
-     31,
-     31
+     32,
+     32,
+     32
     ],
     "ph": [
      40,
@@ -100499,8 +100499,8 @@
    "r": {
     "lab": {
      "verb": [
-      70,
-      30,
+      71,
+      31,
       40
      ],
      "changed": [
@@ -100533,11 +100533,11 @@
       0
      ],
      "meaning": [
-      0,
+      1,
       0
      ],
      "lead": 0,
-     "notfound": 29
+     "notfound": 28
     },
     "par": [
      {
@@ -100700,7 +100700,7 @@
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 35,
@@ -100801,7 +100801,7 @@
      [
       6,
       1,
-      0
+      1
      ],
      [
       6,
@@ -101073,8 +101073,8 @@
     "cueClean": 14,
     "startErr": 35,
     "endErr": 48,
-    "startN": 103,
-    "iou8": 96,
+    "startN": 104,
+    "iou8": 97,
     "attrN": 0,
     "attrOK": 0,
     "weak": 1
@@ -101162,11 +101162,11 @@
       1
      ],
      "meaning": [
-      5,
+      6,
       1
      ],
      "lead": 2,
-     "notfound": 17
+     "notfound": 16
     },
     "par": [
      {
@@ -101700,7 +101700,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 28,
+    "startErr": 32,
     "endErr": 17,
     "startN": 140,
     "iou8": 138,
@@ -101791,11 +101791,11 @@
       0
      ],
      "meaning": [
-      5,
+      6,
       1
      ],
      "lead": 0,
-     "notfound": 22
+     "notfound": 21
     },
     "par": [
      {
@@ -101963,9 +101963,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -102967,10 +102967,10 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 15,
+    "startErr": 27,
     "endErr": 36,
     "startN": 140,
-    "iou8": 134,
+    "iou8": 132,
     "attrN": 18,
     "attrOK": 18,
     "weak": 0
@@ -103605,10 +103605,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 81,
+    "startErr": 89,
     "endErr": 78,
     "startN": 136,
-    "iou8": 117,
+    "iou8": 116,
     "attrN": 18,
     "attrOK": 15,
     "weak": 0
@@ -103696,8 +103696,8 @@
       1
      ],
      "meaning": [
-      4,
-      4
+      5,
+      3
      ],
      "lead": 1,
      "notfound": 16
@@ -104398,9 +104398,9 @@
      {
       "id": 25,
       "tx": false,
-      "rank": -1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 2,
       "cue": 1,
       "meaning": 0
      },
@@ -104528,7 +104528,7 @@
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 26,
