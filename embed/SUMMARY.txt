@@ -1,0 +1,6 @@
+dev: 358 texts, dim 1024, 2 s
+dev101: 3670 texts, dim 1024, 27 s
+eval: 1604 texts, dim 1024, 9 s
+saying: 2 texts, dim 1024, 0 s
+real1: 1531 texts, dim 1024, 9 s
+real2: 5 texts, dim 1024, 0 s
