@@ -65,7 +65,7 @@ test("a later window that fails after one more try: the part already transcribed
   };
   try {
     const r = await transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example", ytRetryMs: 0 });
-    assert.equal(n, 2, "the failed window is asked once more");
+    assert.equal(n, 3, "the failed window is asked twice more");
     assert.equal(said(r.words), "كلام أول");
     assert.equal(r.partial.upTo, 600);
     assert.equal(r.partial.why.code, "upstream");

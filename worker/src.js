@@ -536,7 +536,7 @@ const YT_MAX_SECONDS = 6 * 3600;
 const YT_AUDIO_TOKENS_PER_SECOND = 32;
 const YT_TIMEOUT_MS = 170_000;
 const YT_COUNT_TIMEOUT_MS = 20_000;
-const YT_DEF_MODELS = "gemini-3.8-flash,gemini-3.5-flash,gemini-2.5-flash";
+const YT_DEF_MODELS = "gemini-3.8-flash,gemini-3.5-flash";
 const YT_ROUNDS_WAIT_MS = [0, 4000, 10000];   // "high demand" (503) is common and brief: the models are tried up to three times round
 const ytModels = (env) => { const m = String(env.GEMINI_YT_MODELS || YT_DEF_MODELS).split(",").map((x) => x.trim()).filter((x) => /^gemini-[a-z0-9.-]{1,40}$/.test(x)); return m.length ? m.slice(0, 4) : YT_DEF_MODELS.split(","); };
 const ytUrl = (id) => "https://www.youtube.com/watch?v=" + id;
@@ -614,20 +614,27 @@ async function ytRoute(req, env, cors) {
 
   // ---- how long is it? (asked before the first window; no cap unit) ----
   if (b.from == null && b.to == null) {
-    try {
-      const r = await fetch(`${GEM_BASE}/v1beta/models/${models[0]}:countTokens`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_COUNT_TIMEOUT_MS),
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ file_data: { file_uri: ytUrl(id) } }] }] }) });
-      if (!r.ok) { try { await r.body?.cancel(); } catch { /* ignore */ }
-        if (r.status === 403 || r.status === 404 || r.status === 400) return json({ error: "yt_unavailable" }, 404, cors);
-        if (r.status === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...(retryAfter(r) ? { "Retry-After": retryAfter(r) } : {}) });
-        return json({ error: "upstream", upstream_status: r.status, stage: "count" }, 502, cors); }
-      const j = await r.json();
-      const audio = (Array.isArray(j.promptTokensDetails) ? j.promptTokensDetails : []).find((d) => d && d.modality === "AUDIO");
-      const seconds = audio && Number.isFinite(audio.tokenCount) ? Math.round(audio.tokenCount / YT_AUDIO_TOKENS_PER_SECOND) : 0;
-      if (!(seconds > 0)) return json({ error: "yt_unavailable" }, 404, cors);
-      if (seconds > YT_MAX_SECONDS) return json({ error: "too_long", seconds, max_seconds: YT_MAX_SECONDS }, 413, cors);
-      return json({ seconds }, 200, cors);
-    } catch { return json({ error: "upstream", stage: "count" }, 502, cors); }
+    let status = 0;
+    for (const model of models) {
+      try {
+        const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:countTokens`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_COUNT_TIMEOUT_MS),
+          body: JSON.stringify({ contents: [{ role: "user", parts: [{ file_data: { file_uri: ytUrl(id) } }] }] }) });
+        if (!r.ok) {
+          status = r.status; const ra = r.status === 429 ? retryAfter(r) : null;
+          try { await r.body?.cancel(); } catch { /* ignore */ }
+          if (r.status === 403 || r.status === 400) return json({ error: "yt_unavailable" }, 404, cors);      // measured: a private, removed or mistyped video answers 403
+          if (r.status === 429 && model === models[models.length - 1]) return json({ error: "upstream_busy" }, 429, { ...cors, ...(ra ? { "Retry-After": ra } : {}) });
+          continue;                                         // 404 = this MODEL is not there; 429 / 5xx: the next model may answer
+        }
+        const j = await r.json();
+        const audio = (Array.isArray(j.promptTokensDetails) ? j.promptTokensDetails : []).find((d) => d && d.modality === "AUDIO");
+        const seconds = audio && Number.isFinite(audio.tokenCount) ? Math.round(audio.tokenCount / YT_AUDIO_TOKENS_PER_SECOND) : 0;
+        if (!(seconds > 0)) return json({ error: "yt_unavailable" }, 404, cors);
+        if (seconds > YT_MAX_SECONDS) return json({ error: "too_long", seconds, max_seconds: YT_MAX_SECONDS }, 413, cors);
+        return json({ seconds }, 200, cors);
+      } catch { status = 0; }
+    }
+    return json({ error: "upstream", ...(status ? { upstream_status: status } : {}), stage: "count" }, 502, cors);
   }
 
   // ---- one window ----
@@ -654,8 +661,8 @@ async function ytRoute(req, env, cors) {
       if (!r.ok) {
         lastStatus = r.status; if (r.status === 429) retry = retryAfter(r);
         try { await r.body?.cancel(); } catch { /* ignore */ }
-        if (r.status === 403 || r.status === 404) return json({ error: "yt_unavailable" }, 404, { ...cors, ...left });
-        continue;                                          // 429 / 500 / 503 / 400 on this model: the next one may answer
+        if (r.status === 403) return json({ error: "yt_unavailable" }, 404, { ...cors, ...left });
+        continue;                                          // 404 (this model is not there) / 429 / 500 / 503 / 400: the next one may answer
       }
       const out = ytNormalise(await r.json(), model, from, to);
       if (!out) { lastStatus = 0; continue; }

@@ -620,8 +620,12 @@ sec("/yt: a YouTube video from its link (Gemini)");
     const env = Y(); const r = await call(yt({ video: VID, from: 0, to: 600 }), env);
     ok(r.status === 200 && up.calls.length === 5 && env.CAP.m.get("d:2026-10-02") === "1", "/yt every model overloaded once: a second round answers, and the window is still one cap unit"); }
   { up.calls = []; up.impl = () => new Response("high demand", { status: 503 }); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y());
-    ok(r.status === 502 && up.calls.length === 9 && r.j.upstream_status === 503, "/yt three rounds over three models, then it gives up with the status"); }
-  { up.calls = []; up.impl = () => new Response("quota", { status: 429 }); await call(yt({ video: VID, from: 0, to: 600 }), Y()); eq(up.calls.length, 3, "/yt a quota answer is not retried round after round"); }
+    ok(r.status === 502 && up.calls.length === 6 && r.j.upstream_status === 503, "/yt three rounds over the models, then it gives up with the status"); }
+  { up.calls = []; up.impl = () => new Response("quota", { status: 429 }); await call(yt({ video: VID, from: 0, to: 600 }), Y()); eq(up.calls.length, 2, "/yt a quota answer is not retried round after round"); }
+  { up.calls = []; let n = 0; up.impl = () => (++n === 1 ? new Response("model not found", { status: 404 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 200 && up.calls.length === 2, "/yt a model that does not exist (404) is skipped, not taken for a missing video"); }
+  { up.calls = []; let n = 0; up.impl = () => (++n === 1 ? new Response("model not found", { status: 404 }) : count(5101)());
+    const r = await call(yt({ video: VID }), Y()); ok(r.status === 200 && r.j.seconds === 159 && up.calls.length === 2, "/yt length: the same for countTokens"); }
   { up.impl = () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "not a list" }] } }] }), { status: 200 }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.error, "upstream", "/yt an answer that is not the list -> upstream"); }
   { up.impl = pieces([]); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 200 && r.j.words.length === 0 && r.j.text === "", "/yt a window without speech is an empty transcript, not an error"); }
   { up.impl = pieces([{ t: "00:01", x: "كلام" }], { finishReason: "MAX_TOKENS" }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.truncated, true, "/yt a cut-off answer says so"); }

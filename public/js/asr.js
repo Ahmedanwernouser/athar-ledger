@@ -277,9 +277,14 @@ async function ytPost(cfg, body, signal) {
     return { r, j };
   };
   let { r, j } = await post();
-  // the Worker's counters take one write a second, and a model can be busy for a moment: one patient retry
-  if (r.status === 503 || (r.status === 429 && j && j.error === "upstream_busy") || (r.status === 502 && j && j.error === "upstream")) {
-    await sleep(cfg.ytRetryMs ?? (r.status === 503 ? 2000 : r.status === 502 ? 15000 : 8000), signal); ({ r, j } = await post());
+  // patience, twice at most: the Worker's counter takes one write a second (503), a model is busy for a moment (502),
+  // or the free quota per minute is spent (429 upstream_busy: the wait it names, at most a minute)
+  for (let tries = 0; tries < 2; tries++) {
+    const busy = r.status === 429 && j && j.error === "upstream_busy";
+    if (!(r.status === 503 || busy || (r.status === 502 && j && j.error === "upstream"))) break;
+    const ra = Number(r.headers.get("Retry-After"));
+    await sleep(cfg.ytRetryMs ?? (r.status === 503 ? 2000 : busy ? Math.min(Math.max(Number.isFinite(ra) ? ra * 1000 : 0, 20000), 60000) : 15000), signal);
+    ({ r, j } = await post());
   }
   if (!r.ok) throw errorOf(r, j);
   if (!j || typeof j !== "object") throw new AsrError("bad_response");
@@ -332,6 +337,7 @@ export async function transcribeYoutube(video, language, cfg, onProgress = () =>
     const part = wordsFromWhisper(j, 0, null).filter(w => w.start != null);
     words = k ? ytStitch(words, part, plan[k].cut) : part;
   }
+  for (let i = 1; i < words.length; i++) if (words[i].start < words[i - 1].start) { words[i] = { ...words[i], start: words[i - 1].start, end: Math.max(words[i].end, words[i - 1].start) }; }   // a join never runs time backwards
   onProgress(1, { code: "asr.done" });
   return { words, provider: "gemini", model, seconds, approx: true, truncated };
 }

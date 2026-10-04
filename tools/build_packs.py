@@ -33,10 +33,12 @@ PACKS = {
         "tahawiyya": ["متن العقيدة الطحاوية", "الطحاوي (ت ٣٢١هـ)"], "wasitiyya": ["العقيدة الواسطية", "ابن تيمية (ت ٧٢٨هـ)"]}},
     # Books about weak and fabricated hadith. The site searches this pack for EVERY hadith, next to the ordinary collections,
     # and reports the two answers separately. Each passage may carry "g": the words of the book itself around its own verdict.
-    "daif": {"title": "ضعيف وموضوع: الموضوعات واللآلئ والفوائد والمقاصد وكشف الخفاء", "domain": "hadith-weak", "domain_ar": "ضعيف وموضوع", "weak": True, "books": {
-        "mawduat": ["الموضوعات", "ابن الجوزي (ت ٥٩٧هـ)"], "laali": ["اللآلئ المصنوعة في الأحاديث الموضوعة", "السيوطي (ت ٩١١هـ)"],
-        "fawaid": ["الفوائد المجموعة في الأحاديث الموضوعة", "الشوكاني (ت ١٢٥٠هـ)"], "maqasid": ["المقاصد الحسنة", "السخاوي (ت ٩٠٢هـ)"],
-        "kashf": ["كشف الخفاء ومزيل الإلباس", "العجلوني (ت ١١٦٢هـ)"]}},
+    "daif": {"title": "موضوعات ومشتهرات: الموضوعات واللآلئ والفوائد، والمقاصد وكشف الخفاء", "domain": "hadith-weak", "domain_ar": "موضوعات ومشتهرات", "weak": True, "books": {
+        # kind "mawdu": a book OF fabricated hadith (what is in it was judged fabricated or weak by someone);
+        # kind "mushtahir": a book that rules on sayings in wide circulation, the sound ones among them (being in it says nothing by itself)
+        "mawduat": ["الموضوعات", "ابن الجوزي (ت ٥٩٧هـ)", "mawdu"], "laali": ["اللآلئ المصنوعة في الأحاديث الموضوعة", "السيوطي (ت ٩١١هـ)", "mawdu"],
+        "fawaid": ["الفوائد المجموعة في الأحاديث الموضوعة", "الشوكاني (ت ١٢٥٠هـ)", "mawdu"], "maqasid": ["المقاصد الحسنة", "السخاوي (ت ٩٠٢هـ)", "mushtahir"],
+        "kashf": ["كشف الخفاء ومزيل الإلباس", "العجلوني (ت ١١٦٢هـ)", "mushtahir"]}},
 }
 
 PAGE = re.compile(r"PageV(\d+)P(\d+)")
@@ -223,7 +225,7 @@ def main():
             (d / f"idx{n}.bin").write_bytes(blob); size += len(blob)
             stats[f"idx{n}"] = {"keys": nk, "postings": npost, "bytes": len(blob), "sha256": hashlib.sha256(blob).hexdigest()}
         meta = {"id": pid, "title": cfg["title"], "domain": cfg["domain"], "domain_ar": cfg["domain_ar"], "weak": bool(cfg.get("weak")),
-                "books": {k: {"title": v[0], "author": v[1]} for k, v in cfg["books"].items()},
+                "books": {k: {"title": v[0], "author": v[1], **({"kind": v[2]} if len(v) > 2 else {})} for k, v in cfg["books"].items()},
                 "passages": len(P), "words": sum(len(x["n"].split()) for x in P), "shards": len(shards), "bytes": size,
                 "chunk_words": CHUNK, "overlap_words": OVERLAP, "index": stats,
                 # per book: are page references available, and how many words of editorial matter were left out

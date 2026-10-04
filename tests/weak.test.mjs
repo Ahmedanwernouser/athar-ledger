@@ -61,3 +61,15 @@ test("a formula shared with another hadith in a weak-hadith book does not label 
   assert.ok(e, "found in Ibn Majah");
   assert.deepEqual(e.weakBooks.map(w => w.book), []);
 });
+test("alerts tell a book OF fabricated hadith from a book that rules on widespread sayings", async () => {
+  const { flagsOf } = await import("../public/js/flags.js");
+  // only in al-La'ali / al-Fawa'id / al-Mawdu'at: an alert naming the fabricated-hadith books
+  const a = run(CUE + "القرآن كلام الله لا خالق ولا مخلوق من قال غير ذلك فهو كافر").find(x => x.weakOnly);
+  assert.ok(a.weakBooks.some(w => w.weakKind === "mawdu")); assert.deepEqual(flagsOf(a), ["weak"]);
+  // only in Kashf al-Khafa (a book on widespread sayings): "not in the collections", never "in the fabricated-hadith books"
+  const b = run(CUE + "اطلبوا العلم ولو في الصين").find(x => x.weakOnly);
+  assert.ok(b && b.weakBooks.every(w => w.weakKind === "mushtahir")); assert.deepEqual(flagsOf(b), ["mush"]);
+  // in al-Bukhari, and Kashf al-Khafa has it too: no alert at all
+  const c = run(CUE + "رضينا بالله ربا وبالإسلام دينا وبمحمد صلى الله عليه وسلم نبيا").find(x => x.source && x.source.type === "h");
+  assert.ok(c && !c.weakOnly); assert.deepEqual(flagsOf(c).filter(f => f !== "attr"), []);
+});

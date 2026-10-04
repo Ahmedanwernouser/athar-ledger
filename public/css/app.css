@@ -916,3 +916,5 @@ html[dir=ltr] .entry[data-rv="unsure"] .ord::after { content: " ?"; }
 .ytrow input:focus { border-color: var(--indigo); }
 .ytform .hint { margin: 8px 0 0; }
 @media (max-width: 560px) { .ytrow { flex-wrap: wrap; } .ytrow .btn { flex: 1 1 100%; } }
+.wb-kind { display: inline-block; margin-inline-start: 8px; padding: 0 8px; border: 1px solid rgba(122,90,18,.35); border-radius: var(--r-pill); font-size: var(--fs-micro); font-weight: 500; color: var(--warn-ink); }
+.wb-book:empty { display: none; }

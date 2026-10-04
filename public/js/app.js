@@ -864,8 +864,8 @@ function drawCommittee() {
   $("committeeRule").textContent = lines.filter(l => l.value == null).map(l => l.label).join(" ");
   // the three numbers a committee asks about first, readable without opening the summary
   const k = { weak: 0, attr: 0, nf: 0 };
-  for (const e of S.ledger) { const f = flagsOf(e); if (f.includes("weak") || f.includes("weakmention")) k.weak++; if (f.includes("attr")) k.attr++; if (st(e) === "notfound") k.nf++; }
-  $("committeeGlance").textContent = [k.weak && t("glance.weak", num(k.weak)), k.attr && t("glance.attr", num(k.attr)), k.nf && t("glance.notfound", num(k.nf))].filter(Boolean).join(sep());
+  for (const e of S.ledger) { const f = flagsOf(e); if (f.includes("weak") || f.includes("weakmention")) k.weak++; if (f.includes("mush")) k.only = (k.only || 0) + 1; if (f.includes("attr")) k.attr++; if (st(e) === "notfound") k.nf++; }
+  $("committeeGlance").textContent = [k.weak && t("glance.weak", num(k.weak)), k.only && t("glance.only", num(k.only)), k.attr && t("glance.attr", num(k.attr)), k.nf && t("glance.notfound", num(k.nf))].filter(Boolean).join(sep());
 }
 /** show only what has no verdict yet. Like the status chips: nothing is rebuilt. */
 function toggleOpen() {
@@ -1164,19 +1164,20 @@ function drawEntry(e) {
   if (src && src.type === "h" && src.matnOnly === false && e.status !== "meaning" && !viaEn) tag(t("tag.isnad"), t("note.isnad"));
   // the two answers about a hadith, kept apart: the ordinary books (the source above, or "not found") and the books of weak / fabricated hadith
   if (e.weakSearched && (e.type === "h" || e.cue === "hadith")) {
-    if (e.weakOnly) li.append(el("p", "note warn", t("e.weak.only")));
+    if (e.weakOnly) li.append(el("p", "note warn", t(flags.includes("mush") ? "e.weak.only.mush" : "e.weak.only")));
     if (e.weakBooks && e.weakBooks.length) {
       const box = el("div", "weakbox");
       for (const w of e.weakBooks) {
         const row = el("div", "wb"), head = w.label + (w.heading ? ` — ${w.heading}` : "");
-        if (!(e.weakOnly && src && src.ref === w.ref)) row.append(mixed(el("p", "wb-book", head), head));
+        const hb = mixed(el("p", "wb-book", e.weakOnly && src && src.ref === w.ref ? "" : head), head); hb.append(el("span", "wb-kind", t("wk." + (w.weakKind === "mushtahir" ? "mushtahir" : "mawdu")))); row.append(hb);
         if (w.bookWords) row.append(el("span", "wb-label", t("e.weak.words")), mixed(el("p", "wb-words", `«${w.bookWords}»`), w.bookWords));
         else row.append(el("p", "note", t("e.weak.nowords")));
         box.append(row);
       }
       box.append(el("p", "note", t("e.weak.note")));
       li.append(details(e, "weak", t("e.weak.head", num(e.weakBooks.length)), box));
-      const dd = li.lastChild; if (dd && !S.openState.has(e.key + "/weak")) dd.open = true;
+      // open by itself only when it is an alert; a widespread-hadith book beside an ordinary source is just one more place
+      const dd = li.lastChild; if (dd && !S.openState.has(e.key + "/weak") && flags.some(f => f === "weak" || f === "mush" || f === "weakmention")) dd.open = true;
     } else if (!e.weakOnly) tag(t("e.weak.none"));
   }
   if (tags.length) { const row = el("p", "tags"); row.append(...tags); const anchor = li.querySelector(":scope > .src"); if (anchor) anchor.after(row); else li.append(row); }

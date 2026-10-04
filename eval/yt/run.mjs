@@ -78,7 +78,7 @@ for (const id of VIDEOS) {
     save(`${id}.ledger.json`, res.ledger.map(e => ({ start: e.start, status: e.status, cue: e.cue, spoken: e.spoken, source: e.source && e.source.label, agreement: e.agreement, weakOnly: e.weakOnly, weakBooks: (e.weakBooks || []).map(w => w.label), grades: (e.spokenGrades || []).map(g => g.kind + ": " + g.text), attribution: e.attribution && e.attribution.code })));
     const back = words.filter((w, i) => i && w.start < words[i - 1].start - 0.01).length;
     say(`${id}: ${r.seconds} s, ${words.length} words, model ${r.model}, ${Math.round((Date.now() - t0) / 1000)} s of work, ${upstream.length} upstream calls (${upstream.map(u => u.status).join(" ")}), ` +
-      `last word at ${words.length ? words.at(-1).start : "-"} s, ${back} words out of time order, ${res.ledger.length} ledger entries: ` +
+      `last word at ${words.length ? words.at(-1).start : "-"} s, ${back} words out of time order, ${r.partial ? "PARTIAL up to " + r.partial.upTo + " s (" + r.partial.why.code + "), " : "complete, "}${res.ledger.length} ledger entries: ` +
       res.ledger.map(e => `${Math.round(e.start)}s ${e.status}${e.source ? " " + e.source.label : ""}`).join(" | "));
   } catch (e) { say(`${id}: FAILED ${e && e.code ? e.code + " " + (e.detail || "") : e && e.message}; upstream ${JSON.stringify(upstream)}`); }
 }

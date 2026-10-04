@@ -414,7 +414,7 @@ export class Corpus {
       }
       const where = p.p ? ` — ${p.v ? "ج" + arNum(p.v) + " " : ""}ص${arNum(p.p)}` : "";
       return { type: "b", domain: bk.domain, domainAr: bk.domain_ar, collection: key, book: bk.title, author: bk.author, heading: p.h || "",
-        ...(bk.domain === "hadith-weak" ? { weak: true, bookWords: p.g || "" } : {}),
+        ...(bk.domain === "hadith-weak" ? { weak: true, weakKind: bk.kind === "mushtahir" ? "mushtahir" : "mawdu", bookWords: p.g || "" } : {}),
         label: `${bk.title}، ${bk.author}${where}`, short: `${bk.title}${where}`, url: null, ref: p.r };
     }
     const [col, num] = p.r.split(":");
