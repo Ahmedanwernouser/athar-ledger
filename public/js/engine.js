@@ -684,6 +684,8 @@ export function analyze(words, corpus, options = {}) {
     if (mm && mm.strong) {
       extra.push({ ts: cue.pos, te: mm.te, cue, status: "meaning", meaning: mm });
       for (let i = cue.pos; i < mm.te; i++) taken[i] = 1;
+    } else if (commentaryAt(ftok, cue.end)) {
+      continue;   // the words after the cue are the speaker explaining ("أما الثاني فهو ..."), not an announced quotation
     } else {
       // stop the span at a sentence-ish length; the quotation boundary is unknown
       const te = Math.min(wEnd, cue.end + 14);
@@ -1112,6 +1114,12 @@ function renderDiff(m, tok) {
  *   4. re-rank : late-interaction MaxSim between the spoken words and each candidate passage
  * Without the dense index (files missing, or useVectors=false) only step 1 runs, as before.
  */
+
+// Words with which a speaker MOVES ON to explaining ("أما الثاني فهو ...", "يعني ...", "هذا الحديث ..."): a cue followed by one of them has
+// announced no quotation, so no "announced but not found" is raised for it. A closed list of discourse markers, used only
+// where nothing was found; a quotation that really is in the corpus is found by its words and never reaches this test.
+const COMMENTARY = new Set(["اما", "فاما", "واما", "يعني", "اي", "فهو", "وهو", "فهذا", "وهذا", "هذا", "هذه", "ذلك", "فذلك", "اذن", "فاذن", "هنا", "فهنا", "المراد", "والمراد", "المعني", "ومعني"]);
+function commentaryAt(ftok, i) { return COMMENTARY.has(ftok[i]) || COMMENTARY.has(ftok[i + 1]) && ftok[i].length <= 2; }
 function meaningCandidates(cue, wEnd, tok, ftok, corpus, o) {
   corpus.ensureStems();
   const kindOk = cue.kind === "quran" ? pid => corpus.quranLike(pid) : cue.kind === "saying" ? pid => corpus.isBook(pid) : pid => !corpus.quranLike(pid);

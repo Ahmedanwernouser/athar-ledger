@@ -10641,7 +10641,7 @@
      {
       "id": 26,
       "tx": false,
-      "rank": -1,
+      "rank": 4,
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
@@ -14268,7 +14268,7 @@
     ],
     "vh": [
      60,
-     59,
+     60,
      58,
      59
     ],
@@ -14282,8 +14282,8 @@
    "r": {
     "lab": {
      "verb": [
-      98,
-      25,
+      99,
+      26,
       73
      ],
      "changed": [
@@ -14293,7 +14293,7 @@
       0
      ]
     },
-    "critWrongSource": 0,
+    "critWrongSource": 1,
     "critChangedVerbatim": 0,
     "critOOC": 0,
     "critOOCverbMost": 0,
@@ -14344,9 +14344,9 @@
      {
       "id": 44,
       "tx": false,
-      "rank": 2,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 3,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -14698,7 +14698,7 @@
      [
       8,
       1,
-      0
+      1
      ],
      [
       14,
@@ -14864,8 +14864,8 @@
     "cueN": 14,
     "cueClean": 12,
     "startErr": 52,
-    "endErr": 41,
-    "startN": 135,
+    "endErr": 43,
+    "startN": 136,
     "iou8": 128,
     "attrN": 17,
     "attrOK": 15,
@@ -15223,9 +15223,9 @@
     ],
     "vh": [
      60,
-     60,
-     58,
-     60
+     59,
+     57,
+     59
     ],
     "ph": [
      40,
@@ -15237,9 +15237,9 @@
    "r": {
     "lab": {
      "verb": [
-      98,
+      97,
       13,
-      85
+      84
      ],
      "changed": [
       33,
@@ -15389,11 +15389,11 @@
      {
       "id": 37,
       "tx": false,
-      "rank": 0,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": -1,
       "cue": 1,
-      "meaning": 0
+      "meaning": 1
      },
      {
       "id": 28,
@@ -15543,7 +15543,7 @@
      [
       12,
       1,
-      1
+      0
      ],
      [
       14,
@@ -15818,13 +15818,13 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 75,
+    "startErr": 70,
     "endErr": 40,
-    "startN": 131,
+    "startN": 130,
     "iou8": 117,
     "attrN": 17,
     "attrOK": 8,
-    "weak": 0
+    "weak": 1
    },
    "cueShare": {
     "vq": [
@@ -16773,10 +16773,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 77,
+    "startErr": 71,
     "endErr": 59,
     "startN": 109,
-    "iou8": 93,
+    "iou8": 95,
     "attrN": 15,
     "attrOK": 4,
     "weak": 2
@@ -23930,9 +23930,9 @@
      {
       "id": 39,
       "tx": false,
-      "rank": -1,
+      "rank": 4,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 4,
       "cue": 1,
       "meaning": 1
      },
@@ -25368,7 +25368,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 336,
+    "startErr": 335,
     "endErr": 122,
     "startN": 72,
     "iou8": 32,
@@ -30828,9 +30828,9 @@
     ],
     "vh": [
      60,
-     40,
-     36,
-     39
+     41,
+     37,
+     40
     ],
     "ph": [
      40,
@@ -30842,9 +30842,9 @@
    "r": {
     "lab": {
      "verb": [
-      78,
+      79,
       36,
-      42
+      43
      ],
      "changed": [
       37,
@@ -31258,7 +31258,7 @@
      [
       5,
       1,
-      0
+      1
      ],
      [
       7,
@@ -31425,10 +31425,10 @@
     "cueClean": 14,
     "startErr": 53,
     "endErr": 64,
-    "startN": 115,
-    "iou8": 100,
-    "attrN": 16,
-    "attrOK": 10,
+    "startN": 116,
+    "iou8": 101,
+    "attrN": 17,
+    "attrOK": 11,
     "weak": 1
    },
    "cueShare": {
@@ -32288,9 +32288,9 @@
      {
       "id": 30,
       "tx": false,
-      "rank": 4,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 4,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -36672,9 +36672,9 @@
      {
       "id": 38,
       "tx": false,
-      "rank": 2,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 2,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -37361,9 +37361,9 @@
      {
       "id": 38,
       "tx": false,
-      "rank": 2,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 2,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -41772,7 +41772,7 @@
     "vh": [
      60,
      55,
-     54,
+     55,
      55
     ],
     "ph": [
@@ -42366,10 +42366,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 105,
+    "startErr": 100,
     "endErr": 54,
     "startN": 122,
-    "iou8": 108,
+    "iou8": 109,
     "attrN": 15,
     "attrOK": 10,
     "weak": 1
@@ -42737,7 +42737,7 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 138,
+    "startErr": 133,
     "endErr": 111,
     "startN": 99,
     "iou8": 77,
@@ -43079,7 +43079,7 @@
     "vh": [
      60,
      55,
-     54,
+     55,
      55
     ],
     "ph": [
@@ -43371,10 +43371,10 @@
     "parOtherTextual": 0,
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 105,
+    "startErr": 100,
     "endErr": 54,
     "startN": 122,
-    "iou8": 108,
+    "iou8": 109,
     "attrN": 15,
     "attrOK": 10,
     "weak": 1
@@ -44941,7 +44941,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 71,
+    "startErr": 69,
     "endErr": 41,
     "startN": 135,
     "iou8": 125,
@@ -45471,7 +45471,7 @@
       "keyTx": true,
       "keyRank": 0,
       "cue": 1,
-      "meaning": 1
+      "meaning": 0
      },
      {
       "id": 45,
@@ -45896,7 +45896,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 108,
+    "startErr": 105,
     "endErr": 68,
     "startN": 127,
     "iou8": 111,
@@ -46851,10 +46851,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 125,
+    "startErr": 123,
     "endErr": 67,
     "startN": 125,
-    "iou8": 101,
+    "iou8": 102,
     "attrN": 14,
     "attrOK": 12,
     "weak": 0
@@ -48377,9 +48377,9 @@
      {
       "id": 50,
       "tx": false,
-      "rank": 1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 2,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      },
@@ -48761,7 +48761,7 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 77,
+    "startErr": 75,
     "endErr": 33,
     "startN": 134,
     "iou8": 123,
@@ -49716,10 +49716,10 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 103,
+    "startErr": 87,
     "endErr": 24,
     "startN": 120,
-    "iou8": 104,
+    "iou8": 106,
     "attrN": 13,
     "attrOK": 8,
     "weak": 5
@@ -50341,9 +50341,9 @@
      {
       "id": 44,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 2,
       "cue": 1,
       "meaning": 0
      },
@@ -50671,10 +50671,10 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 67,
+    "startErr": 59,
     "endErr": 30,
     "startN": 101,
-    "iou8": 87,
+    "iou8": 89,
     "attrN": 14,
     "attrOK": 6,
     "weak": 0
@@ -55981,9 +55981,9 @@
      {
       "id": 45,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -58311,7 +58311,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 237,
+    "startErr": 235,
     "endErr": 147,
     "startN": 105,
     "iou8": 72,
@@ -59266,7 +59266,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 317,
+    "startErr": 314,
     "endErr": 118,
     "startN": 78,
     "iou8": 33,
@@ -78544,10 +78544,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 82,
+    "startErr": 77,
     "endErr": 46,
     "startN": 138,
-    "iou8": 125,
+    "iou8": 126,
     "attrN": 17,
     "attrOK": 16,
     "weak": 0
@@ -79052,9 +79052,9 @@
      {
       "id": 36,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -83229,10 +83229,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 104,
+    "startErr": 98,
     "endErr": 36,
     "startN": 135,
-    "iou8": 118,
+    "iou8": 119,
     "attrN": 17,
     "attrOK": 12,
     "weak": 1
@@ -84166,10 +84166,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 94,
+    "startErr": 91,
     "endErr": 54,
     "startN": 115,
-    "iou8": 94,
+    "iou8": 95,
     "attrN": 16,
     "attrOK": 9,
     "weak": 5
@@ -88851,7 +88851,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 101,
+    "startErr": 98,
     "endErr": 66,
     "startN": 135,
     "iou8": 117,
@@ -91662,10 +91662,10 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 217,
+    "startErr": 214,
     "endErr": 207,
     "startN": 100,
-    "iou8": 60,
+    "iou8": 61,
     "attrN": 14,
     "attrOK": 9,
     "weak": 2
@@ -101999,9 +101999,9 @@
      {
       "id": 42,
       "tx": false,
-      "rank": 1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -104881,7 +104881,7 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 78,
+    "startErr": 77,
     "endErr": 57,
     "startN": 135,
     "iou8": 119,

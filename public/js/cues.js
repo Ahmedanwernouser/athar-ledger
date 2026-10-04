@@ -85,6 +85,23 @@ for (const a of BY_FIRST.values()) a.sort((x, y) => y.toks.length - x.toks.lengt
 // the engine never trusts the cue for the verdict — it only decides where to look harder.
 const KIND_RANK = { saying: 3, hadith: 2, quran: 1 };
 
+
+// The blessing on the Prophet ("صلى الله عليه وعلى آله وصحبه وسلم تسليما كثيرا") in any of its spellings: a run of at most 9
+// tokens made only of blessing words, starting with "صلى" and ending at "وسلم"/"سلم" (+ an optional "تسليما" and "كثيرا").
+const BLESS = new Set(["صلي", "الله", "عليه", "وعلي", "اله", "واله", "وصحبه", "صحبه", "واصحابه", "اصحابه", "وازواجه", "وسلم", "سلم", "تسليما", "كثيرا"].map(F));
+const BLESS_END = new Set([F("وسلم"), F("سلم")]);
+export function blessingLength(ftok, i) {
+  if (ftok[i] !== F("صلى")) return 0;
+  let end = 0;
+  for (let k = 0; k < 9 && i + k < ftok.length; k++) {
+    const t = ftok[i + k];
+    if (!BLESS.has(t)) break;
+    if (BLESS_END.has(t)) end = k + 1;
+  }
+  while (end && BLESS.has(ftok[i + end]) && [F("تسليما"), F("كثيرا")].includes(ftok[i + end])) end++;
+  return end;
+}
+
 /** -> [{pos, end, kind, trailing, weak}] sorted by pos, non-overlapping (longest, then most specific) */
 export function findCues(ftok) {
   const out = [];
@@ -116,6 +133,9 @@ export function findCues(ftok) {
       for (const h of HON) {
         if (h.every((t, k) => ftok[c.end + k] === t)) { c.end += h.length; moved = true; break; }
       }
+      // any other way of writing the blessing ("صلى الله عليه وعلى آله وسلم", "... وآله وصحبه وسلم تسليما كثيرا"): a run of
+      // blessing words that starts with "صلى" and reaches "وسلم" — a rule, not a list of spellings
+      if (!moved) { const k = blessingLength(ftok, c.end); if (k) { c.end += k; moved = true; } }
     }
   }
   // drop cues that begin inside an earlier (extended) cue; merge cues that touch ("في الحديث الصحيح" + "عن النبي ...")
