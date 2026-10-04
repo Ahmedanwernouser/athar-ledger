@@ -1,0 +1,36 @@
+# One-off probe: which Gemini request shape transcribes a public YouTube video from its link.
+# Keys are repository secrets; never printed, never written. Results go to the branch `yt-probe-results`.
+name: yt-probe
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["eval/live/youtube_probe.mjs", ".github/workflows/yt-probe.yml"]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: probe
+        env:
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+        run: node eval/live/youtube_probe.mjs
+      - name: publish results
+        if: always()
+        run: |
+          set -e
+          cp -r eval/live/out-yt /tmp/out
+          git config user.name "yt-probe"
+          git config user.email "yt-probe@users.noreply.github.com"
+          git checkout --orphan yt-probe-results
+          git rm -rfq --cached .
+          rm -rf yt && mkdir yt && cp -r /tmp/out/. yt/
+          echo "${GITHUB_SHA}" > yt/COMMIT
+          git add -f yt
+          git commit -qm "yt probe for ${GITHUB_SHA}"
+          git push -f origin yt-probe-results
