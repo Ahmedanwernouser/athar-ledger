@@ -1,0 +1,43 @@
+# Deploys the site (Cloudflare Pages) and the Worker. Secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID,
+# and the transcription keys GROQ_API_KEY / GEMINI_API_KEYS. A short log (no identifiers) goes to the
+# branch `deploy-log`.
+name: deploy
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["public/**", "worker/**", "tools/deploy.sh", ".github/workflows/deploy.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: tests
+        run: npm test
+      - name: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+        run: bash tools/deploy.sh
+      - name: publish the log
+        if: always()
+        run: |
+          mkdir -p /tmp/dl && cp /tmp/athar-deploy/deploy.log /tmp/dl/deploy.log 2>/dev/null || echo "no log (the tests failed before the deployment)" > /tmp/dl/deploy.log
+          git config user.name "deploy"
+          git config user.email "deploy@users.noreply.github.com"
+          git checkout --orphan deploy-log
+          git rm -rfq --cached .
+          mkdir -p deploy && cp /tmp/dl/deploy.log deploy/deploy.log && echo "${GITHUB_SHA}" > deploy/COMMIT
+          git add -f deploy
+          git commit -qm "deploy log for ${GITHUB_SHA}"
+          git push -f origin deploy-log
