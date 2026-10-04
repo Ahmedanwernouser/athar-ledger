@@ -176,7 +176,7 @@ test("committee summary: counts follow the ledger and the verdicts as they are n
   assert.equal(s2.manual, 1); assert.deepEqual(s2.review, { yes: 2, no: 1, unsure: 1, none: ledger.length + 1 - 4 });
   const lines = summaryLines(s2);
   assert.ok(lines.find(l => l.label === "أحاديث").value.includes("البخاري"));
-  assert.ok(lines.find(l => l.label === "حالة المراجعة").value.includes("صحيح ٢"));
+  assert.ok(lines.find(l => l.label === "حالة المراجعة").value.includes("سليمة ٢"));
   // the document carries the summary after the subtitle, as short paragraphs
   const d = buildCitedDoc({ words, ledger });
   assert.equal(d.paragraphs[1].style, "Subtitle"); assert.equal(d.paragraphs[2].style, "SummaryHead");

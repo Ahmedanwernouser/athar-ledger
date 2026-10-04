@@ -52,7 +52,7 @@ export async function resolveByMeaning(entry, corpus, llm) {
     catch (e) { if (llmStops(e)) throw e; k = 0; }      // a reached limit or a lost connection ends the whole search; anything else is "no answer"
     if (k >= 1) {
       const c = list[k - 1];
-      return { source: c, parallels: [], text: c.excerpt, agreement: null, sharedStems: c.shared || 0, strength: "اختيار من مرشّحات المدونة", strengthCode: "choice", via: "choice" };
+      return { source: c, parallels: [], text: c.excerpt, agreement: null, sharedStems: c.shared || 0, strength: "اختيار من مرشّحات المصادر", strengthCode: "choice", via: "choice" };
     }
   }
   if (entry.cue === "saying") return null;
@@ -92,6 +92,6 @@ export function applyMeaning(entry, r) {
     source: r.source, parallels: r.parallels, candidates: null, suggestions: null,
     meaningVia: "llm", meaningText: r.text, meaningStrength: r.strength, meaningStrengthCode: r.strengthCode || null, noteCode: r.via === "choice" ? "llm_choice" : "llm_recall",
     note: r.via === "choice"
-      ? "اختار نموذجٌ لغويٌّ هذا النص من بين مرشّحات استرجعها البحث من المدونة. النموذج لا يكتب نصًّا ولا يحكم بصحة؛ يحتاج تأكيدًا بشريًّا."
-      : "اقترح نموذجٌ لغويٌّ النصَّ المقصود، ثم عُثر على هذا النص في المدونة. النموذج لم يحكم بشيء وكلامه لا يُعرض؛ المعروض هو نص المدونة. يحتاج تأكيدًا بشريًّا." };
+      ? "اختار نموذجٌ لغويٌّ هذا النص من بين مرشّحات استرجعها البحث من المصادر. النموذج لا يكتب نصًّا ولا يحكم بصحة؛ يحتاج تأكيدًا بشريًّا."
+      : "اقترح نموذجٌ لغويٌّ النصَّ المقصود، ثم عُثر على هذا النص في المصادر. النموذج لم يحكم بشيء وكلامه لا يُعرض؛ المعروض هو نص المصدر. يحتاج تأكيدًا بشريًّا." };
 }

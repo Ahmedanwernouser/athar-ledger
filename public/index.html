@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>أثَر — سجل الاستشهادات المنطوقة</title>
 <meta name="description" content="ارفع تسجيل محاضرة أو الصق نصّها: يستخرج أثَر الآيات والأحاديث المنطوقة، يحدّد موضعها في التسجيل، ويقارن لفظها بالمصدر كلمةً كلمة.">
-<link rel="preload" href="fonts/reem-kufi-arabic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/amiri-arabic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
@@ -19,7 +19,7 @@
     </div>
     <nav class="top-actions">
       <button type="button" class="navbtn" id="btnNew" hidden>تحليل جديد</button>
-      <button type="button" class="navbtn" id="btnSearch">ابحث في المدونة</button>
+      <button type="button" class="navbtn" id="btnSearch">ابحث في المصادر</button>
       <button type="button" class="navbtn" id="btnLimits">كيف يعمل وما حدوده</button>
       <button type="button" class="navbtn lang" id="btnLang" lang="en">English</button>
     </nav>
@@ -33,10 +33,11 @@
       <div class="hero-in">
         <div class="hero-text">
           <h1 id="startTitle" tabindex="-1">ما الذي استشهد به المتحدث، وأين، وبأي لفظ؟</h1>
-          <p class="lede">يستخرج أثَر الآيات والأحاديث من تسجيل محاضرة أو خطبة، يربط كل استشهاد بلحظته في التسجيل، ويقارن ما قيل بنص المصدر كلمةً كلمة، ثم يُخرج نص المحاضرة بحواشٍ فيها مصدر كل استشهاد، جاهزًا للمراجعة. لا يحكم على صحة حديث؛ يُريك ما وجده في مدونته وما لم يجده.</p>
+          <p class="lede">ارفع محاضرة أو الصق نصّها: يجد أثَر كل آية وحديث قيل فيها، يربطه بلحظته في التسجيل، ويقارن لفظه بالمصدر كلمةً كلمة، ثم يُخرج النص بحواشيه. لا يحكم على صحة حديث؛ يُريك الدليل.</p>
+          <p class="hero-cta"><button type="button" class="btn gold" id="btnTry">شاهد مثالًا جاهزًا</button> <a class="hero-alt" href="#wayText" id="heroAlt">أو ابدأ بنصّك</a></p>
           <div class="corpus-state" id="corpusState" role="status">
             <div class="bar"><i id="corpusBar"></i></div>
-            <span id="corpusMsg">تُحمَّل المدونة…</span>
+            <span id="corpusMsg">تُحمَّل المصادر…</span>
             <button type="button" class="navbtn retry" id="corpusRetry" hidden>أعد المحاولة</button>
           </div>
         </div>
@@ -80,7 +81,7 @@
         <div class="way way-text" id="wayText">
           <h2 id="wayTextTitle">نص مفرَّغ جاهز</h2>
           <p id="wayTextHint">الصق نص المحاضرة بالعربية أو الإنجليزية، أو ملف تفريغ (JSON من Whisper أو SRT/VTT) لتبقى الأزمنة.</p>
-          <textarea id="paste" rows="7" dir="auto" aria-labelledby="wayTextTitle" aria-describedby="wayTextHint"></textarea>
+          <textarea id="paste" rows="7" dir="auto" placeholder="الصق نص المحاضرة هنا…" aria-labelledby="wayTextTitle" aria-describedby="wayTextHint"></textarea>
           <label class="videourl"><span id="videoLabel">رابط الفيديو (اختياري)</span>
             <input type="url" id="videoUrl" dir="ltr" inputmode="url" placeholder="https://youtu.be/…" autocomplete="off"></label>
           <p class="hint" id="ytHint">من يوتيوب: افتح «عرض النص المكتوب» تحت الفيديو، انسخه كله بأزمنته والصقه هنا، وضع رابط الفيديو ليُفتح عند لحظة كل استشهاد.</p>
@@ -124,17 +125,24 @@
       <div class="wrap res-head-in">
         <h1 id="summaryLine" class="summary-line" tabindex="-1"></h1>
         <div class="exports">
-          <button type="button" class="btn gold" id="btnMeaning" hidden>ابحث عن الاقتباسات بالمعنى</button>
-          <span class="export-group">
-            <button type="button" class="btn gold" id="btnDocx">النص المخرَّج (Word)</button>
-            <label class="opt" id="optMushafWrap"><input type="checkbox" id="optMushaf"><span id="optMushafLabel">اكتب الآيات المطابقة برسم المصحف</span></label>
-            <label class="opt" id="optHadithWrap"><input type="checkbox" id="optHadith"><span id="optHadithLabel">اكتب الأحاديث المطابقة حرفيًّا بلفظ المصدر المشكول</span></label>
-          </span>
-          <button type="button" class="btn ondark" id="btnIndex">فهرس للوصف</button>
-          <button type="button" class="btn ondark" id="btnSave">حفظ الجلسة</button>
-          <button type="button" class="btn ondark" id="btnCsv">تنزيل CSV</button>
-          <button type="button" class="btn ondark" id="btnJson">تنزيل JSON</button>
-          <button type="button" class="btn ondark" id="btnPrint">طباعة التقرير</button>
+          <button type="button" class="btn gold" id="btnDocx">تنزيل النص بحواشيه (Word)</button>
+          <details class="menu" id="menuWord">
+            <summary id="menuWordTitle">خيارات Word</summary>
+            <div class="menu-box">
+              <label class="opt" id="optMushafWrap"><input type="checkbox" id="optMushaf"><span id="optMushafLabel">الآيات برسم المصحف</span></label>
+              <label class="opt" id="optHadithWrap"><input type="checkbox" id="optHadith"><span id="optHadithLabel">الأحاديث الحرفية بلفظ المصدر مشكولًا</span></label>
+            </div>
+          </details>
+          <details class="menu" id="menuMore">
+            <summary id="menuMoreTitle">تنزيلات أخرى وطباعة</summary>
+            <div class="menu-box">
+              <button type="button" class="menu-item" id="btnPrint">اطبع التقرير</button>
+              <button type="button" class="menu-item" id="btnIndex">فهرس زمني لوصف الفيديو</button>
+              <button type="button" class="menu-item" id="btnCsv">جدول (CSV)</button>
+              <button type="button" class="menu-item" id="btnJson">بيانات (JSON)</button>
+            </div>
+          </details>
+          <button type="button" class="btn ondark" id="btnSave">احفظ المراجعة</button>
         </div>
       </div>
     </div>
@@ -143,7 +151,7 @@
 
     <div class="wrap">
       <details class="committee" id="committee">
-        <summary id="committeeTitle">ملخّص للجنة المراجعة</summary>
+        <summary><span id="committeeTitle">ملخّص للجنة المراجعة</span> <span class="glance" id="committeeGlance"></span></summary>
         <dl class="committee-list" id="committeeList"></dl>
         <p class="note" id="committeeRule"></p>
       </details>
@@ -154,36 +162,42 @@
         <audio id="audio" controls preload="metadata" hidden></audio>
         <div class="map" id="map" role="group" aria-label="خريطة الاستشهادات على طول التسجيل"></div>
         <div class="map-scale"><span id="mapStart">0:00</span><span class="noaudio" id="noAudio" hidden></span><span id="mapEnd"></span></div>
+        <div class="progress" id="progress">
+          <span id="progressText" role="status"></span>
+          <span class="pbar" aria-hidden="true"><i id="progressBar"></i></span>
+          <button type="button" class="btn small line" id="btnNext">التالي غير المراجَع</button>
+          <a class="link tr-jump" href="#transcriptTitle" id="trJump">النص المفرَّغ</a>
+        </div>
       </div>
     </div>
 
     <div class="wrap">
       <p class="tr-by" id="trBy" hidden></p>
       <div class="tools">
-        <div class="filters" id="filters" role="group" aria-label="تصفية السجل"><button type="button" class="chip open" id="chipOpen" aria-pressed="false" hidden></button></div>
-        <div class="progress" id="progress">
-          <span id="progressText" role="status"></span>
-          <span class="pbar" aria-hidden="true"><i id="progressBar"></i></span>
-          <button type="button" class="link" id="btnKeys">اختصارات لوحة المفاتيح (؟)</button>
-        </div>
-        <form class="csearch" id="csearch" role="search">
-          <input type="text" enterkeyhint="search" id="csearchQ" dir="auto" placeholder="ابحث في المدونة" aria-label="ابحث في المدونة عن نص" autocomplete="off">
-          <button type="submit" class="btn small" id="csearchGo">ابحث</button>
-        </form>
-        <div class="legend" id="legend" role="group" aria-label="مفتاح علامات الفروق">
-          <span><b class="k k-asr">كلمة</b> <span id="lgAsr">فرق يُرجَّح أنه من التفريغ</span></span>
-          <span><b class="k k-near">كلمة</b> <span id="lgNear">حرف مختلف (تفريغ أو لفظ)</span></span>
-          <span><b class="k k-diff">كلمة</b> <span id="lgDiff">لفظ مختلف عن المصدر</span></span>
-          <span><b class="k k-ins">كلمة</b> <span id="lgIns">زيادة ليست في المصدر</span></span>
-          <span><b class="k k-del">كلمة</b> <span id="lgDel">في المصدر ولم تُنطَق</span></span>
-        </div>
+        <div class="filters" id="filters" role="group" aria-label="تصفية السجل"><button type="button" class="chip all" id="chipAll" aria-pressed="true">الكل</button><button type="button" class="chip flagchip" id="chipFlag" aria-pressed="false" hidden></button><button type="button" class="chip open" id="chipOpen" aria-pressed="false" hidden></button></div>
+        <button type="button" class="link keys" id="btnKeys">اختصارات (؟)</button>
+        <p class="meaning-cta"><button type="button" class="btn small line" id="btnMeaning" hidden>ابحث عن الاقتباسات بالمعنى</button></p>
+        <details class="legend-wrap" id="legendWrap">
+          <summary id="legendTitle">مفتاح علامات الفروق</summary>
+          <div class="legend" id="legend" role="group" aria-label="مفتاح علامات الفروق">
+            <span><b class="k k-asr">كلمة</b> <span id="lgAsr">فرق يُرجَّح أنه من التفريغ</span></span>
+            <span><b class="k k-near">كلمة</b> <span id="lgNear">حرف مختلف (تفريغ أو لفظ)</span></span>
+            <span><b class="k k-diff">كلمة</b> <span id="lgDiff">لفظ مختلف عن المصدر</span></span>
+            <span><b class="k k-ins">كلمة</b> <span id="lgIns">زيادة ليست في المصدر</span></span>
+            <span><b class="k k-del">كلمة</b> <span id="lgDel">في المصدر ولم تُنطَق</span></span>
+          </div>
+        </details>
       </div>
 
       <div class="cols">
         <ol class="ledger" id="ledger"></ol>
         <aside class="transcript-wrap">
           <div class="video" id="video" hidden><iframe id="videoFrame" title="video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-          <h2>النص المفرَّغ</h2>
+          <h2 id="transcriptTitle">النص المفرَّغ</h2>
+          <form class="csearch" id="csearch" role="search">
+            <input type="text" enterkeyhint="search" id="csearchQ" dir="auto" placeholder="ابحث في المصادر" aria-label="ابحث في المصادر عن نص" autocomplete="off">
+            <button type="submit" class="btn small" id="csearchGo">ابحث</button>
+          </form>
           <p class="tr-hint" id="trHint">ظلِّل نصًّا فاتَ الأداةَ للبحث عن مصدره. لتصحيح كلمة في استشهاد: حدِّده ثم اضغط الكلمة.</p>
           <p class="fixbar" id="fixBar" role="status" hidden><span id="fixCount"></span> <button type="button" class="link" id="btnUndoFixes">تراجع عن كل التصحيحات</button></p>
           <div class="transcript" id="transcript" role="group" aria-label="النص المفرَّغ"></div>
@@ -196,8 +210,8 @@
 <button type="button" class="selact" id="selAct" hidden>ابحث عن مصدر هذا النص</button>
 
 <footer class="foot"><div class="foot-in">
-  <p id="footCorpus">المدونة الأساسية: القرآن الكريم وتسع مجموعات حديثية.</p>
-  <p><span id="fc1">نص القرآن:</span> <a href="https://tanzil.net" target="_blank" rel="noopener" id="fcTanzil">مشروع تنزيل</a> <span id="fc2">(CC BY 3.0، معروض بلا تغيير). نصوص الأحاديث والأحكام والترجمات الإنجليزية: hadith-api و quran-api (fawazahmed0). الكتب:</span> <a href="https://github.com/OpenITI" target="_blank" rel="noopener" lang="en">OpenITI</a> <span id="fc3">(CC BY-NC-SA 4.0، للاستعمال غير التجاري).</span> <a href="#" id="repoLink" target="_blank" rel="noopener" hidden>الشيفرة والتوثيق</a></p>
+  <p id="footCorpus">المصادر الأساسية: القرآن الكريم وتسع مجموعات حديثية.</p>
+  <p><span id="fc1">نص القرآن:</span> <a href="https://tanzil.net" target="_blank" rel="noopener" id="fcTanzil">مشروع تنزيل</a> <span id="fc2">(CC BY 3.0، معروض بلا تغيير). نصوص الأحاديث والأحكام والترجمات الإنجليزية: hadith-api و quran-api (fawazahmed0). الكتب:</span> <a href="https://github.com/OpenITI" target="_blank" rel="noopener" lang="en">OpenITI</a> <span id="fc3">‏(CC BY-NC-SA 4.0‏، للاستعمال غير التجاري).</span> <a href="#" id="repoLink" target="_blank" rel="noopener" hidden>الشيفرة والتوثيق</a></p>
 </div></footer>
 
 <dialog id="limits" aria-label="كيف يعمل أثَر وما حدوده">
@@ -206,10 +220,10 @@
   <h2>كيف يعمل أثَر</h2>
   <ol class="how">
     <li><b>التفريغ.</b> يُحوَّل الصوت إلى نص بطوابع زمنية لكل كلمة (Whisper).</li>
-    <li><b>البحث.</b> كل ثلاث كلمات متتالية تُبحث في فهرس المدونة بعد توحيد الحروف التي يخلط بينها التفريغ (ص/س، ذ/ز، ق/ك…).</li>
+    <li><b>البحث.</b> كل ثلاث كلمات متتالية تُبحث في فهرس المصادر بعد توحيد الحروف التي يخلط بينها التفريغ (ص/س، ذ/ز، ق/ك…).</li>
     <li><b>المقارنة.</b> المواضع المرشّحة تُحاذى مع نص المصدر كلمةً كلمة، فيُعرف ما طابق وما اختلف وما زيد وما نقص.</li>
-    <li><b>الوصف.</b> يُعطى كل استشهاد وصفًا من خمسة بحسب ما عُدَّ من الكلمات، لا بحسب رأي نموذج لغوي. الاستثناء الوحيد: إذا فُعِّلت خطوة «البحث بالمعنى» الاختيارية فقد يختار نموذج لغوي واحدًا من النصوص التي رشّحها البحث من المدونة؛ يُكتب على ذلك الموضع أن نموذجًا اختاره، ويبقى محتاجًا إلى تأكيد بشري.</li>
-    <li><b>الاقتراح بالمعنى.</b> ما لم يُطابَق لفظه يُبحث عنه بحثًا هجينًا: كلمات نادرة مشتركة، ومتجهات معنى مدرَّبة على المدونة نفسها، ثم إعادة ترتيب. الناتج اقتراحات للمراجعة، لا مطابقات.</li>
+    <li><b>الوصف.</b> يُعطى كل استشهاد وصفًا من خمسة بحسب ما عُدَّ من الكلمات، لا بحسب رأي نموذج لغوي. الاستثناء الوحيد: إذا فُعِّلت خطوة «البحث بالمعنى» الاختيارية فقد يختار نموذج لغوي واحدًا من النصوص التي رشّحها البحث من المصادر؛ يُكتب على ذلك الموضع أن نموذجًا اختاره، ويبقى محتاجًا إلى تأكيد بشري.</li>
+    <li><b>الاقتراح بالمعنى.</b> ما لم يُطابَق لفظه يُبحث عنه بحثًا هجينًا: كلمات نادرة مشتركة، ومتجهات معنى مدرَّبة على المصادر نفسها، ثم إعادة ترتيب. الناتج اقتراحات للمراجعة، لا مطابقات.</li>
     <li><b>تفريغان.</b> إذا فُرِّغ التسجيل بمفرِّغَين قورن السجلّان كلمةً بكلمة: حيث سمع أحدهما لفظ المصدر عُدَّ الخلاف من التفريغ ووُصف الاستشهاد بأنه «حرفي بترجيح تفريغين»، وحيث اتفقا على غير لفظ المصدر بقي فرقًا في اللفظ؛ وهذا ترجيح لا قطع، فقد يخطئ المفرِّغان الخطأ نفسه أو يصحِّح أحدهما ما قاله المتحدث إلى النص المشهور.</li>
     <li><b>الإنجليزية.</b> الكلام الإنجليزي يُقارن بترجمات منشورة تحمل مراجع المصادر العربية نفسها، فالمطابقة بالإنجليزية تقود إلى النص العربي. لا يُترجم شيء من النصوص الشرعية آليًّا.</li>
   </ol>
@@ -217,14 +231,14 @@
   <dl class="statuses">
     <dt class="s-verbatim">مطابق حرفيًا</dt><dd>اللفظ المنطوق هو لفظ المصدر (أو لفظ ترجمة منشورة)، وما اختلف يُرجَّح أنه من التفريغ.</dd>
     <dt class="s-partial">مطابق مع فروق</dt><dd>أغلب اللفظ من المصدر مع كلمات مغيَّرة أو زائدة أو ناقصة. الفروق معروضة.</dd>
-    <dt class="s-meaning">بالمعنى — يحتاج تأكيدًا</dt><dd>لم يُطابق اللفظ، لكن وُجد في المدونة نص قريب. لا يُعتمد قبل مراجعة بشرية.</dd>
+    <dt class="s-meaning">بالمعنى — يحتاج تأكيدًا</dt><dd>لم يُطابق اللفظ، لكن وُجد في المصادر نص قريب. لا يُعتمد قبل مراجعة بشرية.</dd>
     <dt class="s-lead">مصدر مرشّح</dt><dd>تشابه ضعيف يستحق نظرة، أو مرجع سمّاه المتحدث. ليس مطابقة.</dd>
-    <dt class="s-notfound">لم يُعثر عليه في المدونة</dt><dd>قال المتحدث ما يدل على استشهاد، ولم يوجد نصه في المدونة. قد يكون في كتاب آخر، أو بلفظ آخر، أو غير ثابت. الأداة لا تعرف أيّها.</dd>
+    <dt class="s-notfound">لم يُعثر عليه في المصادر</dt><dd>قال المتحدث ما يدل على استشهاد، ولم يوجد نصه في المصادر. قد يكون في كتاب آخر، أو بلفظ آخر، أو غير ثابت. الأداة لا تعرف أيّها.</dd>
   </dl>
   <h2>ما لا يفعله</h2>
   <ul class="limits">
     <li>لا يحكم على صحة حديث. «الأحكام المنقولة» منسوخة من قاعدة البيانات بأسماء أصحابها كما وردت فيها. بعض هذه الأسماء محقّقو طبعات مطبوعة، وأحكام طبعاتهم تكرّر في الغالب أحكام الألباني وليست أحكامًا مستقلة.</li>
-    <li>مدونته محدودة: القرآن وتسع مجموعات حديثية، وعشرة كتب إضافية اختيارية، ومجموعة ترجمات إنجليزية. ما سواها خارج نطاقه، ومن استعمل ترجمة أخرى لا يُعثر على كلامه إلا بالمعنى، إن عُثر.</li>
+    <li>مصادره محدودة: القرآن وتسع مجموعات حديثية، وعشرة كتب إضافية اختيارية، ومجموعة ترجمات إنجليزية. ما سواها خارج نطاقه، ومن استعمل ترجمة أخرى لا يُعثر على كلامه إلا بالمعنى، إن عُثر.</li>
     <li>ترجمات الأحاديث الإنجليزية من قاعدة بيانات hadith-api، والمترجم غير مسمّى في المصدر. ترجمات القرآن معروضة بأسماء أصحابها.</li>
     <li>اختيار كتابين من كل علم لا يعني ترجيح مذهب؛ هي عيّنة مشهورة متاحة بنص مفتوح.</li>
     <li>الاقتباس بالمعنى يظهر كاقتراحات غير مؤكدة، وكثير منه لا يُلتقط.</li>
@@ -242,9 +256,9 @@
   <dl class="keys">
     <dt><kbd>j</kbd> <kbd>↓</kbd></dt><dd>الاستشهاد التالي</dd>
     <dt><kbd>k</kbd> <kbd>↑</kbd></dt><dd>الاستشهاد السابق</dd>
-    <dt><kbd>1</kbd></dt><dd>صحيح</dd>
-    <dt><kbd>2</kbd></dt><dd>غير صحيح</dd>
-    <dt><kbd>3</kbd></dt><dd>يحتاج نظرًا</dd>
+    <dt><kbd>1</kbd></dt><dd>النتيجة سليمة</dd>
+    <dt><kbd>2</kbd></dt><dd>النتيجة خاطئة</dd>
+    <dt><kbd>3</kbd></dt><dd>تحتاج نظرًا</dd>
     <dt><kbd>p</kbd></dt><dd>شغِّل من زمن الاستشهاد</dd>
     <dt><kbd>n</kbd></dt><dd>اكتب ملاحظة</dd>
     <dt><kbd>?</kbd></dt><dd>أظهر هذه الاختصارات</dd>
@@ -291,8 +305,8 @@
   <dl class="keys">
     <dt><kbd>j</kbd> <kbd>↓</kbd></dt><dd>Next citation</dd>
     <dt><kbd>k</kbd> <kbd>↑</kbd></dt><dd>Previous citation</dd>
-    <dt><kbd>1</kbd></dt><dd>Correct</dd>
-    <dt><kbd>2</kbd></dt><dd>Incorrect</dd>
+    <dt><kbd>1</kbd></dt><dd>Finding is right</dd>
+    <dt><kbd>2</kbd></dt><dd>Finding is wrong</dd>
     <dt><kbd>3</kbd></dt><dd>Needs a look</dd>
     <dt><kbd>p</kbd></dt><dd>Play from the citation's time</dd>
     <dt><kbd>n</kbd></dt><dd>Write a note</dd>
@@ -309,9 +323,9 @@
   <dl class="keys">
     <dt><kbd>j</kbd> <kbd>↓</kbd></dt><dd>الاستشهاد التالي</dd>
     <dt><kbd>k</kbd> <kbd>↑</kbd></dt><dd>الاستشهاد السابق</dd>
-    <dt><kbd>1</kbd></dt><dd>صحيح</dd>
-    <dt><kbd>2</kbd></dt><dd>غير صحيح</dd>
-    <dt><kbd>3</kbd></dt><dd>يحتاج نظرًا</dd>
+    <dt><kbd>1</kbd></dt><dd>النتيجة سليمة</dd>
+    <dt><kbd>2</kbd></dt><dd>النتيجة خاطئة</dd>
+    <dt><kbd>3</kbd></dt><dd>تحتاج نظرًا</dd>
     <dt><kbd>p</kbd></dt><dd>شغِّل من زمن الاستشهاد</dd>
     <dt><kbd>n</kbd></dt><dd>اكتب ملاحظة</dd>
     <dt><kbd>?</kbd></dt><dd>أظهر هذه الاختصارات</dd>
@@ -323,8 +337,8 @@
   <dl class="keys">
     <dt><kbd>j</kbd> <kbd>↓</kbd></dt><dd>Next citation</dd>
     <dt><kbd>k</kbd> <kbd>↑</kbd></dt><dd>Previous citation</dd>
-    <dt><kbd>1</kbd></dt><dd>Correct</dd>
-    <dt><kbd>2</kbd></dt><dd>Incorrect</dd>
+    <dt><kbd>1</kbd></dt><dd>Finding is right</dd>
+    <dt><kbd>2</kbd></dt><dd>Finding is wrong</dd>
     <dt><kbd>3</kbd></dt><dd>Needs a look</dd>
     <dt><kbd>p</kbd></dt><dd>Play from the citation's time</dd>
     <dt><kbd>n</kbd></dt><dd>Write a note</dd>
@@ -336,9 +350,9 @@
 
 <dialog id="lookup" aria-labelledby="lookupTitle">
   <form method="dialog"><button class="x" aria-label="إغلاق">×</button></form>
-  <h2 id="lookupTitle">ابحث في المدونة</h2>
+  <h2 id="lookupTitle">ابحث في المصادر</h2>
   <form class="lookup-form" id="lookupForm" role="search">
-    <input type="text" enterkeyhint="search" id="lookupQ" dir="auto" autocomplete="off" aria-label="نص يُبحث عنه في المدونة" placeholder="اكتب أو الصق نصَّ آية أو حديث">
+    <input type="text" enterkeyhint="search" id="lookupQ" dir="auto" autocomplete="off" aria-label="نص يُبحث عنه في المصادر" placeholder="اكتب أو الصق نصَّ آية أو حديث">
     <button type="submit" class="btn small" id="lookupGo">ابحث</button>
   </form>
   <div class="lookup-range" id="lookupRange" hidden>

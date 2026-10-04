@@ -2,8 +2,9 @@
 import { fmtTime } from "./text.js";
 import { t, tOpt, srcLabel } from "./i18n.js";
 import { statusOf } from "./agree.js";
+import { flagsOf } from "./flags.js";
 
-const COLS = ["id", "start", "end", "word", "kind", "status", "fidelity", "agreement", "spoken", "source", "ref", "url", "sourceText", "parallels", "attr", "review", "note", "origin"];
+const COLS = ["id", "start", "end", "word", "kind", "status", "fidelity", "agreement", "spoken", "source", "ref", "url", "sourceText", "parallels", "attr", "review", "note", "origin", "alerts"];
 // when a second transcription was compared (agree.js): `status` is the status the two support together, and these follow it
 const TWO_COLS = ["statusStrict", "two", "twoConfirmed", "twoDisagree", "twoUnresolved"];
 const colsFor = ledger => (ledger.some(e => e.agreement2) ? [...COLS.slice(0, 6), ...TWO_COLS, ...COLS.slice(6)] : COLS);
@@ -25,7 +26,8 @@ export function toRows(ledger, review = {}) {
       statusStrict: tOpt("status." + e.status) || e.statusAr || "", two: g ? t("two.verdict." + (g.paired ? g.verdict : "unpaired")) : "",
       twoConfirmed: g && g.paired ? g.confirmed : "", twoDisagree: g && g.paired ? g.disagree : "", twoUnresolved: g && g.paired ? g.unresolved : "",
       id: e.id, start: fmtTime(e.start), end: fmtTime(e.end), word: e.wordStart == null ? "" : e.wordStart + 1,
-      kind: tOpt("kind." + (e.source && e.source.type === "b" ? "b" : e.type)), status: tOpt("status." + status) || e.statusAr || "", fidelity: tOpt("fid." + status) || e.fidelity || "",
+      kind: tOpt("kind." + (e.source && e.source.type === "b" && !e.weakOnly ? "b" : e.type)),
+      alerts: flagsOf(e).map(f => t("flag." + f)).join("؛ "), status: tOpt("status." + status) || e.statusAr || "", fidelity: tOpt("fid." + status) || e.fidelity || "",
       agreement: e.agreement == null ? "" : Math.round(e.agreement * 100) + "%",
       spoken: e.spoken, source: e.source ? srcLabel(e.source) : "", ref: e.source ? e.source.ref : "",
       url: e.source ? e.source.url || "" : "", sourceText: sourceTextOf(e), parallels: (e.parallels || []).map(p => srcLabel(p, true)).join("؛ "),

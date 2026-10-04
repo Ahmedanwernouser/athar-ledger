@@ -2,6 +2,7 @@
 import { fmtTime, fnv1a, wordsFromText } from "./text.js";
 import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, AsrError, llmStops } from "./asr.js";
 import { compareLedgers, applyAgreement, marksOf, statusOf, timeTolerance } from "./agree.js";
+import { flagsOf } from "./flags.js";
 import { toCsv, toJson, download } from "./exporter.js";
 import { citedDocx, toSession, fromSession, parseStampedText, youtubeId, cleanManual, cleanFixes, committeeSummary, summaryLines, descriptionIndex } from "./report.js";
 import { t, tOpt, has, num, setLang, getLang, srcLabel, transcriberLabel, LANGS } from "./i18n.js";
@@ -147,8 +148,9 @@ function boot() {
   $("asrProv").onchange = () => store.set("athar:asrprov", $("asrProv").value);
   fetch(new URL("../samples/manifest.json", import.meta.url)).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then(list => {
     for (const s of list) {
-      const b = el("button", "sample"); b.type = "button"; b.dir = dirOf(s.title); b.lang = scriptOf(s.title);
-      b.append(el("b", null, s.title), el("small", null, s.note));
+      const ar = getLang() === "ar", title = (ar && s.title_ar) || s.title, note = (ar && s.note_ar) || s.note;
+      const b = el("button", "sample"); b.type = "button"; b.dir = dirOf(title); b.lang = scriptOf(title);
+      b.append(el("b", null, title), el("small", null, note));
       b.onclick = () => runSample(s);
       $("samples").append(b);
     }
@@ -202,6 +204,20 @@ function boot() {
   document.addEventListener("keydown", onShortcut);
   wireSelection(); wireLedger();
   $("btnMeaning").onclick = runMeaning;
+  $("chipAll").onclick = showAll; $("chipFlag").onclick = toggleFlag; $("btnNext").onclick = nextOpen;
+  $("btnTry").onclick = () => { const b = $("samples").querySelector(".sample"); if (b) b.click(); else $("waySample").scrollIntoView({ behavior: "smooth" }); };
+  $("heroAlt").onclick = ev => { ev.preventDefault(); $("wayText").scrollIntoView({ behavior: "smooth", block: "center" }); $("paste").focus({ preventScroll: true }); };
+  $("trJump").onclick = ev => { ev.preventDefault(); $("transcriptTitle").scrollIntoView({ behavior: "smooth", block: "start" }); };
+  // the two menus of the results band: one open at a time; a click elsewhere, Escape or choosing an item closes them
+  const menus = [...document.querySelectorAll("details.menu")];
+  for (const m of menus) {
+    m.addEventListener("toggle", () => { if (m.open) menus.forEach(x => { if (x !== m) x.open = false; }); });
+    m.addEventListener("keydown", ev => { if (ev.key === "Escape" && m.open) { ev.stopPropagation(); m.open = false; m.querySelector("summary").focus(); } });
+    m.querySelectorAll(".menu-item").forEach(b => b.addEventListener("click", () => { m.open = false; }));
+    m.addEventListener("focusout", ev => { if (m.open && ev.relatedTarget && !m.contains(ev.relatedTarget)) m.open = false; });
+  }
+  document.addEventListener("keydown", ev => { if (ev.key === "Escape") for (const m of menus) if (m.open) { m.open = false; ev.stopPropagation(); } }, true);
+  document.addEventListener("click", ev => { for (const m of menus) if (m.open && !m.contains(ev.target)) m.open = false; });
   const a = $("audio");
   a.ontimeupdate = onTime;
   a.onloadedmetadata = () => { if (isFinite(a.duration)) { S.duration = Math.max(S.duration, a.duration); placeMarks(); } };
@@ -253,7 +269,7 @@ function choose(id, on) { const cur = new Set(packsChosen()); on ? cur.add(id) :
 function loadPack(id) {
   const p = packs.get(id); if (!p) return Promise.resolve(false);
   if (p.state !== "none") return p.promise;
-  p.state = "loading"; p.cb.checked = true; p.lab.classList.add("loading");
+  p.state = "loading"; p.cb.checked = true; p.lab.classList.add("loading"); p.lab.dataset.loading = t("pack.loading");
   p.promise = packQueue.then(() => call("loadPack", { pack: id })).then(() => {
     p.state = "loaded"; p.lab.classList.remove("loading"); packFail.delete(id); return true;
   }, e => {
@@ -668,14 +684,14 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
 
   // ---- from here on this run owns the screen
   stopAudio();
-  S.words = words; S.title = title; S.titleKey = titleKey; S.hidden = new Set(); S.openState = new Map(); S.sel = null;
+  S.words = words; S.title = title; S.titleKey = titleKey; S.only = new Set(); S.onlyFlag = false; S.openState = new Map(); S.sel = null;
   S.hasTimes = words.some(w => w.start != null);
   let dur = 0; if (S.hasTimes) for (const w of words) { const x = w.end ?? w.start; if (x > dur) dur = x; }      // (no spread: transcripts can be very long)
   S.duration = S.hasTimes ? dur : words.length;
   S.fixes = fixes; S.manual = manual; S.extra = extra; S.fixKey = fixKey; S.manualKey = manualKey;
   S.second = second; S.two = second ? second.stats : null;
   S.transcribers = (Array.isArray(transcribers) ? transcribers : []).slice(0, second ? 2 : 1);
-  S.onlyOpen = false; S.keepOpen = new Set(); S.reworking = false; S.focusAfter = null;
+  S.onlyOpen = false; S.onlyFlag = false; S.keepOpen = new Set(); S.reworking = false; S.focusAfter = null;
   if (fixCount()) store.set(fixKey, fixes);
   if (manual.length) store.set(manualKey, manual);
   setLedger(ledger, added);
@@ -748,7 +764,7 @@ function saveReview(e, patch) {
 }
 const reviewed = e => { const { cur } = reviewOf(e); return !!(cur && cur.v); };
 /** hidden by the filters: its status is switched off, or only unreviewed entries are wanted and this one has a verdict */
-const isOff = e => S.hidden.has(st(e)) || (S.onlyOpen && reviewed(e) && !S.keepOpen.has(e.key));
+const isOff = e => (S.only.size > 0 && !S.only.has(st(e))) || (S.onlyFlag && !flagsOf(e).length) || (S.onlyOpen && reviewed(e) && !S.keepOpen.has(e.key));
 function activeReviews() {
   const out = {};
   for (const e of S.ledger) { const { cur } = reviewOf(e); if (cur) out[e.key] = { v: cur.v || null, note: cur.note || "" }; }
@@ -791,20 +807,22 @@ function drawNotices() {
 function drawSummary() {
   const counts = {}; for (const e of S.ledger) counts[st(e)] = (counts[st(e)] || 0) + 1;
   const parts = STATUS_ORDER.filter(s => counts[s]).map(s => `${num(counts[s])} ${t("short." + s)}`).join(sep());
-  $("summaryLine").textContent = S.ledger.length ? t("sum.line", titleNow(), num(S.ledger.length), parts) : t("sum.none", titleNow());
+  $("summaryLine").textContent = S.ledger.length ? t("sum.line", "\u2068" + titleNow() + "\u2069", counted("n.spot", S.ledger.length), parts) : t("sum.none", titleNow());
   const f = $("filters");
   for (const s of STATUS_ORDER) {
     let c = f.querySelector(`[data-s="${s}"]`);
-    if (!counts[s]) { if (c) c.remove(); S.hidden.delete(s); continue; }
+    if (!counts[s]) { if (c) c.remove(); S.only.delete(s); continue; }
     if (!c) {
       c = el("button", "chip s-" + s); c.type = "button"; c.dataset.s = s; c.style.setProperty("--c", `var(--${s})`);
       c.onclick = () => toggleStatus(s);
       const after = STATUS_ORDER.slice(STATUS_ORDER.indexOf(s) + 1).map(x => f.querySelector(`[data-s="${x}"]`)).find(Boolean);
-      f.insertBefore(c, after || $("chipOpen"));
+      f.insertBefore(c, after || $("chipFlag"));
     }
     c.textContent = `${t("status." + s)} (${num(counts[s])})`;
-    c.setAttribute("aria-pressed", String(!S.hidden.has(s)));
+    c.setAttribute("aria-pressed", String(S.only.has(s)));
   }
+  $("chipAll").hidden = !S.ledger.length;
+  drawFilterState();
   drawProgress();
 }
 /** how far the review is, the "not reviewed yet" chip, and the committee summary: all three follow every verdict */
@@ -814,6 +832,12 @@ function drawProgress() {
   $("progressText").textContent = n ? t("pg.line", num(done), num(n)) : "";
   $("progressBar").style.width = (n ? 100 * done / n : 0) + "%";
   chip.hidden = !n; chip.textContent = t("pg.open", num(n - done)); chip.title = t("pg.open.title"); chip.setAttribute("aria-pressed", String(S.onlyOpen));
+  $("btnNext").hidden = !n || done === n;
+  if (n && done === n) $("progressText").textContent = t("pg.done");
+  const flagged = S.ledger.filter(e => flagsOf(e).length).length, fc = $("chipFlag");
+  fc.hidden = !flagged; fc.textContent = t("flag.chip", num(flagged)); fc.title = t("flag.chip.title");
+  if (!flagged && S.onlyFlag) { S.onlyFlag = false; }
+  drawFilterState();
   drawCommittee();
 }
 function drawCommittee() {
@@ -821,11 +845,15 @@ function drawCommittee() {
   const lines = summaryLines(committeeSummary(S.ledger, activeReviews()));
   for (const l of lines) if (l.value != null) list.append(el("dt", null, l.label), el("dd", null, l.value));
   $("committeeRule").textContent = lines.filter(l => l.value == null).map(l => l.label).join(" ");
+  // the three numbers a committee asks about first, readable without opening the summary
+  const k = { weak: 0, attr: 0, nf: 0 };
+  for (const e of S.ledger) { const f = flagsOf(e); if (f.includes("weak") || f.includes("weakmention")) k.weak++; if (f.includes("attr")) k.attr++; if (st(e) === "notfound") k.nf++; }
+  $("committeeGlance").textContent = [k.weak && t("glance.weak", num(k.weak)), k.attr && t("glance.attr", num(k.attr)), k.nf && t("glance.notfound", num(k.nf))].filter(Boolean).join(sep());
 }
 /** show only what has no verdict yet. Like the status chips: nothing is rebuilt. */
 function toggleOpen() {
   S.onlyOpen = !S.onlyOpen; S.keepOpen = new Set();
-  $("chipOpen").setAttribute("aria-pressed", String(S.onlyOpen));
+  $("chipOpen").setAttribute("aria-pressed", String(S.onlyOpen)); drawFilterState();
   applyVisibility();
 }
 function applyVisibility() {
@@ -837,9 +865,27 @@ function applyVisibility() {
 }
 /** show / hide one status: nothing is rebuilt, so focus, open details, typed notes and the selection all stay */
 function toggleStatus(s) {
-  S.hidden.has(s) ? S.hidden.delete(s) : S.hidden.add(s);
-  $("filters").querySelector(`[data-s="${s}"]`).setAttribute("aria-pressed", String(!S.hidden.has(s)));
-  applyVisibility();
+  S.only.has(s) ? S.only.delete(s) : S.only.add(s);
+  $("filters").querySelector(`[data-s="${s}"]`).setAttribute("aria-pressed", String(S.only.has(s)));
+  drawFilterState(); applyVisibility();
+}
+/** "All" is pressed when no filter narrows the ledger; pressing it clears every filter */
+function drawFilterState() {
+  $("chipAll").setAttribute("aria-pressed", String(!S.only.size && !S.onlyFlag && !S.onlyOpen));
+  $("chipFlag").setAttribute("aria-pressed", String(S.onlyFlag));
+}
+function showAll() {
+  S.only.clear(); S.onlyFlag = false; S.onlyOpen = false; S.keepOpen = new Set();
+  for (const c of $("filters").querySelectorAll("[data-s]")) c.setAttribute("aria-pressed", "false");
+  $("chipOpen").setAttribute("aria-pressed", "false");
+  drawFilterState(); applyVisibility();
+}
+function toggleFlag() { S.onlyFlag = !S.onlyFlag; drawFilterState(); applyVisibility(); }
+/** the next entry (after the selected one, wrapping round) that has no verdict yet */
+function nextOpen() {
+  const L = S.ledger, n = L.length; if (!n) return;
+  const from = S.sel ? L.findIndex(e => e.id === S.sel) + 1 : 0;
+  for (let k = 0; k < n; k++) { const e = L[(from + k) % n]; if (!reviewed(e) && !isOff(e)) { selectAndFocus(e); return; } }
 }
 function afterVisibility() {
   const L = $("ledger"), all = $("allHidden");
@@ -854,7 +900,7 @@ function drawMap() {
   const m = $("map"); m.textContent = ""; m.style.direction = "ltr";
   const frag = document.createDocumentFragment();
   for (const e of S.ledger) {
-    const b = el("button", "mark s-" + st(e) + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); b.type = "button"; b.tabIndex = -1;
+    const b = el("button", "mark s-" + st(e) + (e.manual ? " by-hand" : "") + (flagsOf(e).length ? " flag" : "") + (e.weakOnly ? " weak-only" : "") + (reviewed(e) ? " rvd" : "") + (e.id === S.sel ? " on" : "")); b.type = "button"; b.tabIndex = -1;
     b.dataset.id = e.id; b.hidden = isOff(e);
     b.title = markTitle(e); b.setAttribute("aria-label", b.title);
     frag.append(b);
@@ -958,9 +1004,10 @@ function quranBlock(s, cls = "", limitWords = 0) {
   if (s.basmala) { const b = el("p", "basmala", s.basmala); b.dir = "rtl"; b.lang = "ar"; f.append(b); }
   let text = s.display || "";
   if (limitWords) { const ws = text.split(" "); if (ws.length > limitWords) text = ws.slice(0, limitWords).join(" ") + " …"; }
-  f.append(textBlock(text, cls));
+  f.append(textBlock(ayahDigits(text), cls));
   return f;
 }
+const ayahDigits = text => text.replace(/﴿(\d+)﴾/g, (_, k) => `﴿${Number(k).toLocaleString("ar-EG", { useGrouping: false })}﴾`);
 const isQuran = s => !!(s && s.type === "q" && s.display);
 function candBlock(k) {
   const c = el("div", "cand"); c.append(sourceLine(k, false));
@@ -992,17 +1039,20 @@ function drawEntry(e) {
   const head = el("div", "entry-head");
   const tb = el("button", "time" + (S.hasTimes ? "" : " none"), S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))); tb.type = "button";
   tb.onclick = () => focusEntry(e, false, true);
-  head.append(tb, el("span", "kind", kindOf(e)), el("span", "status", t("status." + st(e))));
+  const flags = flagsOf(e); if (flags.length) li.classList.add("flag"); if (e.weakOnly) li.classList.add("weak-only");
+  head.append(tb, el("span", "ord", t("e.n", num(e.id), num(S.ledger.length))), el("span", "kind", kindOf(e)), el("span", "status", t("status." + st(e))));
+  for (const f of flags) head.append(el("span", "flagtag", t("flag." + f)));
   if (byTwo(e)) { const tag = el("span", "two-tag", t("two.tag")); tag.title = t("two.tag.title", t("status." + e.status)); head.append(tag); }
   if (e.manual) head.append(el("span", "hand", t("e.manual")));
   if (e.pass === "t2") head.append(el("span", "hand", t("two.second")));
   const g2 = e.agreement2 || null, marks = marksOf(e);
   if (e.agreement != null && e.counts) {
     const c = e.counts, n = c.exact + c.asr + c.near + c.diff + c.added + c.omitted;
-    const bits = [t("e.agree", num(Math.round(e.agreement * 100)), num(n))];
-    if (c.asr + c.near) bits.push(t("e.asr", num(c.asr + c.near)));
-    if (c.diff + c.added + c.omitted) bits.push(t("e.wording", num(c.diff + c.added + c.omitted)));
-    head.append(el("span", "agree", bits.join(sep())));
+    const bits = [], wd = c.diff + c.added + c.omitted, ad = c.asr + c.near;
+    if (wd || ad || Math.round(e.agreement * 100) < 100) bits.push(t("e.agree", num(Math.round(e.agreement * 100)), counted("n.word", n)));      // a clean match needs no figure
+    if (ad) bits.push(counted("n.adiff", ad));
+    if (wd) bits.push(counted("n.wdiff", wd));
+    if (bits.length) head.append(el("span", "agree", bits.join(sep())));
   }
   li.append(head);
 
@@ -1023,16 +1073,18 @@ function drawEntry(e) {
       const so = srcH ? origBlock("", "source-text") : el("p", "source-text " + dir); if (!srcH) { so.dir = dir; so.lang = lang; }
       for (let i = 0; i < e.diff.length; i++) {
         const d = e.diff[i], n = sourceSpan(d, srcQ || srcH ? d.sourceDisplay : d.source, marks.get(i)); if (n) so.append(n);
-        if (srcQ && d.ayahEnd) so.append(el("span", "ayah-no", `﴿${d.ayahEnd}﴾`), " ");
+        if (srcQ && d.ayahEnd) so.append(el("span", "ayah-no", ayahDigits(`﴿${d.ayahEnd}﴾`)), " ");
       }
       if (srcQ && src.basmala && e.diffFromStart) pair.append(so); else pair.append(el("span", null, t("e.source")), so);
     }
     li.append(pair);
   } else if (srcQ && e.status === "verbatim" && !e.manual) li.append(quranBlock(src, "spoken"));
   else li.append(spokenBlock(e));
+  // small facts about the match go into one row of tags under the source (built below); warnings stay as notes
+  const tags = [], tag = (text, title, cls) => { const x = el("span", "tag" + (cls ? " " + cls : ""), text); if (title) x.title = title; tags.push(x); };
   if (e.excerpt && typeof e.excerpt === "object") {
-    if (e.excerpt.head) li.append(el("p", "note", t("note.excerpt_head")));
-    if (e.excerpt.tail && !e.tailUnmatched) li.append(el("p", "note", t("note.excerpt_tail")));
+    const parts = [e.excerpt.head && t("note.excerpt_head"), e.excerpt.tail && !e.tailUnmatched && t("note.excerpt_tail")].filter(Boolean);
+    if (parts.length) tag(`${t("tag.excerpt")}: ${parts.join(sep())}`);
   }
   if (e.tailUnmatched) li.append(el("p", "note", t("note.tail_unmatched", e.tailUnmatchedSpoken || "")));
   // what a second transcription of the same recording says about these words
@@ -1074,7 +1126,8 @@ function drawEntry(e) {
     li.append(d);
   }
   // the hadith as the source writes it (after the chain of narrators), for a textual match made in Arabic
-  if (src && src.type === "h" && !viaEn && src.displayFull && textual(e)) li.append(details(e, "hadith", t("e.hadith.text"), longBlock(src.displayFull, 150, "cand-text", true)));
+  const more = [];      // [label, node...]: everything a reviewer opens only sometimes sits behind ONE disclosure
+  if (src && src.type === "h" && !viaEn && src.displayFull && textual(e)) more.push([t("e.hadith.text"), longBlock(src.displayFull, 150, "cand-text", true)]);
   const note = e.noteCode ? tOpt("note." + e.noteCode) : "";
   if (e.status === "notfound") {
     li.append(el("p", "note", note || t("note.notfound")));
@@ -1087,46 +1140,56 @@ function drawEntry(e) {
   } else if (note) li.append(el("p", "note", note));
   if (e.attribution) {
     const a = tOpt("attr." + e.attribution.code);       // a code this page does not know yet shows nothing rather than a raw key
-    if (a) li.append(el("p", "note " + (e.attribution.code === "collection_other_wording" ? "" : e.attribution.agrees ? "ok" : "warn"), a));
+    if (a && e.attribution.agrees && e.attribution.code !== "collection_other_wording") tag(t("tag.attr_ok"), a, "ok");
+    else if (a) li.append(el("p", "note " + (e.attribution.code === "collection_other_wording" ? "" : "warn"), a));
   }
   for (const g of (e.spokenGrades || [])) li.append(mixed(el("p", "note " + (g.kind === "weak" ? "warn" : ""), t("e.grade." + (g.kind === "strong" ? "strong" : "weak"), S.hasTimes && g.start != null ? fmtTime(g.start) : "", g.text)), g.text));
-  if (src && src.type === "h" && src.matnOnly === false && e.status !== "meaning" && !viaEn) li.append(el("p", "note", t("note.isnad")));
+  if (src && src.type === "h" && src.matnOnly === false && e.status !== "meaning" && !viaEn) tag(t("tag.isnad"), t("note.isnad"));
   // the two answers about a hadith, kept apart: the ordinary books (the source above, or "not found") and the books of weak / fabricated hadith
   if (e.weakSearched && (e.type === "h" || e.cue === "hadith")) {
     if (e.weakOnly) li.append(el("p", "note warn", t("e.weak.only")));
     if (e.weakBooks && e.weakBooks.length) {
       const box = el("div", "weakbox");
       for (const w of e.weakBooks) {
-        const row = el("div", "cand"), head = w.label + (w.heading ? ` — ${w.heading}` : "");
-        row.append(mixed(el("p", "note warn", head), head));
-        row.append(w.bookWords ? mixed(el("p", "note", t("e.weak.words", w.bookWords)), w.bookWords) : el("p", "note", t("e.weak.nowords")));
+        const row = el("div", "wb"), head = w.label + (w.heading ? ` — ${w.heading}` : "");
+        if (!(e.weakOnly && src && src.ref === w.ref)) row.append(mixed(el("p", "wb-book", head), head));
+        if (w.bookWords) row.append(el("span", "wb-label", t("e.weak.words")), mixed(el("p", "wb-words", `«${w.bookWords}»`), w.bookWords));
+        else row.append(el("p", "note", t("e.weak.nowords")));
         box.append(row);
       }
       box.append(el("p", "note", t("e.weak.note")));
       li.append(details(e, "weak", t("e.weak.head", num(e.weakBooks.length)), box));
       const dd = li.lastChild; if (dd && !S.openState.has(e.key + "/weak")) dd.open = true;
-    } else if (!e.weakOnly) li.append(el("p", "note", t("e.weak.none")));
+    } else if (!e.weakOnly) tag(t("e.weak.none"));
   }
+  if (tags.length) { const row = el("p", "tags"); row.append(...tags); const anchor = li.querySelector(":scope > .src"); if (anchor) anchor.after(row); else li.append(row); }
 
   const linkOrText = p => { const x = el("li"), label = srcLabel(p); if (p.url) { const a = mixed(el("a", null, label), label); a.href = p.url; a.target = "_blank"; a.rel = "noopener"; x.append(a); } else { x.textContent = label; mixed(x, label); } return x; };
-  if (e.parallels && e.parallels.length) { const ul = el("ul"); e.parallels.slice(0, 30).forEach(p => ul.append(linkOrText(p))); li.append(details(e, "parallels", t("e.parallels", num(e.parallels.length)), ul)); }
-  if (e.inBooks && e.inBooks.length) { const ul = el("ul"); e.inBooks.forEach(p => ul.append(mixed(el("li", null, p.label), p.label))); li.append(details(e, "inbooks", t("e.inbooks", num(e.inBooks.length)), ul)); }
-  if (e.tafsir && e.tafsir.length) li.append(details(e, "tafsir", t("e.tafsir"), ...e.tafsir.map(x => { const c = el("div", "cand"); c.append(el("span", null, t("e.ayah", num(x.ayah))), textBlock(x.text)); return c; })));
+  if (e.parallels && e.parallels.length) { const ul = el("ul"); e.parallels.slice(0, 30).forEach(p => ul.append(linkOrText(p))); more.push([t("e.parallels", num(e.parallels.length)), ul]); }
+  if (e.inBooks && e.inBooks.length) { const ul = el("ul"); e.inBooks.forEach(p => ul.append(mixed(el("li", null, p.label), p.label))); more.push([t("e.inbooks", num(e.inBooks.length)), ul]); }
+  if (e.tafsir && e.tafsir.length) more.push([t("e.tafsir"), ...e.tafsir.map(x => { const c = el("div", "cand"); c.append(el("span", null, t("e.ayah", num(x.ayah))), textBlock(x.text)); return c; })]);
   const graded = [src, ...(e.parallels || [])].filter(s => s && s.grades && s.grades.length);
-  if (graded.length && e.status !== "notfound") {
+  if (graded.length && e.status !== "notfound" && !isQuran(src)) {
     const ul = el("ul");
     graded.slice(0, 6).forEach(s => {
       const x = el("li"), g = s.grades.map(k => `${k.by}: ${k.grade}`).join("؛ ");
       x.append(`${srcLabel(s, true)} — ${t("e.grades.line")}: `, mixed(el("span", null, g), g));
       ul.append(x);
     });
-    li.append(details(e, "grades", t("e.grades"), el("p", "note", t("e.grades.note")), ul));
+    more.push([t("e.grades"), el("p", "note", t("e.grades.note")), ul]); more[more.length - 1].short = t("e.grades.short");
+  }
+  if (more.length) {
+    const body = more.map(([label, ...nodes]) => { const sec = el("div", "more-sec"); sec.append(el("h4", null, label), ...nodes); return sec; });
+    const d = details(e, "more", "", ...body), sm = d.querySelector("summary");
+    sm.append(el("b", null, t("e.more.details")), el("span", "more-list", more.map(m => m.short || m[0]).join(sep())));
+    li.append(d);
   }
 
   const firstWord = li.querySelector(".spoken .fw"); if (firstWord) firstWord.tabIndex = 0;      // one tab stop per spoken line; the arrow keys move inside it
   li.append(drawReview(e));
+  { const { cur } = reviewOf(e); if (cur && cur.v) li.dataset.rv = cur.v; }
   if (e.manual) { const b = el("button", "link rm", t("e.manual.remove")); b.type = "button"; b.onclick = () => removeManual(e); li.append(b); }
-  else if (!textual(e) && !foreign(e)) { const b = el("button", "link find", t("e.find")); b.type = "button"; b.onclick = () => openLookup({ a: e.wordStart, b: e.wordEnd }); li.append(b); }
+  else if (!textual(e) && !foreign(e)) { const b = el("button", "btn small line find", t("e.find")); b.type = "button"; b.onclick = () => openLookup({ a: e.wordStart, b: e.wordEnd }); li.querySelector(":scope > .review").before(b); }
   return li;
 }
 function drawReview(e) {
@@ -1138,6 +1201,8 @@ function drawReview(e) {
     rv.querySelectorAll(".rv").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === v)));
     printed.textContent = [v ? t("rv." + v) : "", noteText || ""].filter(Boolean).join(" — ");
     rv.classList.toggle("blank", !v && !noteText);
+    const li = rv.closest(".entry"); if (li) { if (v) li.dataset.rv = v; else delete li.dataset.rv; }
+    const mk = $("map").querySelector(`.mark[data-id="${e.id}"]`); if (mk) mk.classList.toggle("rvd", !!v);
     const old = rv.querySelector(".rv-stale"); if (old && cur) old.remove();
     if (rv.isConnected) drawProgress();
   };
@@ -1287,12 +1352,12 @@ function onTime() {
 let printing = false;
 function beforePrint() {
   printing = true; flushLedger();
-  for (const d of document.querySelectorAll("#ledger details:not([open]), #committee:not([open])")) { d.dataset.p = "1"; d.open = true; }
+  for (const d of document.querySelectorAll("#ledger details:not([open]), #committee:not([open]), #legendWrap:not([open])")) { d.dataset.p = "1"; d.open = true; }
 }
 function afterPrint() {
-  for (const d of document.querySelectorAll("#ledger details[data-p], #committee[data-p]")) d.open = false;
+  for (const d of document.querySelectorAll("#ledger details[data-p], #committee[data-p], #legendWrap[data-p]")) d.open = false;
   // "toggle" events arrive later: the marks are cleared after them so that this opening and closing is not remembered as the reader's
-  setTimeout(() => { for (const d of document.querySelectorAll("#ledger details[data-p], #committee[data-p]")) delete d.dataset.p; printing = false; }, 300);
+  setTimeout(() => { for (const d of document.querySelectorAll("#ledger details[data-p], #committee[data-p], #legendWrap[data-p]")) delete d.dataset.p; printing = false; }, 300);
 }
 
 // ---------------- reviewer: keyboard shortcuts ----------------
@@ -1305,7 +1370,7 @@ function selectAndFocus(e, scroll = true) {
 function onShortcut(ev) {
   if ($("results").hidden || ev.defaultPrevented || ev.ctrlKey || ev.metaKey || ev.altKey || document.querySelector("dialog[open]")) return;
   const el0 = ev.target instanceof Element ? ev.target : null;
-  if (el0 && el0.closest("input, textarea, select, [contenteditable], audio, video, iframe")) return;
+  if (el0 && el0.closest("input, textarea, select, [contenteditable], audio, video, iframe, details.menu")) return;
   const arrow = ev.key === "ArrowDown" || ev.key === "ArrowUp";
   if (arrow && (ev.shiftKey || (el0 && el0.closest("#map, #transcript")))) return;      // extending a selection, or moving inside the map / the transcript
   // a Latin letter or digit is taken as typed; otherwise (an Arabic layout) the position of the key decides
@@ -1524,7 +1589,7 @@ function addManual(c) {
   setLedger(S.ledger.filter(x => !x.manual), [...S.ledger.filter(x => x.manual), e]);
   S.review[e.key] = { v: "yes", note: "", sig: sig(e) }; store.set(S.reviewKey, S.review);      // a person chose it: the verdict starts as "correct"
   if (S.onlyOpen) S.keepOpen.add(e.key);
-  S.hidden.delete(e.status);
+  S.only.clear(); S.onlyFlag = false;
   $("lookup").close();
   S.sel = e.id; render(); selectAndFocus(e);
 }

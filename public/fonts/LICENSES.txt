@@ -1,7 +1,6 @@
 Fonts in this folder are redistributed under the SIL Open Font License 1.1 (https://openfontlicense.org):
 - Amiri — Copyright 2010-2022 The Amiri Project Authors (https://github.com/aliftype/amiri)
 - IBM Plex Sans Arabic — Copyright © 2017 IBM Corp. with Reserved Font Name "Plex" (https://github.com/IBM/plex)
-- Reem Kufi — Copyright 2015-2022 The Reem Kufi Project Authors (https://github.com/aliftype/reem-kufi)
 Files were taken from the Fontsource npm packages (subsets: arabic, latin).
 
 

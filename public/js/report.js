@@ -322,7 +322,8 @@ export function descriptionIndex(ledger, reviews = {}, { intro = false } = {}) {
       lines.push(`${time} ${t(many ? "idx.verses" : "idx.verse")} — ${ar ? t("idx.surah", arDigits(label)) : label}`);
     } else {
       const ws = String(e.spoken || "").split(/\s+/).filter(Boolean), said = ws.slice(0, QUOTE_WORDS).join(" ").replace(/[.,،؛:!?؟…]+$/, "") + (ws.length > QUOTE_WORDS ? "…" : "");
-      lines.push(`${time} ${t(s.type === "b" ? "idx.book" : "idx.hadith")} — ${srcLabel(s, true)}${said ? ": " + said : ""}`);
+      // found only in a book of weak / fabricated hadith: the line says so, it is never listed as a plain source
+      lines.push(`${time} ${t(s.type === "b" && !e.weakOnly ? "idx.book" : "idx.hadith")} — ${e.weakOnly ? t("idx.weakonly", srcLabel(s, true)) : srcLabel(s, true)}${said ? ": " + said : ""}`);
     }
   }
   if (intro && lines.length && fmtTime(list[0].start) !== "0:00") lines.unshift(`0:00 ${t("idx.intro")}`);

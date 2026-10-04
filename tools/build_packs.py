@@ -119,9 +119,16 @@ def parse_openiti(path, dropped=None, numbered=False):
         if s[0] != "text": continue
         w = norm(MS.sub(" ", s[1])).split()
         if not w: continue
+        # the printed form of every normalised word (norm() works letter by letter, so word by word gives the same words):
+        # used only to quote a book in its own spelling; a printed word that yields two normalised words is carried by the first
+        o = []
+        for tok in MS.sub(" ", s[1]).split():
+            k = len(norm(tok).split())
+            if k: o += [tok] + [""] * (k - 1)
+        assert len(o) == len(w)
         if s[3] or not paras or paras[-1]["h"] != s[2]:
-            paras.append({"words": w, "pg": [pages[i]] * len(w), "h": s[2], "num": s[4]})
-        else: paras[-1]["words"] += w; paras[-1]["pg"] += [pages[i]] * len(w)
+            paras.append({"words": w, "orig": o, "pg": [pages[i]] * len(w), "h": s[2], "num": s[4]})
+        else: paras[-1]["words"] += w; paras[-1]["orig"] += o; paras[-1]["pg"] += [pages[i]] * len(w)
     return paras, usable
 
 def chunk(paras, key):
@@ -130,7 +137,7 @@ def chunk(paras, key):
     def flush():
         nonlocal buf
         if buf and len(buf["words"]) >= MIN_WORDS: out.append(buf)
-        elif buf and out and out[-1]["h"] == buf["h"]: out[-1]["words"] += buf["words"]; out[-1]["num2"] = buf["num2"]
+        elif buf and out and out[-1]["h"] == buf["h"]: out[-1]["words"] += buf["words"]; out[-1]["orig"] += buf["orig"]; out[-1]["num2"] = buf["num2"]
         buf = None
     for p in paras:
         w = p["words"]
@@ -138,17 +145,17 @@ def chunk(paras, key):
             flush()
             for s in range(0, len(w), CHUNK - OVERLAP):
                 piece = w[s:s + CHUNK]
-                if len(piece) >= MIN_WORDS or s == 0: out.append({"h": p["h"], "num": p["num"], "num2": p["num"], "at": p["pg"][s], "words": piece})
+                if len(piece) >= MIN_WORDS or s == 0: out.append({"h": p["h"], "num": p["num"], "num2": p["num"], "at": p["pg"][s], "words": piece, "orig": p["orig"][s:s + CHUNK]})
                 if s + CHUNK >= len(w): break
             continue
         if buf and (buf["h"] != p["h"] or len(buf["words"]) + len(w) > CHUNK): flush()
-        if buf is None: buf = {"h": p["h"], "num": p["num"], "num2": p["num"], "at": p["pg"][0], "words": list(w)}
-        else: buf["words"] += w; buf["num2"] = p["num"]
+        if buf is None: buf = {"h": p["h"], "num": p["num"], "num2": p["num"], "at": p["pg"][0], "words": list(w), "orig": list(p["orig"])}
+        else: buf["words"] += w; buf["orig"] += p["orig"]; buf["num2"] = p["num"]
     flush()
     def head(c):      # numbered books: "باب المياه — حديث 5" / "باب المياه — الأحاديث 1–4"
         if not c["num"]: return c["h"][:80]
         return c["h"][:80] + (f" — حديث {c['num']}" if c["num2"] <= c["num"] else f" — الأحاديث {c['num']}–{c['num2']}")
-    return [{"t": "b", "r": f"{key}:{i + 1}", "n": " ".join(c["words"]), "h": head(c), "v": c["at"][0], "p": c["at"][1]}
+    return [{"t": "b", "r": f"{key}:{i + 1}", "n": " ".join(c["words"]), "h": head(c), "v": c["at"][0], "p": c["at"][1], "_o": c["orig"]}
             for i, c in enumerate(out) if len(c["words"]) >= MIN_WORDS]
 
 # The book's own words about a hadith's rank, copied from its text (never worded by this tool): the phrase, with a few words round it.
@@ -156,20 +163,23 @@ VERDICTS = [r"هذا حديث (?:لا يصح|موضوع|باطل|ضعيف|منك
             r"(?:لا|لم) يصح", r"(?:لا|لم) يثبت", r"باطل[هة]?", r"ضعيف[هة]? جدا", r"(?:اسناده|سنده|بسند|باسناد) (?:ضعيف|واه)", r"ضعيف[هة]?", r"واهي?[هة]?", r"معلول[هة]?", r"منكر[هة]?",
             r"لم (?:اقف عليه|اجده|اره)", r"لا اعرفه", r"كذاب", r"وضاع", r"متروك"]
 VERDICT_RE = [re.compile(r"(?<![ء-ي])(?:" + v + r")(?![ء-ي])") for v in VERDICTS]      # whole words only ("ضعيفان" is not "ضعيف")
-def verdict(words, before=7, after=11):
+def verdict(words, orig, before=7, after=11):
+    """-> the book's words round its verdict, in the book's own spelling (the printed words, not the search form)"""
     s = " ".join(words)
     for rx in VERDICT_RE:
         m = rx.search(s)
         if m:
             k = len(s[:m.start()].split()); j = k + len(m.group(0).split())
-            return " ".join(words[max(0, k - before):j + after])
+            a, b = max(0, k - before), min(len(words), j + after)
+            while a > 0 and not orig[a]: a -= 1            # never start inside a printed word
+            return " ".join(t for t in orig[a:b] if t).strip(" ،؛:.-\"'()[]«»")
     return ""
 
 def add_verdicts(part):
     """g = the book's own verdict wording in this passage; failing that, in the passage that follows it (an entry is cut into passages)"""
     for i, x in enumerate(part):
-        w = x["n"].split(); g = verdict(w)
-        if not g and i + 1 < len(part) and part[i + 1]["r"].split(":")[0] == x["r"].split(":")[0]: g = verdict(part[i + 1]["n"].split()[:50])
+        w = x["n"].split(); g = verdict(w, x["_o"])
+        if not g and i + 1 < len(part) and part[i + 1]["r"].split(":")[0] == x["r"].split(":")[0]: g = verdict(part[i + 1]["n"].split()[:50], part[i + 1]["_o"][:50])
         if g: x["g"] = g
 
 def jalalayn():
@@ -190,6 +200,7 @@ def main():
                 paras, usable = parse_openiti(BOOKS / f"{key}.txt", drop, key in NUMBERED)
                 part = chunk(paras, key)
                 if cfg.get("weak"): add_verdicts(part)
+                for x in part: x.pop("_o", None)
                 page_refs[key] = usable; dropped[key] = {k: drop[k] for k in sorted(drop)}
             print(f"  {key}: {len(part)} passages, {sum(len(x['n'].split()) for x in part):,} words"
                   + ("" if key == "jalalayn" else f", pages {'yes' if page_refs[key] else 'NO (cited by heading)'}, distinct pages {len({(x['v'], x['p']) for x in part})}, left out {dropped[key]}"))

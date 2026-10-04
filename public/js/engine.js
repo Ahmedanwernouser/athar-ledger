@@ -19,7 +19,7 @@ export const STATUS = {
   partial: { ar: "مطابق جزئيًا", fidelity: "مخلوط", rank: 3 },
   meaning: { ar: "بالمعنى — يحتاج تأكيدًا", fidelity: "بالمعنى", rank: 2 },
   lead: { ar: "مصدر مرشّح", fidelity: "غير محدَّد", rank: 1 },
-  notfound: { ar: "لم يُعثر عليه في المدونة", fidelity: "—", rank: 0 },
+  notfound: { ar: "لم يُعثر عليه في المصادر", fidelity: "—", rank: 0 },
 };
 
 export const DEFAULTS = {
@@ -832,7 +832,7 @@ export function analyze(words, corpus, options = {}) {
       e.noteCode = books ? "saying_notfound" : "saying_core_only";
       e.note = books
         ? "قول منسوب إلى عالم: لم يُعثر على لفظه في الكتب المحمَّلة."
-        : "قول منسوب إلى عالم: المدونة الأساسية قرآن وحديث فقط. حمّل حزم الكتب للبحث في التفسير والفقه والسيرة والعقيدة.";
+        : "قول منسوب إلى عالم: المصادر الأساسية قرآن وحديث فقط. حمّل حزم الكتب للبحث في التفسير والفقه والسيرة والعقيدة.";
     } else if (x.status === "notfound" && !corpus.hasEnglish()) {
       // English speech can only be compared with the English translations, and those are an optional pack
       let latin = 0; for (let i = x.cue.end; i < x.te; i++) if (isLatin(tok[i])) latin++;
@@ -1309,7 +1309,7 @@ function checkAttribution(entry, sources, c, corpus) {
       const ok = near.some(r => qs.some(s => s.surah === r.surah && r.ayah <= s.ayahEnd && (r.ayahEnd ?? r.ayah) >= s.ayah));
       return { kind: "reference", code: ok ? "ref_ok" : "ref_mismatch", said: near.map(r => `${r.surah}:${r.ayah}${r.ayahEnd ? "-" + r.ayahEnd : ""}`), foundIn: qs.map(s => s.ref), agrees: ok,
         text: ok ? "المرجع المنطوق (السورة ورقم الآية) موافق لموضع النص في المصحف."
-                 : "ذُكر مرجع (سورة ورقم آية) غير الموضع الذي وُجد فيه النص في المدونة — يُراجع." };
+                 : "ذُكر مرجع (سورة ورقم آية) غير الموضع الذي وُجد فيه النص في المصادر — يُراجع." };
     }
     const said = [...new Set(c.refs.map(r => r.surah))];
     if (!said.length) return null;
@@ -1317,7 +1317,7 @@ function checkAttribution(entry, sources, c, corpus) {
     const ok = said.some(s => foundIn.includes(s));
     return { kind: "surah", code: ok ? "surah_ok" : "surah_mismatch", said, foundIn, agrees: ok,
       text: ok ? "النسبة المنطوقة إلى السورة موافقة لموضع النص في المصحف."
-               : "ذُكرت سورة غير التي وُجد فيها النص في المدونة — يُراجع." };
+               : "ذُكرت سورة غير التي وُجد فيها النص في المصادر — يُراجع." };
   }
   // "رواه ..." after the quotation speaks about it; names before it are used only when nothing follows
   const said = [...new Set(c.colAfter.length ? c.colAfter : c.colBefore)];
@@ -1329,10 +1329,10 @@ function checkAttribution(entry, sources, c, corpus) {
   const otherWording = missing.filter(s => elsewhere.has(s)), absent = missing.filter(s => !elsewhere.has(s));
   const code = missing.length === 0 ? "collection_ok" : absent.length === 0 ? "collection_other_wording" : confirmed.length || otherWording.length ? "collection_partial" : "collection_mismatch";
   const out = { kind: "collection", code, said, foundIn, agrees: absent.length === 0,
-    text: code === "collection_ok" ? "النسبة المنطوقة موافقة: النص موجود في المدونة في الكتاب المذكور."
-      : code === "collection_other_wording" ? "الحديث موجود في الكتاب المذكور ضمن المدونة بلفظ آخر؛ اللفظ المنطوق أقرب إلى رواية كتاب آخر."
-      : code === "collection_partial" ? "النسبة المنطوقة مؤكَّدة جزئيًا: لم يُعثر على هذا اللفظ في بعض الكتب المذكورة ضمن المدونة."
-      : "لم يُعثر على هذا اللفظ في الكتاب المذكور ضمن نسخة المدونة؛ وُجد في غيره — يُراجع (قد يكون بلفظ آخر أو برواية أخرى)." };
+    text: code === "collection_ok" ? "النسبة المنطوقة موافقة: النص موجود في المصادر في الكتاب المذكور."
+      : code === "collection_other_wording" ? "الحديث موجود في الكتاب المذكور ضمن المصادر بلفظ آخر؛ اللفظ المنطوق أقرب إلى رواية كتاب آخر."
+      : code === "collection_partial" ? "النسبة المنطوقة مؤكَّدة جزئيًا: لم يُعثر على هذا اللفظ في بعض الكتب المذكورة ضمن المصادر."
+      : "لم يُعثر على هذا اللفظ في الكتاب المذكور ضمن المصادر؛ وُجد في غيره — يُراجع (قد يكون بلفظ آخر أو برواية أخرى)." };
   if (otherWording.length) out.otherWording = otherWording;
   return out;
 }
