@@ -1076,14 +1076,14 @@
    "openerKnownToEngine_byNoisePct": {
     "0": {
      "sentenceVectors": {
-      "firstShown": 19,
+      "firstShown": 21,
       "n": 26,
       "ci95": [
-       54,
-       86
+       62,
+       91
       ],
       "ofWhichTextualMatch": 5,
-      "ofWhichFirstSuggestion": 14,
+      "ofWhichFirstSuggestion": 16,
       "inFirst3": 22,
       "inFirst5": 23
      },
@@ -1100,15 +1100,15 @@
       "inFirst5": 15
      },
      "wordsOnly": {
-      "firstShown": 9,
+      "firstShown": 10,
       "n": 26,
       "ci95": [
-       19,
-       54
+       22,
+       57
       ],
       "ofWhichTextualMatch": 5,
-      "ofWhichFirstSuggestion": 4,
-      "inFirst3": 9,
+      "ofWhichFirstSuggestion": 5,
+      "inFirst3": 10,
       "inFirst5": 10
      }
     },
@@ -1123,7 +1123,7 @@
       "ofWhichTextualMatch": 4,
       "ofWhichFirstSuggestion": 9,
       "inFirst3": 17,
-      "inFirst5": 20
+      "inFirst5": 19
      },
      "hybrid": {
       "firstShown": 9,
@@ -1138,16 +1138,16 @@
       "inFirst5": 12
      },
      "wordsOnly": {
-      "firstShown": 8,
+      "firstShown": 9,
       "n": 26,
       "ci95": [
-       17,
-       50
+       19,
+       54
       ],
       "ofWhichTextualMatch": 4,
-      "ofWhichFirstSuggestion": 4,
-      "inFirst3": 8,
-      "inFirst5": 8
+      "ofWhichFirstSuggestion": 5,
+      "inFirst3": 9,
+      "inFirst5": 9
      }
     },
     "20": {
@@ -1176,28 +1176,28 @@
       "inFirst5": 7
      },
      "wordsOnly": {
-      "firstShown": 4,
+      "firstShown": 5,
       "n": 26,
       "ci95": [
-       6,
-       34
+       9,
+       38
       ],
       "ofWhichTextualMatch": 3,
-      "ofWhichFirstSuggestion": 1,
-      "inFirst3": 4,
-      "inFirst5": 4
+      "ofWhichFirstSuggestion": 2,
+      "inFirst3": 5,
+      "inFirst5": 5
      }
     },
     "30": {
      "sentenceVectors": {
-      "firstShown": 10,
+      "firstShown": 11,
       "n": 26,
       "ci95": [
-       22,
-       57
+       26,
+       61
       ],
       "ofWhichTextualMatch": 3,
-      "ofWhichFirstSuggestion": 7,
+      "ofWhichFirstSuggestion": 8,
       "inFirst3": 11,
       "inFirst5": 12
      },
@@ -1214,29 +1214,29 @@
       "inFirst5": 8
      },
      "wordsOnly": {
-      "firstShown": 5,
+      "firstShown": 6,
       "n": 26,
       "ci95": [
-       9,
-       38
+       11,
+       42
       ],
       "ofWhichTextualMatch": 3,
-      "ofWhichFirstSuggestion": 2,
-      "inFirst3": 7,
-      "inFirst5": 7
+      "ofWhichFirstSuggestion": 3,
+      "inFirst3": 8,
+      "inFirst5": 8
      }
     }
    },
    "openerUnknownToEngine_clean": {
     "sentenceVectors": {
-     "firstShown": 19,
+     "firstShown": 20,
      "n": 26,
      "ci95": [
-      54,
-      86
+      58,
+      89
      ],
      "ofWhichTextualMatch": 5,
-     "ofWhichFirstSuggestion": 14,
+     "ofWhichFirstSuggestion": 15,
      "inFirst3": 21,
      "inFirst5": 22
     },
@@ -1253,15 +1253,15 @@
      "inFirst5": 15
     },
     "wordsOnly": {
-     "firstShown": 9,
+     "firstShown": 10,
      "n": 26,
      "ci95": [
-      19,
-      54
+      22,
+      57
      ],
      "ofWhichTextualMatch": 5,
-     "ofWhichFirstSuggestion": 4,
-     "inFirst3": 9,
+     "ofWhichFirstSuggestion": 5,
+     "inFirst3": 10,
      "inFirst5": 10
     }
    },
@@ -2257,11 +2257,11 @@
      ]
     },
     "nonIndexedTranslationVerses_referenceWithinFirst5": {
-     "k": 96,
+     "k": 98,
      "n": 150,
      "ci95": [
-      56,
-      71
+      57,
+      72
      ]
     },
     "wrongReferenceCitations": 5,
@@ -2293,11 +2293,11 @@
      ]
     },
     "nonIndexedTranslationVerses_referenceWithinFirst5": {
-     "k": 90,
+     "k": 91,
      "n": 150,
      "ci95": [
-      52,
-      67
+      53,
+      68
      ]
     },
     "wrongReferenceCitations": 6,
@@ -2329,11 +2329,11 @@
      ]
     },
     "nonIndexedTranslationVerses_referenceWithinFirst5": {
-     "k": 79,
+     "k": 82,
      "n": 150,
      "ci95": [
-      45,
-      60
+      47,
+      62
      ]
     },
     "wrongReferenceCitations": 4,
@@ -7526,33 +7526,33 @@
    "wordsOnly": {
     "0": {
      "n": 26,
-     "firstShown": 9,
+     "firstShown": 10,
      "ci95": [
-      19,
-      54
+      22,
+      57
      ],
      "asTextualMatch": 5,
-     "asFirstSuggestion": 4,
-     "inFirst3": 9,
+     "asFirstSuggestion": 5,
+     "inFirst3": 10,
      "inFirst5": 10,
      "openerRecognisedAsCue": 26,
-     "firstShownByKeyPhraseOnly": 8,
+     "firstShownByKeyPhraseOnly": 9,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 8,
+       "firstShown": 9,
        "asTextualMatch": 5,
-       "inFirst3": 9,
+       "inFirst3": 10,
        "inFirst5": 10
       },
       {
        "seed": 303,
        "n": 26,
-       "firstShown": 9,
+       "firstShown": 10,
        "asTextualMatch": 5,
-       "inFirst3": 9,
-       "inFirst5": 9
+       "inFirst3": 10,
+       "inFirst5": 10
       },
       {
        "seed": 404,
@@ -7560,31 +7560,31 @@
        "firstShown": 9,
        "asTextualMatch": 5,
        "inFirst3": 10,
-       "inFirst5": 10
+       "inFirst5": 11
       }
      ]
     },
     "10": {
      "n": 26,
-     "firstShown": 8,
+     "firstShown": 9,
      "ci95": [
-      17,
-      50
+      19,
+      54
      ],
      "asTextualMatch": 4,
-     "asFirstSuggestion": 4,
-     "inFirst3": 8,
-     "inFirst5": 8,
+     "asFirstSuggestion": 5,
+     "inFirst3": 9,
+     "inFirst5": 9,
      "openerRecognisedAsCue": 26,
-     "firstShownByKeyPhraseOnly": 7,
+     "firstShownByKeyPhraseOnly": 8,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 8,
+       "firstShown": 9,
        "asTextualMatch": 4,
-       "inFirst3": 8,
-       "inFirst5": 8
+       "inFirst3": 9,
+       "inFirst5": 9
       },
       {
        "seed": 303,
@@ -7600,51 +7600,11 @@
        "firstShown": 7,
        "asTextualMatch": 3,
        "inFirst3": 8,
-       "inFirst5": 8
+       "inFirst5": 9
       }
      ]
     },
     "20": {
-     "n": 26,
-     "firstShown": 4,
-     "ci95": [
-      6,
-      34
-     ],
-     "asTextualMatch": 3,
-     "asFirstSuggestion": 1,
-     "inFirst3": 4,
-     "inFirst5": 4,
-     "openerRecognisedAsCue": 26,
-     "firstShownByKeyPhraseOnly": 4,
-     "perLecture": [
-      {
-       "seed": 202,
-       "n": 26,
-       "firstShown": 5,
-       "asTextualMatch": 2,
-       "inFirst3": 6,
-       "inFirst5": 7
-      },
-      {
-       "seed": 303,
-       "n": 26,
-       "firstShown": 6,
-       "asTextualMatch": 4,
-       "inFirst3": 6,
-       "inFirst5": 6
-      },
-      {
-       "seed": 404,
-       "n": 25,
-       "firstShown": 6,
-       "asTextualMatch": 5,
-       "inFirst3": 6,
-       "inFirst5": 6
-      }
-     ]
-    },
-    "30": {
      "n": 26,
      "firstShown": 5,
      "ci95": [
@@ -7653,26 +7613,66 @@
      ],
      "asTextualMatch": 3,
      "asFirstSuggestion": 2,
-     "inFirst3": 7,
-     "inFirst5": 7,
+     "inFirst3": 5,
+     "inFirst5": 5,
      "openerRecognisedAsCue": 26,
-     "firstShownByKeyPhraseOnly": 4,
+     "firstShownByKeyPhraseOnly": 5,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
        "firstShown": 6,
-       "asTextualMatch": 4,
-       "inFirst3": 7,
+       "asTextualMatch": 2,
+       "inFirst3": 6,
        "inFirst5": 7
       },
       {
        "seed": 303,
        "n": 26,
+       "firstShown": 7,
+       "asTextualMatch": 4,
+       "inFirst3": 7,
+       "inFirst5": 7
+      },
+      {
+       "seed": 404,
+       "n": 25,
        "firstShown": 6,
+       "asTextualMatch": 5,
+       "inFirst3": 6,
+       "inFirst5": 7
+      }
+     ]
+    },
+    "30": {
+     "n": 26,
+     "firstShown": 6,
+     "ci95": [
+      11,
+      42
+     ],
+     "asTextualMatch": 3,
+     "asFirstSuggestion": 3,
+     "inFirst3": 8,
+     "inFirst5": 8,
+     "openerRecognisedAsCue": 26,
+     "firstShownByKeyPhraseOnly": 5,
+     "perLecture": [
+      {
+       "seed": 202,
+       "n": 26,
+       "firstShown": 7,
+       "asTextualMatch": 4,
+       "inFirst3": 7,
+       "inFirst5": 8
+      },
+      {
+       "seed": 303,
+       "n": 26,
+       "firstShown": 7,
        "asTextualMatch": 2,
-       "inFirst3": 9,
-       "inFirst5": 9
+       "inFirst3": 10,
+       "inFirst5": 10
       },
       {
        "seed": 404,
@@ -7688,30 +7688,30 @@
    "sentence": {
     "0": {
      "n": 26,
-     "firstShown": 19,
+     "firstShown": 21,
      "ci95": [
-      54,
-      86
+      62,
+      91
      ],
      "asTextualMatch": 5,
-     "asFirstSuggestion": 14,
+     "asFirstSuggestion": 16,
      "inFirst3": 22,
      "inFirst5": 23,
      "openerRecognisedAsCue": 26,
-     "firstShownByKeyPhraseOnly": 16,
+     "firstShownByKeyPhraseOnly": 18,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 18,
+       "firstShown": 19,
        "asTextualMatch": 5,
        "inFirst3": 21,
-       "inFirst5": 23
+       "inFirst5": 22
       },
       {
        "seed": 303,
        "n": 26,
-       "firstShown": 16,
+       "firstShown": 15,
        "asTextualMatch": 5,
        "inFirst3": 22,
        "inFirst5": 23
@@ -7719,7 +7719,7 @@
       {
        "seed": 404,
        "n": 25,
-       "firstShown": 20,
+       "firstShown": 21,
        "asTextualMatch": 5,
        "inFirst3": 21,
        "inFirst5": 22
@@ -7736,17 +7736,17 @@
      "asTextualMatch": 4,
      "asFirstSuggestion": 9,
      "inFirst3": 17,
-     "inFirst5": 20,
+     "inFirst5": 19,
      "openerRecognisedAsCue": 26,
      "firstShownByKeyPhraseOnly": 11,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 15,
+       "firstShown": 16,
        "asTextualMatch": 4,
        "inFirst3": 17,
-       "inFirst5": 20
+       "inFirst5": 19
       },
       {
        "seed": 303,
@@ -7799,7 +7799,7 @@
       {
        "seed": 404,
        "n": 25,
-       "firstShown": 11,
+       "firstShown": 10,
        "asTextualMatch": 5,
        "inFirst3": 13,
        "inFirst5": 13
@@ -7808,13 +7808,13 @@
     },
     "30": {
      "n": 26,
-     "firstShown": 10,
+     "firstShown": 11,
      "ci95": [
-      22,
-      57
+      26,
+      61
      ],
      "asTextualMatch": 3,
-     "asFirstSuggestion": 7,
+     "asFirstSuggestion": 8,
      "inFirst3": 11,
      "inFirst5": 12,
      "openerRecognisedAsCue": 26,
@@ -7839,9 +7839,9 @@
       {
        "seed": 404,
        "n": 25,
-       "firstShown": 7,
+       "firstShown": 8,
        "asTextualMatch": 2,
-       "inFirst3": 12,
+       "inFirst3": 11,
        "inFirst5": 13
       }
      ]
@@ -7890,33 +7890,33 @@
     },
     "wordsOnly": {
      "n": 26,
-     "firstShown": 9,
+     "firstShown": 10,
      "ci95": [
-      19,
-      54
+      22,
+      57
      ],
      "asTextualMatch": 5,
-     "asFirstSuggestion": 4,
-     "inFirst3": 9,
+     "asFirstSuggestion": 5,
+     "inFirst3": 10,
      "inFirst5": 10,
      "openerRecognisedAsCue": 25,
-     "firstShownByKeyPhraseOnly": 8,
+     "firstShownByKeyPhraseOnly": 9,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 8,
+       "firstShown": 9,
        "asTextualMatch": 5,
-       "inFirst3": 9,
+       "inFirst3": 10,
        "inFirst5": 10
       },
       {
        "seed": 303,
        "n": 26,
-       "firstShown": 9,
+       "firstShown": 10,
        "asTextualMatch": 5,
-       "inFirst3": 9,
-       "inFirst5": 9
+       "inFirst3": 10,
+       "inFirst5": 10
       },
       {
        "seed": 404,
@@ -7924,36 +7924,36 @@
        "firstShown": 9,
        "asTextualMatch": 5,
        "inFirst3": 10,
-       "inFirst5": 10
+       "inFirst5": 11
       }
      ]
     },
     "sentence": {
      "n": 26,
-     "firstShown": 19,
+     "firstShown": 20,
      "ci95": [
-      54,
-      86
+      58,
+      89
      ],
      "asTextualMatch": 5,
-     "asFirstSuggestion": 14,
+     "asFirstSuggestion": 15,
      "inFirst3": 21,
      "inFirst5": 22,
      "openerRecognisedAsCue": 25,
-     "firstShownByKeyPhraseOnly": 16,
+     "firstShownByKeyPhraseOnly": 17,
      "perLecture": [
       {
        "seed": 202,
        "n": 26,
-       "firstShown": 17,
+       "firstShown": 18,
        "asTextualMatch": 5,
        "inFirst3": 20,
-       "inFirst5": 22
+       "inFirst5": 21
       },
       {
        "seed": 303,
        "n": 26,
-       "firstShown": 16,
+       "firstShown": 15,
        "asTextualMatch": 5,
        "inFirst3": 21,
        "inFirst5": 22
@@ -15315,10 +15315,10 @@
       30,
       30
      ],
-     "referenceWithinFirst5": 96,
+     "referenceWithinFirst5": 98,
      "ci95First5": [
-      56,
-      71
+      57,
+      72
      ]
     },
     "wrongReferenceCitations": [
@@ -15404,10 +15404,10 @@
       29,
       27
      ],
-     "referenceWithinFirst5": 90,
+     "referenceWithinFirst5": 91,
      "ci95First5": [
-      52,
-      67
+      53,
+      68
      ]
     },
     "wrongReferenceCitations": [
@@ -15501,10 +15501,10 @@
       22,
       20
      ],
-     "referenceWithinFirst5": 79,
+     "referenceWithinFirst5": 82,
      "ci95First5": [
-      45,
-      60
+      47,
+      62
      ]
     },
     "wrongReferenceCitations": [

@@ -1553,9 +1553,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -1652,7 +1652,7 @@
      {
       "id": 41,
       "tx": false,
-      "rank": 4,
+      "rank": -1,
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
@@ -1890,7 +1890,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      },
@@ -2032,9 +2032,9 @@
      {
       "id": 30,
       "tx": false,
-      "rank": 4,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 4,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },
@@ -2068,9 +2068,9 @@
      {
       "id": 34,
       "tx": false,
-      "rank": 1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -4453,9 +4453,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -4932,9 +4932,9 @@
      {
       "id": 30,
       "tx": false,
-      "rank": 4,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 4,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },
@@ -4968,9 +4968,9 @@
      {
       "id": 34,
       "tx": false,
-      "rank": 1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -7337,9 +7337,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -7373,9 +7373,9 @@
      {
       "id": 42,
       "tx": false,
-      "rank": 1,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },
@@ -7710,7 +7710,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 4,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -10229,9 +10229,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -10301,9 +10301,9 @@
      {
       "id": 36,
       "tx": false,
-      "rank": 2,
+      "rank": 3,
       "keyTx": false,
-      "keyRank": 2,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -10528,9 +10528,9 @@
      {
       "id": 33,
       "tx": false,
-      "rank": 3,
+      "rank": 4,
       "keyTx": false,
-      "keyRank": 3,
+      "keyRank": 4,
       "cue": 1,
       "meaning": 0
      },
@@ -27732,9 +27732,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -27831,7 +27831,7 @@
      {
       "id": 41,
       "tx": false,
-      "rank": 4,
+      "rank": -1,
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
@@ -28069,7 +28069,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      },
@@ -28211,9 +28211,9 @@
      {
       "id": 30,
       "tx": false,
-      "rank": 4,
+      "rank": -1,
       "keyTx": false,
-      "keyRank": 4,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },
@@ -28247,9 +28247,9 @@
      {
       "id": 34,
       "tx": false,
-      "rank": 1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -37535,9 +37535,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -37638,7 +37638,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 2,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -37708,9 +37708,9 @@
      {
       "id": 33,
       "tx": false,
-      "rank": 1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 2,
       "cue": 1,
       "meaning": 0
      },
@@ -37798,7 +37798,7 @@
      {
       "id": 48,
       "tx": false,
-      "rank": 0,
+      "rank": 1,
       "keyTx": false,
       "keyRank": 3,
       "cue": 1,
@@ -43335,9 +43335,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -46227,9 +46227,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -46330,7 +46330,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 2,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -63730,9 +63730,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -63833,7 +63833,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 2,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -63903,9 +63903,9 @@
      {
       "id": 33,
       "tx": false,
-      "rank": 1,
+      "rank": 2,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 2,
       "cue": 1,
       "meaning": 0
      },
@@ -63993,7 +63993,7 @@
      {
       "id": 48,
       "tx": false,
-      "rank": 0,
+      "rank": 1,
       "keyTx": false,
       "keyRank": 3,
       "cue": 1,
@@ -73139,7 +73139,7 @@
      {
       "id": 38,
       "tx": false,
-      "rank": 0,
+      "rank": 3,
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
@@ -73274,9 +73274,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -73429,9 +73429,9 @@
      {
       "id": 46,
       "tx": false,
-      "rank": 1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -73449,7 +73449,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 4,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },
@@ -75966,7 +75966,7 @@
      {
       "id": 38,
       "tx": false,
-      "rank": 0,
+      "rank": 3,
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
@@ -76101,9 +76101,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -78794,7 +78794,7 @@
      {
       "id": 38,
       "tx": false,
-      "rank": 0,
+      "rank": 3,
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
@@ -78929,9 +78929,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -79104,7 +79104,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 4,
+      "keyRank": 3,
       "cue": 1,
       "meaning": 0
      },
@@ -79228,9 +79228,9 @@
      {
       "id": 34,
       "tx": false,
-      "rank": 0,
+      "rank": 1,
       "keyTx": false,
-      "keyRank": 0,
+      "keyRank": 1,
       "cue": 1,
       "meaning": 0
      },
@@ -81914,9 +81914,9 @@
      {
       "id": 33,
       "tx": false,
-      "rank": 1,
+      "rank": 4,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 4,
       "cue": 1,
       "meaning": 0
      },
@@ -82049,9 +82049,9 @@
      {
       "id": 48,
       "tx": false,
-      "rank": 1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": 1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      }
@@ -98758,7 +98758,7 @@
      {
       "id": 38,
       "tx": false,
-      "rank": 0,
+      "rank": 3,
       "keyTx": false,
       "keyRank": -1,
       "cue": 1,
@@ -98893,9 +98893,9 @@
      {
       "id": 47,
       "tx": false,
-      "rank": -1,
+      "rank": 0,
       "keyTx": false,
-      "keyRank": -1,
+      "keyRank": 0,
       "cue": 1,
       "meaning": 0
      },
@@ -99068,7 +99068,7 @@
       "tx": false,
       "rank": 0,
       "keyTx": false,
-      "keyRank": 4,
+      "keyRank": -1,
       "cue": 1,
       "meaning": 0
      },

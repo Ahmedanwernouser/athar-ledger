@@ -284,7 +284,11 @@ export class Corpus {
   /** stem -> passages, built on first use (only needed for "by meaning" candidates) */
   ensureStems() {
     if (this.stemPost) return;
-    const MAXP = 1500, df = new Map(), post = new Map(), vdf = new Map();
+    // A stem found in too many passages says nothing and is not indexed. The limit is a SHARE of the library (5%), not a
+    // number of passages: a fixed number silently dropped ordinary words ("ساعة") as soon as a book pack was loaded, so the
+    // candidates by meaning got worse the more books the reader added. (5% was compared with 3.5% and 8% on the development
+    // lecture: 8% lets filler speech share enough words with a passage to look like a quotation.)
+    const MAXP = Math.max(1500, Math.round(this.N * 0.05)), df = new Map(), post = new Map(), vdf = new Map();
     for (let pid = 0; pid < this.N; pid++) {
       const chain = this.chainLen(pid);            // narrators' names are not what a hadith is about
       const words = chain ? this.P[pid].n.split(" ").slice(chain) : this.P[pid].n.split(" ");
@@ -298,6 +302,9 @@ export class Corpus {
       }
     }
     this.stemDf = df; this.stemPost = post; this.vstemDf = vdf;
+    // "rare" stems (3.5% of the library, 1,500 passages for the core alone): only these can make a match BY MEANING; the
+    // wider index above only orders suggestions
+    this.stemRareMax = Math.max(1500, Math.round(this.N * 0.035));
   }
   vstemIdf(st) { const d = this.vstemDf.get(st); return d ? this._lnN - Math.log(d) : this._lnN; }
   stemIdf(st) { const d = this.stemDf.get(st); return d ? this._lnN - Math.log(d) : this._lnN; }

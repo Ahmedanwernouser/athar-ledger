@@ -1301,33 +1301,41 @@ function meaningCandidates(cue, wEnd, tok, ftok, corpus, o) {
   const en = latin * 2 > wEnd - cue.end;
   const ok = pid => corpus.isEnglish(pid) === en && kindOk(pid) && !corpus.isDead(pid) && !(o.blocked && o.blocked.has(pid));
   // --- 1) lexical
-  const score = new Map(), shared = new Map(), seenW = new Set();
+  // Two measures of the shared stems: every indexed stem orders the SUGGESTIONS; only the rare ones (corpus.stemRareMax) can
+  // make a match by meaning (`strong` below) — ordinary words shared with a passage are no evidence that it is being quoted.
+  const score = new Map(), shared = new Map(), seenW = new Set(), rscore = new Map(), rcount = new Map();
   for (let i = cue.end; i < wEnd; i++) {
     if (ftok[i].length < 3) continue;
     const w = stem(ftok[i]);
     if (seenW.has(w)) continue; seenW.add(w);
     const post = corpus.stemPost.get(w);
     if (!post) continue;
-    const v = corpus.stemIdf(w);
+    const v = corpus.stemIdf(w), rare = post.length <= corpus.stemRareMax;
     for (const pid of post) {
       if (!ok(pid)) continue;
       score.set(pid, (score.get(pid) || 0) + v);
       let s = shared.get(pid); if (!s) shared.set(pid, s = []); s.push(i);
+      if (rare) { rscore.set(pid, (rscore.get(pid) || 0) + v); rcount.set(pid, (rcount.get(pid) || 0) + 1); }
     }
   }
   const lex = [];
+  let top = null;        // the passage that shares the most with the speech, by rare stems alone
   for (const [pid, sc] of score) {
     const sh = shared.get(pid);
     if (sh.length < 2) continue;
-    const len = corpus.tok(pid).length;
-    lex.push({ pid, score: sc / (1 + 0.5 * Math.log(Math.max(1, len / 20))), sharedIdx: sh });   // long passages share words by chance
+    const len = 1 + 0.5 * Math.log(Math.max(1, corpus.tok(pid).length / 20));   // long passages share words by chance
+    lex.push({ pid, score: sc / len, sharedIdx: sh });
+    const rn = rcount.get(pid) || 0, rs = (rscore.get(pid) || 0) / len;
+    if (rn >= 2 && (!top || rs > top.score || (rs === top.score && pid < top.pid))) top = { pid, score: rs, n: rn };
   }
   lex.sort((x, y) => y.score - x.score || x.pid - y.pid);
   const sharedOf = pid => (shared.get(pid) || []);
   const pack = (pid, sc, extra = {}) => ({ pid, score: sc, shared: sharedOf(pid).length, sharedF: sharedOf(pid).map(i => stem(ftok[i])), ...extra });
   const lastShared = pid => (sharedOf(pid).length ? Math.max(...sharedOf(pid)) + 2 : wEnd);
 
-  const lexStrong = lex.length && lex[0].sharedIdx.length >= o.meaningMinWords && lex[0].score >= o.meaningMin && (lex[0].sharedIdx.length >= 4 || lex[0].score >= o.meaningStrong);
+  const lexStrong = !!top && top.n >= o.meaningMinWords && top.score >= o.meaningMin && (top.n >= 4 || top.score >= o.meaningStrong);
+  /** the passage that makes the match by meaning stands first, whatever ordered the rest */
+  const strongFirst = cands => { if (!lexStrong) return cands; const k = cands.findIndex(c => c.pid === top.pid); if (k > 0) cands.unshift(cands.splice(k, 1)[0]); else if (k < 0) cands.unshift(pack(top.pid, top.score)); return cands; };
   // --- sentence vectors (o.sem; Arabic speech, texts of the core): the words that follow the cue, at several lengths because
   // the end of the quotation is unknown, each embedded as one sentence. Their nearest passages and the shared-stems list are
   // fused by rank. A stretch whose vector is not at hand is recorded in o.sem.want, and the candidates are ordered as before.
@@ -1347,7 +1355,7 @@ function meaningCandidates(cue, wEnd, tok, ftok, corpus, o) {
       const rrf = new Map();
       for (const l of [...lists, lex.slice(0, o.denseK).map(c => c.pid)]) l.forEach((pid, r) => rrf.set(pid, (rrf.get(pid) || 0) + 1 / (60 + r)));
       let cands = [...rrf].sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, o.rerankK).map(([pid, sc]) => pack(pid, sc, { sem: +(simOf.get(pid) ?? 0).toFixed(3) }));
-      if (lexStrong) { const k = cands.findIndex(c => c.pid === lex[0].pid); if (k > 0) cands.unshift(cands.splice(k, 1)[0]); else if (k < 0) cands.unshift(pack(lex[0].pid, 1)); }
+      strongFirst(cands);
       if (cue.kind === "hadith" && corpus.hasBooks()) { const core = cands.filter(c => !corpus.isBook(c.pid)).slice(0, 3), books = cands.filter(c => corpus.isBook(c.pid)).slice(0, o.meaningTop - core.length); cands = [...core, ...books]; }
       cands = cands.slice(0, o.meaningTop);
       if (cands.length) return { mode: "sentence", te: Math.min(wEnd, lexStrong ? lastShared(cands[0].pid) : cue.end + 14), strong: !!lexStrong, cands };
@@ -1360,9 +1368,9 @@ function meaningCandidates(cue, wEnd, tok, ftok, corpus, o) {
   const embedded = vec ? prefixes.map(w => ({ w, q: vec.embed(w, en ? "en" : "ar") })).filter(x => x.q) : [];
   const qs = embedded.map(x => x.q);
   if (!qs.length) {   // words only
-    const cands = lex.filter(c => c.sharedIdx.length >= o.meaningMinWords && c.score >= o.suggestMin).slice(0, o.meaningTop);
+    const cands = strongFirst(lex.filter(c => c.sharedIdx.length >= o.meaningMinWords && c.score >= o.suggestMin).slice(0, o.meaningTop).map(c => pack(c.pid, c.score))).slice(0, o.meaningTop);
     if (!cands.length) return null;
-    return { mode: "lexical", te: Math.min(wEnd, lastShared(cands[0].pid)), strong: !!lexStrong, cands: cands.map(c => pack(c.pid, c.score)) };
+    return { mode: "lexical", te: Math.min(wEnd, lastShared(cands[0].pid)), strong: !!lexStrong, cands };
   }
   // --- 2) dense, 3) fusion
   const denseBest = new Map();
@@ -1388,7 +1396,7 @@ function meaningCandidates(cue, wEnd, tok, ftok, corpus, o) {
     if (o.rerankMode === "mix") best = 0.5 * best + 0.5 * (denseBest.get(pid) || 0);
     return pack(pid, best, { dense: +(denseBest.get(pid) || 0).toFixed(3) });
   }).sort((x, y) => y.score - x.score || x.pid - y.pid);
-  if (lexStrong) { const k = cands.findIndex(c => c.pid === lex[0].pid); if (k > 0) cands.unshift(cands.splice(k, 1)[0]); }
+  strongFirst(cands);
   if (cue.kind === "hadith" && corpus.hasBooks()) {
     // a hadith cue: the hadith collections come first, commentaries and other books after them
     const core = cands.filter(c => !corpus.isBook(c.pid)).slice(0, 3), books = cands.filter(c => corpus.isBook(c.pid)).slice(0, o.meaningTop - core.length);

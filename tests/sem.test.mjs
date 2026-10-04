@@ -99,3 +99,26 @@ test("the evaluation's offline loader gives the shipped index", async () => {
   assert.equal(sem.lookup("نص لم يُضمَّن قط"), null); assert.equal(sem.missed.size, 1);
   assert.equal(semText(["a", "b"]), "a b");
 });
+
+test("a companion's saying told in other words, after 'مقولة مشهورة، كان يقول': the true source is the first suggestion", async () => {
+  // a real case (a public lecture analysed from its link): the speaker's wording and the wording of Sunan Ibn Majah 162 share two
+  // ordinary words. The vectors of the two stretches were made by the deployed Worker (eval/embed/cache/saying.bin).
+  const sem = await loadSem(corpus);
+  const t = "والكلام ده لهم مقولة مشهورة كان يقول لمقام أحدهم في الصف ساعة يعدل عبادة أحد أحدكم ولو عُمِّر عمر نوح. القصة مش قصة كلام وخلاص";
+  const want = new Set(); run(t, { sem: { want } });
+  assert.deepEqual([...want].sort(), ["لمقام احدهم في الصف ساعه يعدل عباده احد احدكم", "لمقام احدهم في الصف ساعه يعدل عباده احد احدكم ولو عمر عمر نوح"]);
+  const e = run(t, { sem: { index: sem.index, lookup: sem.lookup } }).find(x => x.suggestions);
+  assert.equal(sem.missed.size, 0, "both stretches have a vector");
+  assert.equal(e.status, "notfound"); assert.equal(e.cue, "saying");
+  assert.equal(e.suggestions[0].ref, "ibnmajah:162");
+});
+
+test("an ordinary word stays in the stem index when a book pack is loaded (the limit is a share of the library)", async () => {
+  const { loadCorpusWith } = await import("../eval/lib.mjs");
+  const big = await loadCorpusWith(["daif"]); big.ensureStems(); corpus.ensureStems();
+  const { fold, stem, norm } = await import("../public/js/text.js");
+  const hour = stem(fold(norm("ساعة")));
+  assert.ok(corpus.stemPost.has(hour) && big.stemPost.has(hour), "«ساعة» is indexed with and without the pack");
+  assert.ok(big.stemDf.get(hour) > 1500, "... although it is in more than 1,500 passages there");
+  assert.ok(!big.stemPost.has(stem(fold(norm("قال")))), "a word that is everywhere is still left out");
+});

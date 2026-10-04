@@ -431,6 +431,8 @@ function runJob(job) {
 
 async function initCorpus() {
   corpus = await loadCorpus();
+  // (development only: ATHAR_PACKS="daif tafsir" measures with book packs loaded, as the site runs; the reported run uses the core alone)
+  for (const p of String(process.env.ATHAR_PACKS || "").split(/[\s,]+/).filter(Boolean)) await corpus.loadPack(p);
   sem = await loadSem(corpus);
   refToPid = new Map(corpus.P.map((p, i) => [(p.t === "q" ? "q" : "") + p.r, i]));
 }
