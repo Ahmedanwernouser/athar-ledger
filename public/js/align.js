@@ -5,7 +5,7 @@
 //   • one-letter slips                                  -> "near"
 // Match scores are scaled by how informative the word is, so the alignment cannot creep into
 // surrounding speech by hopping between common words (في، من، الله ...).
-import { wordSim, within1, editDistance, inflectionOf } from "./text.js";
+import { wordSim, within1, editDistance, inflectionOf, sameSound } from "./text.js";
 
 const GAP = 2.0, DIFF = 2.6;
 const BASE = { exact: 3.0, asr: 2.7, near: 1.7 };
@@ -98,7 +98,7 @@ export function align(T, FT, P, FP, wt, opt = { tolerant: true }) {
     if (b === 0) break;
     if (b === 1) {
       const t = T[i - 1], p = P[j - 1];
-      const soft = t === p ? "exact" : (tol ? wordSim(t, p, FT[i - 1], FP[j - 1]) : "diff");
+      const soft = (t === p || (tol && sameSound(t, p))) ? "exact" : (tol ? wordSim(t, p, FT[i - 1], FP[j - 1]) : "diff");
       // real-word rule: the pair is REPORTED as a wording difference; `soft` keeps what it sounds like, which still
       // counts when deciding whether this passage is being quoted at all
       // (a grammatical variant of the source word — "أعنا" for "أعني" — is a real word form even when no text of the

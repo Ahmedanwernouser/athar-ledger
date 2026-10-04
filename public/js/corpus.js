@@ -2,7 +2,7 @@
 // (tafsir, fiqh, seerah, aqeedah, more hadith), each with its own shingle indexes. Passage ids are global:
 // the core comes first, packs are appended in the order they are loaded.
 // Works in the browser (fetch) and in Node (fs) through an injected `fetcher(name, kind)`.
-import { fold, fnv1a, stem, normEn } from "./text.js";
+import { fold, fnv1a, stem, normEn, noteMaqsura } from "./text.js";
 import { Vectors } from "./vectors.js";
 
 export const SURAHS = ["الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس","هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه","الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم","لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر","فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق","الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة","الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج","نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس","التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","المسد","الإخلاص","الفلق","الناس"];
@@ -75,6 +75,8 @@ export class Corpus {
       fetcher("quran_display.json", "json").then(x => (tick(), x)),
       ...shardP]);
     c.quranDisplay = qd;
+    // words that end in alif maqsura: a transcript may spell them with a plain alif (قلى / قلا)
+    for (const v of (Array.isArray(qd) ? qd : Object.values(qd))) noteMaqsura(typeof v === "string" ? v : (v && (v.t || v.text || v.d)) || "");
     c.P = shards.flat();
     checkPackSize("core", c.P.length);
     c.N = c.P.length; c.coreN = c.N;

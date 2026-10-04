@@ -1,9 +1,12 @@
 // Cloudflare Worker — the only place where the API keys live. The browser never sees them.
 //
-//   POST /asr   multipart: `file` (audio/video) + `language` ("ar" | "en").  Every other field is IGNORED.
-//               The Worker builds the Groq Whisper request itself (model, format, timestamps, temperature).
+//   POST /asr   multipart: `file` (audio/video) + `language` ("ar" | "en") + `provider` ("groq" | "gemini").
+//               Every other field is IGNORED. The Worker builds the upstream request itself (model, format,
+//               timestamps, mode); `provider` only chooses between two fixed hosts and never becomes a URL.
+//               Answer (same shape for both providers):
+//                 { text, duration, words: [{word, start, end}], segments?, provider, model, timestamps?: false }
 //   POST /llm   JSON {spoken, kind, candidates?}  ->  {choice: n}  or  {text: "..."}   (optional feature)
-//   GET  /health  ->  {ok: true, configured: true|false}
+//   GET  /health  ->  {ok: true, configured: true|false, asr: {default, available: [...]}}
 //
 // What protects the free quota (in this order):
 //   1. Origin check  — stops OTHER WEBSITES from using the Worker. It does NOT stop a script: anyone can
@@ -37,6 +40,12 @@ const DEF_MAX_BYTES = 25_000_000;  // Groq free tier upload limit is 25 MB
 const FORM_SLACK = 100_000;        // multipart overhead allowed on top of MAX_BYTES in the Content-Length pre-check
 const LLM_MAX_BODY = 8192;
 const ASR_TIMEOUT_MS = 120_000;
+const GEM_UPLOAD_TIMEOUT_MS = 120_000;      // each of: start upload, upload bytes
+const GEM_POLL_TIMEOUT_MS = 15_000;         // each poll of the file resource
+const GEM_TRANSCRIBE_TIMEOUT_MS = 180_000;  // the transcription itself
+const GEM_DELETE_TIMEOUT_MS = 10_000;
+const GEM_MAX_POLLS = 10;
+const GEM_POLL_MS = 1000;
 const LLM_TIMEOUT_MS = 30_000;
 const KV_RETRY_MS = 1100;          // KV refuses two writes to the same key within 1 second
 
@@ -75,7 +84,7 @@ function retryAfter(up) {
 }
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     let cors = {};
     try {
       const allowed = String(env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()).filter((s) => s && s !== "*" && s !== "null");
@@ -87,9 +96,10 @@ export default {
       if (req.method === "GET" && path === "/health") {
         const missing = [];
         if (!env.CAP) missing.push("CAP");
-        if (!env.GROQ_API_KEY) missing.push("GROQ_API_KEY");
+        const asr = asrProviders(env);          // looks at the secrets' presence only; never touches the caps
+        if (!asr.available.includes(asr.default)) missing.push(ASR_KEY_NAME[asr.default]);
         if (!allowed.length) missing.push("ALLOWED_ORIGINS");
-        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}) }, 200, cors);
+        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr }, 200, cors);
       }
       const route = req.method === "POST" && (path === "/asr" || path === "/llm") ? path : null;
       if (!route) return json({ error: "not_found" }, 404, cors);
@@ -98,7 +108,7 @@ export default {
       // FAIL CLOSED: no counter store => no service. (Otherwise the caps would silently be off.)
       if (!env.CAP) return json({ error: "server_not_configured" }, 500, cors);
 
-      return route === "/asr" ? await asrRoute(req, env, cors) : await llmRoute(req, env, cors);
+      return route === "/asr" ? await asrRoute(req, env, cors, ctx) : await llmRoute(req, env, cors);
     } catch {
       return json({ error: "internal" }, 500, cors);   // never a stack trace, never without CORS
     }
@@ -222,8 +232,17 @@ function audioSeconds(text) {
   return max;
 }
 
-async function asrRoute(req, env, cors) {
-  if (!env.GROQ_API_KEY) return json({ error: "server_not_configured" }, 500, cors);
+// ---- providers --------------------------------------------------------------------------------------
+const ASR_KEY_NAME = { groq: "GROQ_API_KEY", gemini: "GEMINI_API_KEY" };
+/** default provider (env ASR_PROVIDER, else "groq") and the providers whose key secret exists */
+function asrProviders(env) {
+  const def = String(env.ASR_PROVIDER || "").trim().toLowerCase() === "gemini" ? "gemini" : "groq";
+  return { default: def, available: ["groq", "gemini"].filter((p) => !!env[ASR_KEY_NAME[p]]) };
+}
+
+async function asrRoute(req, env, cors, ctx) {
+  const prov = asrProviders(env);
+  if (!prov.available.length) return json({ error: "server_not_configured" }, 500, cors);
 
   // 1) cheap checks on headers, before anything is buffered
   const maxBytes = posInt(env.MAX_BYTES, DEF_MAX_BYTES);
@@ -232,7 +251,7 @@ async function asrRoute(req, env, cors) {
   if (Number(cl) > maxBytes + FORM_SLACK) return json({ error: "too_large", max_bytes: maxBytes }, 413, cors);
   if (!/^multipart\/form-data\s*;/i.test(req.headers.get("Content-Type") || "")) return json({ error: "bad_form" }, 400, cors);
 
-  // 2) limits
+  // 2) limits (the SAME counters for both providers: one unit = up to 10 minutes of audio, whoever transcribes it)
   const t = clock();
   const { ip, tag } = await ipTag(req, t.day);
   if (await burstLimited(env.RL, "/asr:" + ip)) return json({ error: "rate_limited", scope: "burst" }, 429, { ...cors, "Retry-After": "60" });
@@ -247,52 +266,252 @@ async function asrRoute(req, env, cors) {
   let g = await guard(env.CAP, specs, false);          // look only: refuse before buffering up to 25 MB
   if (g.busy || g.over) return capResponse(g, cors);
 
-  // 3) parse the form and keep ONLY the file and the language
+  // 3) parse the form and keep ONLY the file, the language and the provider
   let form;
   try { form = await req.formData(); } catch { return json({ error: "bad_form" }, 400, cors); }
   const file = form.get("file");
   if (!file || typeof file === "string" || typeof file.size !== "number" || file.size === 0) return json({ error: "bad_file" }, 400, cors);
   if (file.size > maxBytes) return json({ error: "too_large", max_bytes: maxBytes }, 413, cors);
+  // `provider` is compared with two literals and nothing else: it can never name a host, a model or a path.
+  const asked = form.get("provider");
+  const explicit = asked === "groq" || asked === "gemini";
+  const provider = explicit ? asked : prov.default;
+  // checked BEFORE the counters are written, so an unavailable provider costs nothing
+  if (!prov.available.includes(provider)) {
+    return explicit ? json({ error: "provider_unavailable", provider }, 400, cors)    // the caller asked for it
+                    : json({ error: "server_not_configured" }, 500, cors);           // ASR_PROVIDER names a provider without a key
+  }
+  const lang = form.get("language") === "en" ? "en" : "ar";
 
   // 4) count it (the upload may have taken a while, so read the counters again)
   g = await guard(env.CAP, specs, true);
   if (g.busy || g.over) return capResponse(g, cors);
 
-  // 5) build the upstream request ourselves — no `url`, no `prompt`, no caller-chosen model
+  const left = (units) => ({
+    "X-Athar-Remaining": String(Math.max(cap - (g.used[0] + units - 1), 0)),
+    "X-Athar-Remaining-Hour": String(Math.max(hourCap - (g.used[1] + units - 1), 0)),
+  });
+
+  // 5) transcribe. Both functions answer {body: "<normalised JSON>", seconds} or {fail: {status?, retry?, stage?}}.
+  const res = provider === "gemini" ? await geminiTranscribe(file, lang, env, ctx) : await groqTranscribe(file, lang, env);
+  if (res.fail) {
+    // never forward the upstream body: it can name the organisation, the quota or internal hosts
+    const f = res.fail;
+    if (f.status === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...left(1), ...(f.retry ? { "Retry-After": f.retry } : {}) });
+    return json({ error: "upstream", ...(f.status ? { upstream_status: f.status } : {}), ...(f.stage ? { stage: f.stage } : {}) }, 502, { ...cors, ...left(1) });
+  }
+
+  const units = Math.min(Math.max(Math.ceil(res.seconds / UNIT_SECONDS), 1), 60);
+  if (units > 1) await charge(env.CAP, specs, units - 1);
+  return new Response(res.body, { status: 200, headers: { ...cors, ...left(units), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+}
+
+// ---- provider 1: Groq Whisper ------------------------------------------------------------------------
+async function groqTranscribe(file, lang, env) {
+  const model = env.ASR_MODEL || "whisper-large-v3";
+  // built here — no `url`, no `prompt`, no caller-chosen model
   const out = new FormData();
   out.append("file", file, safeName(file));
-  out.append("model", env.ASR_MODEL || "whisper-large-v3");
-  out.append("language", form.get("language") === "en" ? "en" : "ar");
+  out.append("model", model);
+  out.append("language", lang);
   out.append("response_format", "verbose_json");
   out.append("timestamp_granularities[]", "word");
   out.append("timestamp_granularities[]", "segment");
   out.append("temperature", "0");
 
-  const left = (units) => ({
-    "X-Athar-Remaining": String(Math.max(cap - (g.used[0] + units - 1), 0)),
-    "X-Athar-Remaining-Hour": String(Math.max(hourCap - (g.used[1] + units - 1), 0)),
-  });
   let up, text;
   try {
     up = await fetch(GROQ_ASR, { method: "POST", headers: { Authorization: "Bearer " + env.GROQ_API_KEY }, body: out,
       signal: AbortSignal.timeout(ASR_TIMEOUT_MS) });
     if (up.ok) text = await up.text();
   } catch {
-    return json({ error: "upstream" }, 502, { ...cors, ...left(1) });
+    return { fail: {} };
   }
-  if (!up.ok) {
-    // never forward the upstream body: it can name the organisation, the quota or internal hosts
-    if (up.status === 429) {
-      const ra = retryAfter(up);
-      return json({ error: "upstream_busy" }, 429, { ...cors, ...left(1), ...(ra ? { "Retry-After": ra } : {}) });
-    }
-    return json({ error: "upstream", upstream_status: up.status }, 502, { ...cors, ...left(1) });
-  }
-  if (!/^\s*\{/.test(text)) return json({ error: "upstream" }, 502, { ...cors, ...left(1) });
+  if (!up.ok) return { fail: { status: up.status, retry: up.status === 429 ? retryAfter(up) : null } };
+  // Whisper's verbose_json already has the normalised shape {text, duration, words, segments}. It is passed
+  // through as text (not parsed: a long transcript would cost CPU time) and `provider` / `model` are added
+  // at the END of the object, so they win over any field of the same name in the upstream JSON.
+  const m = /^\s*\{([\s\S]*)\}\s*$/.exec(text);
+  if (!m) return { fail: {} };
+  const tail = `"provider":"groq","model":${JSON.stringify(String(model))}}`;
+  return { body: "{" + m[1] + (m[1].trim() ? "," : "") + tail, seconds: audioSeconds(text) };
+}
 
-  const units = Math.min(Math.max(Math.ceil(audioSeconds(text) / UNIT_SECONDS), 1), 60);
-  if (units > 1) await charge(env.CAP, specs, units - 1);
-  return new Response(text, { status: 200, headers: { ...cors, ...left(units), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+// ---- provider 2: Gemini 3.5 Transcribe ---------------------------------------------------------------
+// NOT TESTED AGAINST THE LIVE API. Written on 4 Oct 2026 from Google's documentation
+// (ai.google.dev/gemini-api/docs/transcribe) and exercised only against the stub in worker/test.mjs.
+// Every detail that depends on Google's API is in one of the small functions below (URLs, header names,
+// request body, response shape, offset format, mime types). If the live API answers differently, these are
+// the functions to adjust; nothing else in the Worker knows about Gemini's formats.
+//
+// Upstream calls for ONE transcription (Workers free plan allows 50 subrequests per request):
+//     1  start the resumable upload          (Files API)
+//     1  upload the bytes + finalize
+//  0–10  poll the file while it is PROCESSING (1 s apart)
+//     1  POST /v1beta/interactions           (the transcription)
+//     1  DELETE the uploaded file            (best effort)
+//  = 4 in the normal case, 14 at most. The KV counters add at most 24 operations (3 keys × look, commit,
+//  retry, extra charge), so even if every KV operation were counted as a subrequest the total stays ≤ 38.
+//
+// LENGTH: with word timestamps Gemini accepts at most 30 minutes of audio per request. The Worker cannot
+// know the duration before transcribing, so it does not check it: the site guarantees pieces of at most
+// 10 minutes, or one direct file of at most 25 minutes, for this provider. Longer audio fails upstream
+// and is answered with `upstream`.
+const GEM_HOST = "generativelanguage.googleapis.com";
+const GEM_BASE = "https://" + GEM_HOST;
+const GEM_UPLOAD_START = GEM_BASE + "/upload/v1beta/files";
+const GEM_INTERACTIONS = GEM_BASE + "/v1beta/interactions";
+const gemFileUrl = (name) => GEM_BASE + "/v1beta/" + name;     // name is always validated by gemFile() first
+
+// Mime types Gemini 3.5 Transcribe documents: wav, mp3, aiff, aac, ogg, flac, mpeg, m4a, l16, opus, webm.
+// The type sent upstream always comes from these two tables, never verbatim from the caller.
+const GEM_MIME_BY_TYPE = { "audio/wav": "audio/wav", "audio/x-wav": "audio/wav", "audio/wave": "audio/wav",
+  "audio/mpeg": "audio/mpeg", "audio/mp3": "audio/mpeg", "audio/mp4": "audio/m4a", "audio/x-m4a": "audio/m4a", "audio/m4a": "audio/m4a",
+  "video/mp4": "audio/m4a", "video/quicktime": "audio/m4a", "audio/aac": "audio/aac", "audio/ogg": "audio/ogg", "audio/opus": "audio/opus",
+  "audio/flac": "audio/flac", "audio/x-flac": "audio/flac", "audio/webm": "audio/webm", "video/webm": "audio/webm",
+  "audio/aiff": "audio/aiff", "audio/x-aiff": "audio/aiff" };
+const GEM_MIME_BY_EXT = { wav: "audio/wav", wave: "audio/wav", mp3: "audio/mpeg", mpeg: "audio/mpeg", mpga: "audio/mpeg",
+  m4a: "audio/m4a", m4b: "audio/m4a", mp4: "audio/m4a", m4v: "audio/m4a", mov: "audio/m4a", "3gp": "audio/m4a", aac: "audio/aac",
+  ogg: "audio/ogg", oga: "audio/ogg", opus: "audio/opus", flac: "audio/flac", webm: "audio/webm", weba: "audio/webm",
+  aiff: "audio/aiff", aif: "audio/aiff" };
+/** whitelisted mime type from the file's declared type, else from its extension, else audio/mpeg */
+function gemMime(file) {
+  const type = String(file.type || "").split(";")[0].trim().toLowerCase();
+  const ext = ((/\.([A-Za-z0-9]{2,5})$/.exec(String(file.name || "")) || [])[1] || "").toLowerCase();
+  return (Object.hasOwn(GEM_MIME_BY_TYPE, type) && GEM_MIME_BY_TYPE[type]) || (Object.hasOwn(GEM_MIME_BY_EXT, ext) && GEM_MIME_BY_EXT[ext]) || "audio/mpeg";
+}
+
+/** BCP-47 code sent to Gemini. Arabic is configurable (GEMINI_ASR_LANG_AR), e.g. "ar-EG", "ar-SA". */
+function gemLanguage(lang, env) {
+  if (lang === "en") return "en-US";
+  const v = String(env.GEMINI_ASR_LANG_AR || "").trim();
+  return /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,2}$/.test(v) ? v : "ar-EG";
+}
+
+/** [Gemini-specific] step 1: start a resumable upload */
+function gemStartInit(key, size, mime) {
+  return { method: "POST", signal: AbortSignal.timeout(GEM_UPLOAD_TIMEOUT_MS),
+    headers: { "x-goog-api-key": key, "X-Goog-Upload-Protocol": "resumable", "X-Goog-Upload-Command": "start",
+      "X-Goog-Upload-Header-Content-Length": String(size), "X-Goog-Upload-Header-Content-Type": mime, "Content-Type": "application/json" },
+    body: JSON.stringify({ file: { display_name: "audio" } }) };
+}
+/** [Gemini-specific] the upload address from step 1; accepted only if it is https on a googleapis.com host */
+function gemUploadUrl(res) {
+  try {
+    const u = new URL(res.headers.get("x-goog-upload-url") || "");
+    return u.protocol === "https:" && !u.username && !u.password && (u.hostname === GEM_HOST || u.hostname.endsWith(".googleapis.com")) ? u.href : null;
+  } catch { return null; }
+}
+/** [Gemini-specific] step 2: send the bytes. The File is given to fetch as it is (streamed with its own
+ *  Content-Length; never base64, never copied). The API key is NOT sent here: the upload URL carries its own id. */
+function gemUploadInit(file, mime) {
+  return { method: "POST", signal: AbortSignal.timeout(GEM_UPLOAD_TIMEOUT_MS),
+    headers: { "X-Goog-Upload-Offset": "0", "X-Goog-Upload-Command": "upload, finalize", "Content-Type": mime }, body: file };
+}
+/** [Gemini-specific] file resource -> {name, uri, state} or null. Upload answers {file: {...}}, GET answers the resource itself. */
+function gemFile(j) {
+  const f = j && typeof j === "object" ? (j.file && typeof j.file === "object" ? j.file : j) : null;
+  if (!f || typeof f.name !== "string" || !/^files\/[A-Za-z0-9_-]{1,80}$/.test(f.name)) return null;
+  const own = gemFileUrl(f.name);
+  // the URI is used only if it is Google's own; otherwise it is rebuilt from the validated name
+  return { name: f.name, uri: typeof f.uri === "string" && f.uri.startsWith(GEM_BASE + "/") && f.uri.length < 300 ? f.uri : own,
+    state: typeof f.state === "string" ? f.state : "ACTIVE" };
+}
+/** [Gemini-specific] step 4: the transcription request. VERBATIM ALWAYS: "smart" mode rewrites the speech
+ *  (drops fillers and self-corrections) and has no timestamps; `custom_vocabulary` cannot be combined with
+ *  word timestamps. Neither is ever sent. */
+function gemInteractionBody(model, uri, mime, languageCode) {
+  return { model, input: [{ type: "audio", uri, mime_type: mime }],
+    generation_config: { transcription_config: { language_codes: [languageCode],
+      mode: { type: "verbatim", timestamp_granularities: ["word"] } } } };
+}
+/** [Gemini-specific] "12.340s" -> 12.34 ; a plain number is accepted too ; anything else -> NaN */
+function gemSeconds(v) {
+  if (typeof v === "number") return Number.isFinite(v) && v >= 0 ? v : NaN;
+  const m = /^\s*([0-9]+(?:\.[0-9]+)?)\s*s?\s*$/.exec(typeof v === "string" ? v : "");
+  return m ? Number(m[1]) : NaN;
+}
+/** [Gemini-specific] interaction -> the normalised answer, or null when it is not a completed transcription */
+function gemNormalise(j, model) {
+  if (!j || typeof j !== "object" || j.status !== "completed") return null;
+  const texts = [], words = [];
+  let duration = 0;
+  for (const step of Array.isArray(j.steps) ? j.steps : []) {
+    for (const c of Array.isArray(step?.content) ? step.content : []) {
+      if (!c || c.type !== "text") continue;
+      if (typeof c.text === "string" && c.text.trim()) texts.push(c.text.trim());
+      for (const a of Array.isArray(c.annotations) ? c.annotations : []) {
+        if (!a || a.type !== "word_info" || typeof a.text !== "string" || !a.text.trim()) continue;
+        const start = gemSeconds(a.start_offset);
+        if (Number.isNaN(start)) continue;                       // a word without a usable start is dropped
+        const e = gemSeconds(a.end_offset), end = Number.isNaN(e) || e < start ? start : e;
+        words.push({ word: a.text.trim(), start, end });
+        if (end > duration) duration = end;
+      }
+    }
+  }
+  const text = texts.join(" ") || words.map((w) => w.word).join(" ");
+  const out = { text, duration, words, provider: "gemini", model };
+  if (text && !words.length) out.timestamps = false;             // the site then spreads the words evenly
+  return out;
+}
+
+async function geminiTranscribe(file, lang, env, ctx) {
+  const key = env.GEMINI_API_KEY;
+  const model = String(env.GEMINI_ASR_MODEL || "gemini-3.5-transcribe");
+  const mime = gemMime(file);
+  let stage = "start", name = null;
+  const fail = async (r) => {
+    if (r) { try { await r.body?.cancel(); } catch { /* ignore */ } }
+    return { fail: { stage, ...(r ? { status: r.status, retry: r.status === 429 ? retryAfter(r) : null } : {}) } };
+  };
+  try {
+    // (1) start the upload
+    const s = await fetch(GEM_UPLOAD_START, gemStartInit(key, file.size, mime));
+    if (!s.ok) return await fail(s);
+    const uploadUrl = gemUploadUrl(s);
+    try { await s.body?.cancel(); } catch { /* ignore */ }
+    if (!uploadUrl) return await fail();
+
+    // (2) upload the bytes
+    stage = "upload";
+    const u = await fetch(uploadUrl, gemUploadInit(file, mime));
+    if (!u.ok) return await fail(u);
+    let info = gemFile(await u.json());
+    if (!info) return await fail();
+    name = info.name;
+
+    // (3) wait while Google processes the file
+    stage = "processing";
+    for (let i = 0; info.state === "PROCESSING" && i < GEM_MAX_POLLS; i++) {
+      await sleep(GEM_POLL_MS);
+      const p = await fetch(gemFileUrl(name), { method: "GET", headers: { "x-goog-api-key": key }, signal: AbortSignal.timeout(GEM_POLL_TIMEOUT_MS) });
+      if (!p.ok) return await fail(p);
+      const next = gemFile(await p.json());
+      if (!next || next.name !== name) return await fail();
+      info = next;
+    }
+    if (info.state !== "ACTIVE") return await fail();              // still PROCESSING, or FAILED
+
+    // (4) transcribe
+    stage = "transcribe";
+    const r = await fetch(GEM_INTERACTIONS, { method: "POST", signal: AbortSignal.timeout(GEM_TRANSCRIBE_TIMEOUT_MS),
+      headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
+      body: JSON.stringify(gemInteractionBody(model, info.uri, mime, gemLanguage(lang, env))) });
+    if (!r.ok) return await fail(r);
+    const out = gemNormalise(await r.json(), model);
+    if (!out) return await fail();
+    return { body: JSON.stringify(out), seconds: out.duration };
+  } catch {
+    return { fail: { stage } };                                    // network error, timeout, or a body that is not JSON
+  } finally {
+    // (5) best effort: remove the audio from Google's storage (it would expire by itself after 48 hours)
+    if (name) {
+      const gone = fetch(gemFileUrl(name), { method: "DELETE", headers: { "x-goog-api-key": key }, signal: AbortSignal.timeout(GEM_DELETE_TIMEOUT_MS) })
+        .then((d) => d.body?.cancel()).catch(() => { /* never fails the request */ });
+      if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(gone); else await gone;
+    }
+  }
 }
 
 // =====================================================================================================

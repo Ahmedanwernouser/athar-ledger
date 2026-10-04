@@ -148,6 +148,32 @@ function inflSplits(w) {
  * true when a and b (normalised, different) are one stem with different affixes. A final "وا" written "و" ("قالو") is
  * spelling, not grammar.
  */
+// Speech has no spelling. Two normalised forms that are written differently but SOUND the same are the same spoken word:
+//   • hamza seats and a dropped final hamza:   مؤمن = مومن ، سئل = سيل ، شيء = شي
+//   • final ة (stored as ه) heard in liaison as ت:   كمشكاة = كمشكات   (words of 4+ letters)
+//   • final alif written ا or ى (stored as ي):        قلى = قلا
+// Pairs where the two spellings are different words that matter (إلى / إلا ، هذي / هذا ، أني / أنا ...) are never merged.
+const NOT_SAME = new Set(["الي", "الا", "علي", "علا", "لدي", "لدا", "هذي", "هذا", "اني", "انا", "لي", "لا", "بي", "با", "في", "فا", "ما", "مي", "حتي", "حتا", "بلي", "بلا", "متي", "متا", "اذي", "اذا", "اما", "امي", "لما", "لمي", "كما", "كمي", "هي", "ها", "ذي", "ذا", "ني", "نا"]);
+const soundForm = w => w.replace(/ؤ/g, "و").replace(/ئ/g, "ي").replace(/ء/g, "");
+export function sameSound(a, b) {
+  if (a === b) return true;
+  if (!a || !b || NOT_SAME.has(a) || NOT_SAME.has(b)) return false;
+  const x = soundForm(a), y = soundForm(b);
+  if (x === y) return x.length >= 2;
+  if (x.length !== y.length || x.length < 3 || x.slice(0, -1) !== y.slice(0, -1)) return false;
+  const p = x[x.length - 1] + y[y.length - 1];
+  if ((p === "هت" || p === "ته") && x.length >= 4) return true;
+  // final alif written ا in the transcript where the source has ى (alif maqsura, stored as ي): only for words known to end in ى,
+  // so that «أعنّا» is never taken for «أعنّي»
+  if (p === "اي") return MAQSURA.has(b);
+  if (p === "يا") return MAQSURA.has(a);
+  return false;
+}
+/** normalised forms of words whose spelling ends in alif maqsura (filled from the Qur'an text when the corpus loads) */
+export const MAQSURA = new Set();
+export function noteMaqsura(text) {
+  for (const w of String(text).split(/\s+/)) { const bare = w.replace(DIAC, "").replace(/[^ء-ي]/g, ""); if (bare.length >= 3 && bare.endsWith("ى")) MAQSURA.add(norm(bare)); }
+}
 export function inflectionOf(a, b) {
   if (a === b || isLatin(a) || isLatin(b)) return false;
   if ((a.endsWith("و") && b === a + "ا") || (b.endsWith("و") && a === b + "ا")) return false;

@@ -1,9 +1,10 @@
 // app.js — the page. All matching runs in js/worker.js; this file only draws and listens.
 import { fmtTime, fnv1a, wordsFromText } from "./text.js";
-import { prepare, transcribePrepared, wordsFromWhisper, AsrError, llmStops } from "./asr.js";
+import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, AsrError, llmStops } from "./asr.js";
+import { compareLedgers, applyAgreement, marksOf, statusOf, timeTolerance } from "./agree.js";
 import { toCsv, toJson, download } from "./exporter.js";
 import { citedDocx, toSession, fromSession, parseStampedText, youtubeId, cleanManual, cleanFixes, committeeSummary, summaryLines, descriptionIndex } from "./report.js";
-import { t, tOpt, has, num, setLang, getLang, srcLabel, LANGS } from "./i18n.js";
+import { t, tOpt, has, num, setLang, getLang, srcLabel, transcriberLabel, LANGS } from "./i18n.js";
 
 const CFG = window.ATHAR_CONFIG || {};
 const $ = id => document.getElementById(id);
@@ -49,6 +50,11 @@ const S = {
   extra: null,          // the words of the second (Arabic) transcription pass, kept for analysing again after a correction
   onlyOpen: false, keepOpen: new Set(),      // "not reviewed yet" filter; entries reviewed while it is on stay until it is toggled
   fixKey: "", manualKey: "", reworking: false, focusAfter: null,
+  // two transcriptions of the same recording (agree.js)
+  asr: null,            // what the Worker offers: {default, available} from /health, or null (one transcriber, no choice)
+  second: null,         // {words, ledger}: the second transcript and its ledger (analysed once; corrections touch the primary only)
+  transcribers: [],     // who produced the transcript(s): [{provider, model, name}], the primary first
+  two: null,            // counts of the last comparison (compareLedgers().stats), or null when there was none
 };
 let corpusReady = null;
 
@@ -107,7 +113,7 @@ function applyLang(l) {
   $("dropMain").textContent = t(CFG.asrUrl ? "drop.on" : "drop.off"); $("dropSub").textContent = t(CFG.asrUrl ? "drop.on2" : "drop.off2");
   $("corpusRetry").textContent = t("corpus.retry");
   $("samplesErr").hidden = !S.samplesFailed; $("samplesErr").textContent = S.samplesFailed ? t("err.samples") : "";
-  drawPackLabels();
+  drawPackLabels(); drawProviders();
   if (S.err) $("startErr").textContent = say(S.err);
   if (S.busy) $("busyMsg").textContent = say(S.busy);
   if (!$("results").hidden) render();
@@ -137,6 +143,8 @@ function boot() {
   loadCorpus();
 
   if (!CFG.asrUrl) { $("drop").classList.add("off"); $("file").disabled = true; }
+  else asrProviders(CFG).then(a => { S.asr = a; drawProviders(); });       // asked once, never waited for
+  $("asrProv").onchange = () => store.set("athar:asrprov", $("asrProv").value);
   fetch(new URL("../samples/manifest.json", import.meta.url)).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then(list => {
     for (const s of list) {
       const b = el("button", "sample"); b.type = "button"; b.dir = dirOf(s.title); b.lang = scriptOf(s.title);
@@ -148,7 +156,7 @@ function boot() {
 
   // the value is cleared so that choosing the same file again (after an error, or with another language) starts again
   $("file").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (f) runAudio(f); };
-  $("transcriptFile").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (f) runTranscriptFile(f); };
+  $("transcriptFile").onchange = e => { const fs = [...e.target.files]; e.target.value = ""; if (fs.length === 1) runTranscriptFile(fs[0]); else if (fs.length > 1) runTwoTranscripts(fs); };
   const drop = $("drop");
   drop.ondragover = e => { e.preventDefault(); if (CFG.asrUrl) drop.classList.add("over"); };
   drop.ondragleave = () => drop.classList.remove("over");
@@ -166,10 +174,11 @@ function boot() {
   $("btnNew").onclick = goStart;
   for (const d of document.querySelectorAll("dialog")) if (d !== dlg) d.onclick = dlg.onclick;       // a click on the backdrop closes
   $("btnCsv").onclick = () => download("athar-ledger.csv", toCsv(S.ledger, activeReviews()), "text/csv;charset=utf-8");
-  $("btnJson").onclick = () => download("athar-ledger.json", toJson(S.ledger, activeReviews(), { source: titleNow(), words: S.words.length, corrections: fixCount() ? { ...S.fixes } : undefined }), "application/json");
+  $("btnJson").onclick = () => download("athar-ledger.json", toJson(S.ledger, activeReviews(), { source: titleNow(), words: S.words.length, corrections: fixCount() ? { ...S.fixes } : undefined,
+    transcribers: S.transcribers.length ? S.transcribers.map(transcriberLabel) : undefined, twoTranscriptions: S.two || undefined }), "application/json");
   $("btnPrint").onclick = () => window.print();
   $("btnDocx").onclick = () => {
-    const { bytes } = citedDocx({ words: shownWords(), ledger: S.ledger, reviews: activeReviews(), title: titleNow(), fixed: fixCount(),
+    const { bytes } = citedDocx({ words: shownWords(), ledger: S.ledger, reviews: activeReviews(), title: titleNow(), fixed: fixCount(), transcribers: S.transcribers.map(transcriberLabel),
       mushaf: !$("optMushafWrap").hidden && $("optMushaf").checked,
       hadithText: !$("optHadithWrap").hidden && $("optHadith").checked,
       date: new Date().toLocaleDateString(getLang() === "ar" ? "ar-EG" : "en-GB", { year: "numeric", month: "long", day: "numeric" }) });
@@ -177,7 +186,7 @@ function boot() {
   };
   $("optMushaf").onchange = () => store.set("athar:mushaf", $("optMushaf").checked);
   $("optHadith").onchange = () => store.set("athar:hadithtext", $("optHadith").checked);
-  $("btnSave").onclick = () => download("athar-session.json", toSession({ words: S.words, title: titleNow(), review: S.review, manual: S.manual, fixes: S.fixes,
+  $("btnSave").onclick = () => download("athar-session.json", toSession({ words: S.words, title: titleNow(), review: S.review, manual: S.manual, fixes: S.fixes, words2: S.second ? S.second.words : null, transcribers: S.transcribers,
     packs: [...packs.values()].filter(p => p.state === "loaded").map(p => p.id), video: S.video ? "https://youtu.be/" + S.video : null }), "application/json");
   $("btnIndex").onclick = openIndex;
   $("indexIntro").onchange = () => { store.set("athar:idxintro", $("indexIntro").checked); drawIndex(); };
@@ -306,25 +315,75 @@ async function runSample(s) {
   await runWords(run, x.words, { title: s.title, estimated: true });
 }
 
+/** the transcriber choice: shown only when the Worker says it offers more than one; "both" only when two are there */
+function drawProviders() {
+  const wrap = $("asrProvWrap"), sel = $("asrProv"), a = S.asr;
+  const offered = a && a.available.length > 1 ? [...a.available, "both"] : [];
+  wrap.hidden = !offered.length;
+  if (!offered.length) return;
+  const was = sel.options.length ? sel.value : store.get("athar:asrprov", null);
+  sel.textContent = "";
+  for (const v of offered) { const o = el("option", null, t("prov." + v)); o.value = v; sel.append(o); }
+  sel.value = offered.includes(was) ? was : a.default;
+}
+/** null (the Worker's default, nothing chosen) | "groq" | "gemini" | "both" */
+const providerChoice = () => ($("asrProvWrap").hidden || !S.asr ? null : $("asrProv").value || null);
+
 async function runAudio(file) {
-  const run = beginRun(), signal = run.ctl.signal, mode = $("recLang").value, two = mode === "en+ar";
+  const run = beginRun(), signal = run.ctl.signal, mode = $("recLang").value, two = mode === "en+ar", lang = mode === "ar" ? "ar" : "en";
+  const choice = providerChoice(), dual = choice === "both";
+  const pA = dual ? S.asr.default : choice, pB = dual ? S.asr.available.find(p => p !== pA) : null;
   busy(0.02, msg("busy.prep"));
-  const progress = (base, span) => (f, m) => { if (live(run)) busy(base + span * f, m && m.code ? msg(m.code, ...(m.args || []).map(num)) : null); };
-  let words, extra = null; const warnings = [];
-  try {
-    const prep = await prepare(file, progress(0.02, 0.06), signal);      // a long recording is decoded once and reused by both passes
-    words = await transcribePrepared(prep, mode === "ar" ? "ar" : "en", CFG, progress(0.08, two ? 0.36 : 0.72), signal);
+  // in a comparison every progress message says whose it is
+  const progress = (base, span, who = null) => (f, m) => {
     if (!live(run)) return;
-    if (!words.length) throw new AsrError("empty");
+    const inner = m && m.code ? msg(m.code, ...(m.args || []).map(num)) : null;
+    busy(base + span * f, inner && who ? msg("busy.prov", () => transcriberLabel({ provider: who }), () => say(inner)) : inner);
+  };
+  const named = (r, asked) => ({ provider: r.provider || asked || "", model: r.model || "" });
+  let words, extra = null, second = null; const warnings = [], transcribers = [];
+  try {
+    // a long recording is decoded once and reused by every pass and by both transcribers
+    const prep = await prepare(file, progress(0.02, 0.06), signal, dual ? [pA, pB] : [pA]);
+    const share = dual ? 0.3 : two ? 0.36 : 0.72;
+    let first = null, firstErr = null, primary = pA;
+    try {
+      first = await transcribeWith(prep, lang, CFG, progress(0.08, share, dual ? pA : null), signal, pA);
+      if (!first.words.length) throw new AsrError("empty");
+    } catch (e) { if (!dual || !live(run) || (e instanceof AsrError && e.code === "aborted")) throw e; first = null; firstErr = e; }
+    if (!live(run)) return;
+    if (dual) {
+      let other = null, otherErr = null;
+      try {
+        other = await transcribeWith(prep, lang, CFG, progress(0.08 + share, share, pB), signal, pB);
+        if (!other.words.length) throw new AsrError("empty");
+      } catch (e) { if (!live(run) || (e instanceof AsrError && e.code === "aborted")) throw e; other = null; otherErr = e; }
+      if (!live(run)) return;
+      if (!first && !other) throw firstErr;
+      if (!first) {       // the default transcriber failed and the other one worked: it becomes the transcript
+        const why = asrMsg(firstErr);
+        warnings.push(msg("warn.two.primary", () => transcriberLabel({ provider: pA }), () => say(why), () => transcriberLabel({ provider: pB })));
+        first = other; other = null; primary = pB;
+      } else if (!other) {
+        const why = asrMsg(otherErr);
+        warnings.push(msg("warn.two.failed", () => transcriberLabel({ provider: pB }), () => say(why), () => transcriberLabel({ provider: pA })));
+      }
+      if (other) { second = other.words; transcribers.push(named(first, primary), named(other, pB)); }
+      else transcribers.push(named(first, primary));
+      if (other && other.estimated) warnings.push(msg("warn.est", () => transcriberLabel(named(other, pB))));
+    } else if (first.provider || pA) transcribers.push(named(first, pA));
+    words = first.words;
+    if (first.estimated) { const who = named(first, primary); warnings.push(msg("warn.est", () => transcriberLabel(who))); }
     if (two) {   // a second pass in Arabic: English speech comes out as noise the engine ignores, recitation comes out as Arabic
-      busy(0.45, msg("busy.pass2"));
-      try { extra = await transcribePrepared(prep, "ar", CFG, progress(0.45, 0.35), signal); }
+      const at = dual ? 0.08 + 2 * share : 0.45, span = dual ? 0.12 : 0.35;      // (with two transcribers: on the primary one only)
+      busy(at, msg("busy.pass2"));
+      try { extra = await transcribePrepared(prep, "ar", CFG, progress(at, span), signal, primary); }
       catch (e) { if (!live(run)) return; const m = asrMsg(e); extra = null; warnings.push(msg("warn.pass2", () => say(m))); }
     }
     prep.pcm = null;
   } catch (e) { return fail(run, asrMsg(e)); }
   if (!live(run)) return;
-  await runWords(run, words, { title: file.name, audioFile: file, extra, warnings });
+  await runWords(run, words, { title: file.name, audioFile: file, extra, warnings, second, transcribers });
 }
 
 class InputError extends Error { constructor(key) { super(key); this.key = key; } }
@@ -383,12 +442,48 @@ async function runTranscriptFile(file) {
     if (!sess || sess.words.length < 4) return fail(run, msg("err.session"));
     await corpusReady; if (!live(run)) return;
     for (const id of sess.packs) if (packs.has(id) && packs.get(id).state === "none") loadPack(id);
-    return runWords(run, sess.words, { title: sess.title || file.name, review: sess.review, video: youtubeId(sess.video), manual: sess.manual, fixes: sess.fixes });
+    return runWords(run, sess.words, { title: sess.title || file.name, review: sess.review, video: youtubeId(sess.video), manual: sess.manual, fixes: sess.fixes,
+      second: sess.words2, transcribers: sess.transcribers });
   }
   try { words = parseTimed(text, file.name); }
   catch (e) { return fail(run, msg(e instanceof InputError ? e.key : "err.transcript")); }
   await runWords(run, words, { title: file.name });
 }
+/**
+ * Two transcripts of the same recording chosen together: the first is the transcript, the second is compared with it.
+ * (This needs no Worker: it is also how the comparison is tried with transcripts made elsewhere.) Both must carry times.
+ */
+async function runTwoTranscripts(files) {
+  const run = beginRun();
+  busy(0.2, msg("busy.read"));
+  if (files.length !== 2) return fail(run, msg("err.two.files"));
+  const both = [];
+  for (const f of files) {
+    let text; try { text = await f.text(); } catch { return fail(run, msg("err.transcript")); }
+    if (!live(run)) return;
+    if (/"athar_session"/.test(text.slice(0, 200))) return fail(run, msg("err.two.files"));
+    let words; try { words = parseTimed(text, f.name); } catch (e) { return fail(run, msg(e instanceof InputError ? e.key : "err.transcript")); }
+    words = words.map(cleanWord).filter(Boolean);
+    if (words.length < 4 || !words.every(w => w.start != null)) return fail(run, msg("err.two.files"));
+    both.push(words);
+  }
+  await runWords(run, both[0], { title: files[0].name, second: both[1], transcribers: files.map(f => ({ provider: "file", model: "", name: f.name })) });
+}
+
+/** entries only the second transcription has: placed on the transcript by time, like those of the Arabic pass */
+function mergeSecondOnly(main, extra, words) {
+  const at = time => { let lo = 0, hi = words.length - 1, k = 0; while (lo <= hi) { const m = (lo + hi) >> 1; if ((words[m].start ?? 0) <= time) { k = m; lo = m + 1; } else hi = m - 1; } return k; };
+  const out = [...main];
+  for (const x of extra) {
+    if (!x.placed) continue;
+    const e = x.entry;
+    out.push({ ...e, diff: e.diff ? e.diff.map(d => { const c = { ...d }; delete c.wordIdx; return c; }) : e.diff,      // (its words are not the words on screen)
+      wordStart: at(e.start), wordEnd: Math.max(at(e.start), at(e.end)), pass: "t2", second: { wordStart: e.wordStart, wordEnd: e.wordEnd }, mushaf: undefined, sourceRun: undefined });
+  }
+  return out;
+}
+/** an entry whose spoken words are not the words on screen (they come from another transcription pass) */
+const foreign = e => e.pass === "ar" || e.pass === "t2";
 
 /** entries found by the Arabic pass of an English recording: keep real textual matches, placed on the main transcript by time */
 function mergeSecondPass(main, second, words) {
@@ -431,12 +526,21 @@ function engineWords(words, fixes) {
   return { run, back };
 }
 /** the engine's ledger for the transcript as it stands now, with every position given as an index of the transcribed words */
-async function analyse(words, fixes, extra) {
+async function analyse(words, fixes, extra, second = null) {
   const { run, back } = engineWords(words, fixes);
   let ledger = (await call("analyze", { words: run })).ledger;
   if (back) for (const e of ledger) {
     e.wordStart = back[e.wordStart] ?? e.wordStart; e.wordEnd = back[e.wordEnd] ?? e.wordEnd;
     if (e.diff) for (const d of e.diff) if (d.wordIdx) d.wordIdx = d.wordIdx.map(k => back[k]);
+  }
+  // a second transcription of the same recording: the two ledgers are compared word by word (corrections are the
+  // reviewer's work on the primary transcript; the second one is analysed once and compared again after each of them)
+  if (second) {
+    if (!second.ledger) second.ledger = (await call("analyze", { words: second.words })).ledger;
+    const r = compareLedgers(ledger, second.ledger, { tolerance: Math.max(timeTolerance(words), timeTolerance(second.words)) });
+    applyAgreement(ledger, r);
+    ledger = mergeSecondOnly(ledger, r.extra, words);
+    second.stats = r.stats;
   }
   if (extra && extra.length) ledger = mergeSecondPass(ledger, (await call("analyze", { words: extra })).ledger, words);
   return ledger;
@@ -492,7 +596,7 @@ async function reanalyse() {
   const job = ++reJob;
   S.reworking = true; drawFixBar();
   let engine, added;
-  try { engine = await analyse(S.words, S.fixes, S.extra); added = await resolveManual(S.manual, S.words, S.fixes); }
+  try { engine = await analyse(S.words, S.fixes, S.extra, S.second); added = await resolveManual(S.manual, S.words, S.fixes); }
   catch (e) { if (live(run) && job === reJob) { S.reworking = false; S.warnings.push(msg("err.analysis", () => detail(e))); render(); } return; }
   if (!live(run) || job !== reJob) return;
   S.reworking = false;
@@ -500,7 +604,7 @@ async function reanalyse() {
   const kept = new Map(S.ledger.filter(e => e.meaningVia === "llm").map(e => [e.key + "|" + e.spoken, e]));
   engine = engine.map(e => { const k = `${e.pass || "m"}:${e.wordStart}-${e.wordEnd}|${e.spoken}`; return kept.has(k) && ["notfound", "meaning"].includes(e.status) ? kept.get(k) : e; });
   const was = S.sel ? S.ledger[S.sel - 1] : null;
-  setLedger(engine, added);
+  setLedger(engine, added); S.two = S.second ? S.second.stats || null : null;
   store.set(S.manualKey, S.manual);
   const now = was ? S.ledger.find(e => e.key === was.key) || S.ledger.find(e => !!e.manual === !!was.manual && e.wordStart <= was.wordEnd && e.wordEnd >= was.wordStart) : null;
   S.sel = now ? now.id : null;
@@ -519,10 +623,11 @@ function redrawInPlace() {
 }
 
 /** the common path of every input. `run` was started (and the busy screen shown) before the first await. */
-async function runWords(run, words, { title = "", titleKey = null, audioFile = null, estimated = false, extra = null, warnings = [], review = null, video = null, manual = null, fixes = null }) {
+async function runWords(run, words, { title = "", titleKey = null, audioFile = null, estimated = false, extra = null, warnings = [], review = null, video = null, manual = null, fixes = null, second = null, transcribers = [] }) {
   words = (Array.isArray(words) ? words : []).map(cleanWord).filter(Boolean);
   if (words.length < 4) return fail(run, msg("err.tooshort"));
   if (extra) extra = extra.map(cleanWord).filter(Boolean);
+  if (second) { second = second.map(cleanWord).filter(Boolean); second = second.length >= 4 ? { words: second, ledger: null, stats: null } : null; }
   // what the reviewer did to this transcript before (in this browser, or in the saved session being opened)
   const base = fnv1a(words.map(w => w.w).join(" ")), fixKey = "athar:fixes:" + base, manualKey = "athar:manual:" + base;
   fixes = cleanFixes({ ...store.get(fixKey, {}), ...(fixes || {}) }, words.length);
@@ -548,7 +653,8 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
       if (bad) return fail(run, msg("err.pack.required", () => packName(bad), () => detail(packFail.get(bad))));
     }
     busy(0.85, msg("busy.search"));
-    ledger = await analyse(words, fixes, extra);
+    if (second) busy(0.85, msg("busy.compare"));
+    ledger = await analyse(words, fixes, extra, second);
     if (!live(run)) return;
     added = await resolveManual(manual, words, fixes);
     if (!live(run)) return;
@@ -561,6 +667,8 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
   let dur = 0; if (S.hasTimes) for (const w of words) { const x = w.end ?? w.start; if (x > dur) dur = x; }      // (no spread: transcripts can be very long)
   S.duration = S.hasTimes ? dur : words.length;
   S.fixes = fixes; S.manual = manual; S.extra = extra; S.fixKey = fixKey; S.manualKey = manualKey;
+  S.second = second; S.two = second ? second.stats : null;
+  S.transcribers = (Array.isArray(transcribers) ? transcribers : []).slice(0, second ? 2 : 1);
   S.onlyOpen = false; S.keepOpen = new Set(); S.reworking = false; S.focusAfter = null;
   if (fixCount()) store.set(fixKey, fixes);
   if (manual.length) store.set(manualKey, manual);
@@ -619,7 +727,7 @@ async function runMeaning() {
 }
 
 // ---------------- reviews: a verdict belongs to the finding it was given for ----------------
-const sig = e => `${e.status}|${e.source ? e.source.ref : ""}`;
+const sig = e => `${st(e)}|${e.source ? e.source.ref : ""}`;       // (the status shown: the one two transcriptions support, when there is one)
 function reviewOf(e) {
   const r = S.review[e.key];
   if (!r || typeof r !== "object" || (!r.v && !r.note)) return { cur: null, stale: null };
@@ -634,7 +742,7 @@ function saveReview(e, patch) {
 }
 const reviewed = e => { const { cur } = reviewOf(e); return !!(cur && cur.v); };
 /** hidden by the filters: its status is switched off, or only unreviewed entries are wanted and this one has a verdict */
-const isOff = e => S.hidden.has(e.status) || (S.onlyOpen && reviewed(e) && !S.keepOpen.has(e.key));
+const isOff = e => S.hidden.has(st(e)) || (S.onlyOpen && reviewed(e) && !S.keepOpen.has(e.key));
 function activeReviews() {
   const out = {};
   for (const e of S.ledger) { const { cur } = reviewOf(e); if (cur) out[e.key] = { v: cur.v || null, note: cur.note || "" }; }
@@ -642,17 +750,31 @@ function activeReviews() {
 }
 
 // ---------------- drawing ----------------
+/** the status an entry is listed, filtered, coloured and counted under (see agree.js) */
+const st = statusOf;
+const byTwo = e => !!(e.statusCombined && e.statusCombined !== e.status);
 const pos = e => (S.hasTimes ? e.start ?? 0 : e.wordStart);
 const posEnd = e => (S.hasTimes ? e.end ?? e.start ?? 0 : e.wordEnd + 1);
 const kindOf = e => (e.source && e.source.type === "b" ? t("kind.book", getLang() === "ar" ? e.source.domainAr : e.source.domain) : tOpt("kind." + (e.type || "h")));
 const titleNow = () => (S.titleKey ? t(S.titleKey) : S.title);
 const sep = () => (getLang() === "ar" ? "، " : ", ");
-const markTitle = e => `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} — ${t("status." + e.status)}${e.source ? " — " + srcLabel(e.source, true) : ""}${e.manual ? " — " + t("e.manual") : ""}`;
+const markTitle = e => `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} — ${t("status." + st(e))}${byTwo(e) ? " (" + t("two.tag") + ")" : ""}${e.source ? " — " + srcLabel(e.source, true) : ""}${e.manual ? " — " + t("e.manual") : ""}${e.pass === "t2" ? " — " + t("two.second") : ""}`;
 
 function render() {
-  drawNotices(); drawNoAudio(); drawSummary(); drawMap(); drawLedger(); drawTranscript(); drawMeaningBtn(); drawFixBar(); drawIndexBtn();
+  drawNotices(); drawNoAudio(); drawTranscribers(); drawSummary(); drawMap(); drawLedger(); drawTranscript(); drawMeaningBtn(); drawFixBar(); drawIndexBtn();
 }
 function drawNoAudio() { $("noAudio").hidden = !S.noAudio; $("noAudio").textContent = S.noAudio ? t(S.noAudio) : ""; }
+/** an Arabic counted noun (فرق واحد، فرقين، ٣ فروق، ١١ فرقًا); English has two forms */
+const counted = (key, n) => t(`${key}.${n === 1 ? 1 : n === 2 ? 2 : n % 100 >= 3 && n % 100 <= 10 ? "few" : "many"}`, num(n));
+/** who produced the transcript(s), and what the comparison of two of them came to */
+function drawTranscribers() {
+  const p = $("trBy"), names = S.transcribers.map(transcriberLabel).filter(Boolean), bits = [];
+  if (S.second && names.length > 1) bits.push(t("tr.by.two", names[0], names[1]));
+  else if (names.length) bits.push(t("tr.by.one", names[0]));
+  else if (S.second) bits.push(t("tr.by.two.anon"));
+  if (S.two) bits.push(t("two.sum", num(S.two.paired), num(S.two.textual), num(S.two.upgraded), num(S.two.confirmed), num(S.two.unresolved)));
+  p.hidden = !bits.length; p.textContent = bits.join(" ");
+}
 function drawNotices() {
   const box = $("notices"); box.textContent = "";
   for (const w of S.warnings) box.append(el("li", null, say(w)));
@@ -661,7 +783,7 @@ function drawNotices() {
 
 /** summary sentence and filter chips. Chips are updated in place, so the one that has the focus keeps it. */
 function drawSummary() {
-  const counts = {}; for (const e of S.ledger) counts[e.status] = (counts[e.status] || 0) + 1;
+  const counts = {}; for (const e of S.ledger) counts[st(e)] = (counts[st(e)] || 0) + 1;
   const parts = STATUS_ORDER.filter(s => counts[s]).map(s => `${num(counts[s])} ${t("short." + s)}`).join(sep());
   $("summaryLine").textContent = S.ledger.length ? t("sum.line", titleNow(), num(S.ledger.length), parts) : t("sum.none", titleNow());
   const f = $("filters");
@@ -726,7 +848,7 @@ function drawMap() {
   const m = $("map"); m.textContent = ""; m.style.direction = "ltr";
   const frag = document.createDocumentFragment();
   for (const e of S.ledger) {
-    const b = el("button", "mark s-" + e.status + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); b.type = "button"; b.tabIndex = -1;
+    const b = el("button", "mark s-" + st(e) + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); b.type = "button"; b.tabIndex = -1;
     b.dataset.id = e.id; b.hidden = isOff(e);
     b.title = markTitle(e); b.setAttribute("aria-label", b.title);
     frag.append(b);
@@ -768,27 +890,34 @@ function saidWords(text, idx) {
   ws.forEach((w, k) => { if (k) f.append(" "); f.append(fixable(w, idx[k])); });
   return f;
 }
-function wordSpan(d) {
+/** what the second transcription has at a compared word, in words: "" when there is nothing to say */
+const heardBy2 = mark => (!mark ? "" : mark.b == null ? t("two.heard.out") : mark.b === "" ? t("two.heard.none") : t("two.heard", mark.b));
+/** @param mark  how the word stands after the comparison of two transcriptions (marksOf), or undefined */
+function wordSpan(d, mark) {
   const said = d.spokenDisplay || d.spoken;      // the word as transcribed when the worker could tie it to the transcript
   const f = document.createDocumentFragment(), words = saidWords(said, d.spokenDisplay ? d.wordIdx : null);
-  if (d.kind === "exact") { f.append(words, " "); return f; }
+  if (d.kind === "exact" && !mark) { f.append(words, " "); return f; }
   const cls = { asr: "w-asr", near: "w-near", diff: "w-diff", ins: "w-ins" }[d.kind] || "";
-  const s = el("span", cls); s.append(words); if (d.source) s.title = d.sourceDisplay || d.source;
+  const s = el("span", [cls, mark ? "ag ag-" + mark.c : ""].filter(Boolean).join(" ")); s.append(words);
+  const tip = [d.source && d.kind !== "exact" ? d.sourceDisplay || d.source : "", mark ? t("two.mark." + mark.c) : "", heardBy2(mark)].filter(Boolean);
+  if (tip.length) s.title = tip.join(" — ");
   s.querySelectorAll(".fw:not(.fx)").forEach(x => x.removeAttribute("title"));       // the source's word is what the mark's tooltip shows
   f.append(s, " "); return f;
 }
 /** a spoken stretch that is not compared word by word (not found, by meaning, a candidate, a verbatim hadith): its words can still be corrected */
 function spokenBlock(e) {
   const p = textBlock("", "spoken"), d = dirOf(e.spoken); p.className = "spoken " + d; p.dir = d; p.lang = scriptOf(e.spoken);
-  const r = e.pass === "ar" ? null : rangeWords(e.wordStart, e.wordEnd);
+  const r = foreign(e) ? null : rangeWords(e.wordStart, e.wordEnd);
   p.append(saidWords(e.spoken, r && r.words.map(w => w.w).join(" ") === e.spoken ? r.idx : null));
   return p;
 }
 /** the source side of one compared word. `text` is the verbatim display word for the Qur'an, the stored word otherwise. */
-function sourceSpan(d, text) {
+function sourceSpan(d, text, mark) {
   if (!text) return null;
   if (d.kind === "exact" || d.kind === "asr") return document.createTextNode(text + " ");
-  const s = el("span", d.kind === "del" ? "w-del" : d.kind === "diff" ? "w-diff" : "w-near", text); if (d.spoken) s.title = d.spokenDisplay || d.spoken;
+  const s = el("span", (d.kind === "del" ? "w-del" : d.kind === "diff" ? "w-diff" : "w-near") + (mark ? " ag ag-" + mark.c : ""), text);
+  const tip = [d.spoken ? d.spokenDisplay || d.spoken : "", mark ? t("two.mark." + mark.c) : "", heardBy2(mark)].filter(Boolean);
+  if (tip.length) s.title = tip.join(" — ");
   const f = document.createDocumentFragment(); f.append(s, " "); return f;
 }
 function sourceLine(s, main) {
@@ -842,13 +971,26 @@ function details(e, name, summary, ...children) {
 }
 const edition = (ed, hadith) => (hadith || !ed || ed === "sunnah.com" ? null : ed);      // hadith translations: the dataset names no translator
 
+/** one line saying what the comparison of two transcriptions found for an entry */
+function twoLine(g) {
+  if (!g.paired) return g.why === "other" ? t("two.unpaired.other", g.otherRef || "") : t("two.unpaired." + (g.why === "nopos" ? "nopos" : "absent"));
+  const parts = [], sure = g.oneExact + (g.oneSided || 0);
+  if (g.confirmed) parts.push(t("two.line.confirmed", counted("two.n.diff", g.confirmed)) + (g.confirmedNear ? " " + t("two.line.near", num(g.confirmedNear)) : ""));
+  if (g.disagree) parts.push(sure === g.disagree ? t(g.disagree === 1 ? "two.line.oneexact.1" : "two.line.oneexact", counted("two.n.place", g.disagree)) : sure ? t("two.line.mixed", counted("two.n.place", g.disagree), num(sure)) : t("two.line.differ", counted("two.n.place", g.disagree)));
+  if (g.unresolved) parts.push(t("two.line.unresolved", num(g.unresolved)));
+  if (!parts.length) parts.push(t("two.line.same"));
+  return parts.join(" ");
+}
 function drawEntry(e) {
-  const li = el("li", "entry s-" + e.status + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); li.id = "e" + e.id; li.dataset.id = e.id; li.hidden = isOff(e); li.tabIndex = -1;
+  const li = el("li", "entry s-" + st(e) + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); li.id = "e" + e.id; li.dataset.id = e.id; li.hidden = isOff(e); li.tabIndex = -1;
   const head = el("div", "entry-head");
   const tb = el("button", "time" + (S.hasTimes ? "" : " none"), S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))); tb.type = "button";
   tb.onclick = () => focusEntry(e, false, true);
-  head.append(tb, el("span", "kind", kindOf(e)), el("span", "status", t("status." + e.status)));
+  head.append(tb, el("span", "kind", kindOf(e)), el("span", "status", t("status." + st(e))));
+  if (byTwo(e)) { const tag = el("span", "two-tag", t("two.tag")); tag.title = t("two.tag.title", t("status." + e.status)); head.append(tag); }
   if (e.manual) head.append(el("span", "hand", t("e.manual")));
+  if (e.pass === "t2") head.append(el("span", "hand", t("two.second")));
+  const g2 = e.agreement2 || null, marks = marksOf(e);
   if (e.agreement != null && e.counts) {
     const c = e.counts, n = c.exact + c.asr + c.near + c.diff + c.added + c.omitted;
     const bits = [t("e.agree", num(Math.round(e.agreement * 100)), num(n))];
@@ -865,7 +1007,7 @@ function drawEntry(e) {
   const partQ = srcQ && e.diff && !hasDiff && e.diffWhole === false;
   if (e.diff && (hasDiff || partQ)) {
     const pair = el("div", "pair"), dir = dirOf(e.diff.find(d => d.spoken)?.spoken || e.spoken), lang = dir === "rtl" ? "ar" : "en";
-    const sp = el("p", "spoken " + dir); sp.dir = dir; sp.lang = lang; e.diff.forEach(d => d.spoken && sp.append(wordSpan(d)));
+    const sp = el("p", "spoken " + dir); sp.dir = dir; sp.lang = lang; e.diff.forEach((d, i) => d.spoken && sp.append(wordSpan(d, marks.get(i))));
     pair.append(el("span", null, t("e.spoken")), sp);
     if (srcQ && !e.diffDisplay) {
       // the words could not be tied one-to-one to the written verse: show the verse whole and untouched, differences marked on the spoken line only
@@ -873,8 +1015,8 @@ function drawEntry(e) {
     } else {
       if (srcQ && src.basmala && e.diffFromStart) { const b = el("p", "basmala", src.basmala); b.dir = "rtl"; b.lang = "ar"; pair.append(el("span", null, t("e.source")), b); }
       const so = srcH ? origBlock("", "source-text") : el("p", "source-text " + dir); if (!srcH) { so.dir = dir; so.lang = lang; }
-      for (const d of e.diff) {
-        const n = sourceSpan(d, srcQ || srcH ? d.sourceDisplay : d.source); if (n) so.append(n);
+      for (let i = 0; i < e.diff.length; i++) {
+        const d = e.diff[i], n = sourceSpan(d, srcQ || srcH ? d.sourceDisplay : d.source, marks.get(i)); if (n) so.append(n);
         if (srcQ && d.ayahEnd) so.append(el("span", "ayah-no", `﴿${d.ayahEnd}﴾`), " ");
       }
       if (srcQ && src.basmala && e.diffFromStart) pair.append(so); else pair.append(el("span", null, t("e.source")), so);
@@ -887,6 +1029,15 @@ function drawEntry(e) {
     if (e.excerpt.tail && !e.tailUnmatched) li.append(el("p", "note", t("note.excerpt_tail")));
   }
   if (e.tailUnmatched) li.append(el("p", "note", t("note.tail_unmatched", e.tailUnmatchedSpoken || "")));
+  // what a second transcription of the same recording says about these words
+  if (g2) {
+    li.append(el("p", "note two-line" + (g2.paired && byTwo(e) ? " ok" : ""), (byTwo(e) ? t("two.line.upgraded") + " " : "") + twoLine(g2)));
+    if (g2.paired && S.second && g2.second) {
+      const ws = S.second.words.slice(g2.second.wordStart, g2.second.wordEnd + 1).map(w => w.w).join(" ");
+      if (ws) li.append(details(e, "second", t("two.show"), textBlock(ws, "second-text")));
+    }
+  }
+  if (e.pass === "t2") li.append(el("p", "note", t("two.second.note")));
 
   if (e.status === "meaning" && e.meaningVia === "llm" && src) {
     li.append(sourceLine(src, true));
@@ -952,7 +1103,7 @@ function drawEntry(e) {
   const firstWord = li.querySelector(".spoken .fw"); if (firstWord) firstWord.tabIndex = 0;      // one tab stop per spoken line; the arrow keys move inside it
   li.append(drawReview(e));
   if (e.manual) { const b = el("button", "link rm", t("e.manual.remove")); b.type = "button"; b.onclick = () => removeManual(e); li.append(b); }
-  else if (!textual(e) && e.pass !== "ar") { const b = el("button", "link find", t("e.find")); b.type = "button"; b.onclick = () => openLookup({ a: e.wordStart, b: e.wordEnd }); li.append(b); }
+  else if (!textual(e) && !foreign(e)) { const b = el("button", "link find", t("e.find")); b.type = "button"; b.onclick = () => openLookup({ a: e.wordStart, b: e.wordEnd }); li.append(b); }
   return li;
 }
 function drawReview(e) {
@@ -1006,8 +1157,8 @@ function refreshEntry(e, was) {
     if (idx >= 0) { const x = fresh.querySelectorAll(focusables)[idx]; if (x) x.focus({ preventScroll: true }); }
   }
   const b = $("map").querySelector(`.mark[data-id="${e.id}"]`);
-  if (b) { b.classList.replace("s-" + was, "s-" + e.status); b.title = markTitle(e); b.setAttribute("aria-label", b.title); b.hidden = isOff(e); }
-  for (const c of $("transcript").querySelectorAll(`.c[data-id="${e.id}"]`)) { c.classList.replace("s-" + was, "s-" + e.status); c.setAttribute("aria-label", t("tr.cite", num(e.id), markTitle(e))); c.toggleAttribute("data-off", isOff(e)); }
+  if (b) { b.classList.replace("s-" + was, "s-" + st(e)); b.title = markTitle(e); b.setAttribute("aria-label", b.title); b.hidden = isOff(e); }
+  for (const c of $("transcript").querySelectorAll(`.c[data-id="${e.id}"]`)) { c.classList.replace("s-" + was, "s-" + st(e)); c.setAttribute("aria-label", t("tr.cite", num(e.id), markTitle(e))); c.toggleAttribute("data-off", isOff(e)); }
   drawSummary(); afterVisibility();
 }
 
@@ -1036,7 +1187,7 @@ function drawTranscript() {
       const e = owner[i], from = i;
       if (!e) { block.append(word(i), " "); i++; }
       else {
-        const c = el("span", "c s-" + e.status + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); c.dataset.id = e.id; c.tabIndex = -1;
+        const c = el("span", "c s-" + st(e) + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); c.dataset.id = e.id; c.tabIndex = -1;
         c.setAttribute("role", "button"); c.setAttribute("aria-label", t("tr.cite", num(e.id), markTitle(e)));
         if (isOff(e)) c.setAttribute("data-off", "");
         for (let first = true; i < n && owner[i] === e; i++, first = false) { if (!first) c.append(" "); c.append(word(i)); }
@@ -1056,7 +1207,7 @@ function wireTranscript() {
   const act = (c, w) => {
     const e = c && !c.hasAttribute("data-off") ? S.ledger[c.dataset.id - 1] : null;
     // a word the reviewer corrected, or a word of the citation that is already selected: correct it here
-    if (w && (w.classList.contains("fx") || (e && c.classList.contains("on") && e.pass !== "ar"))) return editWord(w, +w.dataset.i, "transcript");
+    if (w && (w.classList.contains("fx") || (e && c.classList.contains("on") && !foreign(e)))) return editWord(w, +w.dataset.i, "transcript");
     if (e) focusEntry(e, true);
     else if (w && S.hasTimes && !$("audio").hidden) $("audio").currentTime = S.words[w.dataset.i].start || 0;
   };

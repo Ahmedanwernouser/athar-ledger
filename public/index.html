@@ -48,7 +48,7 @@
             <i class="p on" style="inset-inline-start:33%;width:13%"></i><i class="v" style="inset-inline-start:52%;width:11%"></i>
             <i class="n" style="inset-inline-start:69%;width:6%"></i><i class="v" style="inset-inline-start:84%;width:8%"></i>
           </div>
-          <div class="spec-head"><span class="spec-time">0:46</span><span id="specKind">حديث</span><span class="spec-status" id="specStatus">مطابق جزئيًا</span></div>
+          <div class="spec-head"><span class="spec-time">0:46</span><span id="specKind">حديث</span><span class="spec-status" id="specStatus">مطابق مع فروق</span></div>
           <p class="spec-label" id="specSpoken">ما قيل</p>
           <p class="spec-q" dir="rtl" lang="ar">من كان يؤمن بالله واليوم الآخر فليقل <em>كلامًا طيبًا</em> أو <em>ليسكت</em></p>
           <p class="spec-label" id="specSource">في المصدر</p>
@@ -72,6 +72,9 @@
           <label class="reclang"><span id="recLangLabel">لغة التسجيل</span>
             <select id="recLang"><option value="ar">عربي</option><option value="en">إنجليزي</option><option value="en+ar">إنجليزي مع تلاوة عربية (تفريغ مرّتين)</option></select>
           </label>
+          <label class="reclang" id="asrProvWrap" hidden><span id="asrProvLabel">المفرِّغ</span>
+            <select id="asrProv"></select>
+          </label>
         </div>
 
         <div class="way way-text" id="wayText">
@@ -83,8 +86,9 @@
           <p class="hint" id="ytHint">من يوتيوب: افتح «عرض النص المكتوب» تحت الفيديو، انسخه كله بأزمنته والصقه هنا، وضع رابط الفيديو ليُفتح عند لحظة كل استشهاد.</p>
           <div class="row">
             <button type="button" class="btn" id="btnAnalyzeText" disabled>حلِّل النص</button>
-            <label class="link filelink"><input type="file" id="transcriptFile" class="vh" accept=".json,.srt,.vtt,.txt"><span id="transcriptFileLabel">أو اختر ملف تفريغ أو جلسة محفوظة</span></label>
+            <label class="link filelink"><input type="file" id="transcriptFile" class="vh" accept=".json,.srt,.vtt,.txt" multiple aria-describedby="twoFilesHint"><span id="transcriptFileLabel">أو اختر ملف تفريغ أو جلسة محفوظة</span></label>
           </div>
+          <p class="hint" id="twoFilesHint">لمقارنة تفريغين للتسجيل نفسه: اختر ملفَّي تفريغ بأزمنة معًا؛ الأول في القائمة هو النص المعتمد والثاني للمقارنة.</p>
         </div>
       </div>
       <p class="err" id="startErr" role="alert" hidden></p>
@@ -154,6 +158,7 @@
     </div>
 
     <div class="wrap">
+      <p class="tr-by" id="trBy" hidden></p>
       <div class="tools">
         <div class="filters" id="filters" role="group" aria-label="تصفية السجل"><button type="button" class="chip open" id="chipOpen" aria-pressed="false" hidden></button></div>
         <div class="progress" id="progress">
@@ -205,12 +210,13 @@
     <li><b>المقارنة.</b> المواضع المرشّحة تُحاذى مع نص المصدر كلمةً كلمة، فيُعرف ما طابق وما اختلف وما زيد وما نقص.</li>
     <li><b>الوصف.</b> يُعطى كل استشهاد وصفًا من خمسة بحسب ما عُدَّ من الكلمات، لا بحسب رأي نموذج لغوي. الاستثناء الوحيد: إذا فُعِّلت خطوة «البحث بالمعنى» الاختيارية فقد يختار نموذج لغوي واحدًا من النصوص التي رشّحها البحث من المدونة؛ يُكتب على ذلك الموضع أن نموذجًا اختاره، ويبقى محتاجًا إلى تأكيد بشري.</li>
     <li><b>الاقتراح بالمعنى.</b> ما لم يُطابَق لفظه يُبحث عنه بحثًا هجينًا: كلمات نادرة مشتركة، ومتجهات معنى مدرَّبة على المدونة نفسها، ثم إعادة ترتيب. الناتج اقتراحات للمراجعة، لا مطابقات.</li>
+    <li><b>تفريغان.</b> إذا فُرِّغ التسجيل بمفرِّغَين قورن السجلّان كلمةً بكلمة: حيث سمع أحدهما لفظ المصدر عُدَّ الخلاف من التفريغ ووُصف الاستشهاد بأنه «حرفي بترجيح تفريغين»، وحيث اتفقا على غير لفظ المصدر بقي فرقًا في اللفظ؛ وهذا ترجيح لا قطع، فقد يخطئ المفرِّغان الخطأ نفسه أو يصحِّح أحدهما ما قاله المتحدث إلى النص المشهور.</li>
     <li><b>الإنجليزية.</b> الكلام الإنجليزي يُقارن بترجمات منشورة تحمل مراجع المصادر العربية نفسها، فالمطابقة بالإنجليزية تقود إلى النص العربي. لا يُترجم شيء من النصوص الشرعية آليًّا.</li>
   </ol>
   <h2>الأوصاف الخمسة</h2>
   <dl class="statuses">
     <dt class="s-verbatim">مطابق حرفيًا</dt><dd>اللفظ المنطوق هو لفظ المصدر (أو لفظ ترجمة منشورة)، وما اختلف يُرجَّح أنه من التفريغ.</dd>
-    <dt class="s-partial">مطابق جزئيًا</dt><dd>أغلب اللفظ من المصدر مع كلمات مغيَّرة أو زائدة أو ناقصة. الفروق معروضة.</dd>
+    <dt class="s-partial">مطابق مع فروق</dt><dd>أغلب اللفظ من المصدر مع كلمات مغيَّرة أو زائدة أو ناقصة. الفروق معروضة.</dd>
     <dt class="s-meaning">بالمعنى — يحتاج تأكيدًا</dt><dd>لم يُطابق اللفظ، لكن وُجد في المدونة نص قريب. لا يُعتمد قبل مراجعة بشرية.</dd>
     <dt class="s-lead">مصدر مرشّح</dt><dd>تشابه ضعيف يستحق نظرة، أو مرجع سمّاه المتحدث. ليس مطابقة.</dd>
     <dt class="s-notfound">لم يُعثر عليه في المدونة</dt><dd>قال المتحدث ما يدل على استشهاد، ولم يوجد نصه في المدونة. قد يكون في كتاب آخر، أو بلفظ آخر، أو غير ثابت. الأداة لا تعرف أيّها.</dd>
@@ -253,12 +259,13 @@
     <li><b>Comparison.</b> Candidate spots are aligned with the source text word by word: what agrees, what differs, what was added or left out.</li>
     <li><b>Status.</b> Each citation gets one of five statuses from counted words, not from a language model's opinion. The one exception: when the optional “by meaning” step is enabled, a language model may pick one of the passages the search retrieved from the corpus; that entry is labelled as picked by a model and still needs human confirmation.</li>
     <li><b>By meaning.</b> What was not matched in wording is searched with a hybrid of rare shared words and meaning vectors trained on the corpus itself, then re-ranked. The result is suggestions to review, not matches.</li>
+    <li><b>Two transcriptions.</b> When the recording is transcribed by two transcribers, the two ledgers are compared word by word: where one of them heard the source's word, the difference is taken to be a transcription slip and the citation is labelled “verbatim by two transcriptions”; where both agree on another word, it remains a difference of wording. This is a weighing of evidence, not a proof: both transcribers can make the same mistake, and one may “correct” what the speaker said to the well-known text.</li>
     <li><b>English.</b> English speech is compared with published translations that carry the same references as the Arabic sources, so a match in English leads to the Arabic text. Nothing sacred is machine-translated.</li>
   </ol>
   <h2>The five statuses</h2>
   <dl class="statuses">
     <dt class="s-verbatim">Verbatim match</dt><dd>The spoken wording is the source's wording (or a published translation's); remaining differences are probably transcription artefacts.</dd>
-    <dt class="s-partial">Partial match</dt><dd>Most of the wording is the source's, with words changed, added or missing. The differences are shown.</dd>
+    <dt class="s-partial">Match with differences</dt><dd>Most of the wording is the source's, with words changed, added or missing. The differences are shown.</dd>
     <dt class="s-meaning">By meaning — needs confirmation</dt><dd>The wording did not match, but a close passage exists in the corpus. Not to be relied on before human review.</dd>
     <dt class="s-lead">Candidate source</dt><dd>A weak similarity worth a look, or a reference the speaker named. Not a match.</dd>
     <dt class="s-notfound">Not found in the corpus</dt><dd>The speaker announced a quotation whose text is not in the corpus. It may be in another book, in other words, or not established. The tool cannot tell which.</dd>

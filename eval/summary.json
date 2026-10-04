@@ -7208,18 +7208,18 @@
       "saidWordForWord": {
        "detected": 297,
        "labelledVerbatim": {
-        "k": 126,
+        "k": 127,
         "n": 297,
-        "pct": 42.4,
+        "pct": 42.8,
         "ci95": [
          37,
          48
         ]
        },
        "downgradedToPartial": {
-        "k": 171,
+        "k": 170,
         "n": 297,
-        "pct": 57.6,
+        "pct": 57.2,
         "ci95": [
          52,
          63

@@ -327,8 +327,69 @@ function attachOriginal(s) {
   return s;
 }
 
+// ---------------- source positions: where each compared word stands in its source ----------------
+// The agreement check between two transcriptions (agree.js) compares two entries of the same source word by word, so
+// every source word of a comparison gets its exact position: diff[i].srcPos (index of the indexed word — counted from the
+// first word of the SURAH for the Qur'an, from the first indexed word of the passage for a hadith), diff[i].srcN when one
+// spoken word stands for several source words, and entry.posKey naming the text the positions belong to. Nothing is
+// attached unless the place is established exactly; an entry without positions is never paired.
+
+/** every index k at which the sequence `want` stands in `toks` */
+function tokenPlaces(want, toks) {
+  const out = [], L = want.length;
+  for (let k = 0; L && k + L <= toks.length; k++) {
+    let same = true;
+    for (let j = 0; j < L; j++) if (toks[k + j] !== want[j]) { same = false; break; }
+    if (same) out.push(k);
+  }
+  return out;
+}
+/**
+ * Give the source words of a diff their positions in `toks` (the indexed words of the passage or ayah range).
+ * @param at    where the compared words begin in toks when that is already known (it is checked), null to find it
+ * @param base  added to every position (the range's first word counted from the start of the surah)
+ * @returns false (nothing attached) unless the words stand at `at`, or at exactly one place in toks
+ */
+export function diffPositions(diff, toks, base = 0, at = null) {
+  if (!Array.isArray(diff) || !Array.isArray(toks)) return false;
+  for (const d of diff) { delete d.srcPos; delete d.srcN; }
+  const want = [], owner = [];
+  diff.forEach((d, i) => { if (d.source) for (const tk of d.source.split(" ")) { want.push(tk); owner.push(i); } });
+  if (!want.length || want.length > toks.length) return false;
+  if (Number.isInteger(at)) { for (let j = 0; j < want.length; j++) if (toks[at + j] !== want[j]) return false; }
+  else { const places = tokenPlaces(want, toks); if (places.length !== 1) return false; at = places[0]; }
+  owner.forEach((i, j) => { const d = diff[i]; if (d.srcPos == null) { d.srcPos = base + at + j; } else d.srcN = (d.srcN || 1) + 1; });
+  return true;
+}
+const surahOffs = new Map();          // surah -> [words before ayah 1, before ayah 2, …]
+/** how many indexed words of the surah stand before this ayah */
+function ayahBase(surah, ayah) {
+  let off = surahOffs.get(surah);
+  if (!off) { off = [0]; surahOffs.set(surah, off); }
+  for (let a = off.length; a < ayah; a++) off.push(off[a - 1] + corpus.tok(corpus.surahStart[surah] + a - 1).length);
+  return off[ayah - 1];
+}
+/** positions for one entry (see the header of this section); `qAt` is what quranDiffDisplay answered for a Qur'an entry */
+function sourcePositions(e, qAt = null) {
+  const s = e.source;
+  delete e.posKey;
+  if (!e.diff || !s || s.via === "en" || (e.status !== "verbatim" && e.status !== "partial")) return false;
+  let ok = false;
+  if (s.type === "q" && s.surah && corpus.surahStart[s.surah] >= 0) {
+    const first = corpus.surahStart[s.surah] + s.ayah - 1, last = corpus.surahStart[s.surah] + s.ayahEnd - 1, toks = [];
+    for (let pid = first; pid <= last; pid++) toks.push(...corpus.tok(pid));
+    ok = diffPositions(e.diff, toks, ayahBase(s.surah, s.ayah), qAt);
+    if (ok) e.posKey = "q:" + s.surah;
+  } else if (s.type === "h") {
+    const pid = hadithPid(s);
+    if (pid != null) ok = diffPositions(e.diff, corpus.tok(pid), 0, null);
+    if (ok) e.posKey = "h:" + s.ref;
+  }
+  return ok;
+}
+
 /** tests run without a worker scope: give the module its corpus */
-export function setCorpusForTests(c) { corpus = c; ayahCache.clear(); origCache.clear(); }
+export function setCorpusForTests(c) { corpus = c; ayahCache.clear(); origCache.clear(); surahOffs.clear(); }
 /** … and its display text (a HadithDisplay, or null for "no display folder") */
 export function setDisplayForTests(d) { display = d; origCache.clear(); }
 
@@ -389,7 +450,8 @@ function decorate(e) {
     e.diffDisplay = !!ok;                 // the source side of the comparison can be drawn from the verbatim words
     e.diffWhole = !!(ok && ok.whole);     // what was compared is the whole of the verse(s), not a part
     e.diffFromStart = !!(ok && ok.at === 0);
-  }
+    try { sourcePositions(e, ok ? ok.at : null); } catch { /* no positions: the entry is not compared with a second transcription */ }
+  } else { try { sourcePositions(e); } catch { /* as above */ } }
   // a published English translation of the source (English packs), and the Arabic text when the match was made in English
   for (const s of [e.source, e.reference, ...(e.candidates || []), ...(e.suggestions || [])]) {
     if (!s || (s.type !== "q" && s.type !== "h")) continue;
@@ -411,7 +473,7 @@ async function onMessage(ev) {
   const { id, type } = ev.data;
   try {
     if (type === "load") {
-      ayahCache.clear();
+      ayahCache.clear(); surahOffs.clear();
       const fetcher = httpFetcher(ev.data.base);
       corpus = await Corpus.load(fetcher, p => self.postMessage({ id, progress: p }));
       corpus.ensureStems();

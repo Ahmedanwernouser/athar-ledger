@@ -456,3 +456,16 @@ kbd { display: inline-block; min-width: 1.7em; text-align: center; direction: lt
 .orig { font-family: var(--quote); }
 .cand p.orig, .cand-text.orig, .lk .cand-text.orig { line-height: 2.1; }
 .long .more { font-size: .84rem; margin-top: 2px; }
+
+/* ---- two transcriptions of the same recording (agree.js) ---- */
+.reclang + .reclang { margin-top: 8px; }
+.tr-by { margin: 10px 0 0; font-size: .82rem; color: var(--muted); }
+.two-tag { margin-top: 6px; font-size: .78rem; font-weight: 600; color: var(--verbatim); border: 1px solid currentColor; border-radius: 999px; padding: 0 10px; line-height: 1.8; }
+.note.two-line { border-inline-start: 2px solid var(--edge); padding-inline-start: 10px; }
+.second-text { font-size: .95rem; color: var(--muted); margin: 6px 0 0; }
+/* a difference the two transcriptions do not agree on is transcription uncertainty: dotted and muted, never the strong mark */
+.w-diff.ag-disagree, .w-del.ag-disagree { background: none; box-shadow: none; border: 0; color: inherit; padding: 0; text-decoration: underline dotted var(--muted); text-underline-offset: 6px; text-decoration-thickness: 2px; opacity: .8; }
+.w-ins.ag-disagree { text-decoration: underline dotted var(--muted); text-decoration-thickness: 2px; opacity: .8; }
+.ag-other { text-decoration: underline dotted var(--edge); text-underline-offset: 6px; text-decoration-thickness: 2px; }
+.ag-unresolved::after { content: "?"; font-size: .7em; font-weight: 700; vertical-align: super; margin-inline-start: 1px; color: var(--notfound); }
+@media print { .two-tag, .ag { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

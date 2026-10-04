@@ -23,7 +23,19 @@ DAILY_CAP = "48"
 HOURLY_CAP = "12"
 IP_DAILY_CAP = "24"        # one IP address may use at most this much of the day (set it equal to DAILY_CAP to switch it off)
 MAX_BYTES = "25000000"     # Groq free tier upload limit (25 MB)
-ASR_MODEL = "whisper-large-v3"
+ASR_MODEL = "whisper-large-v3"   # Groq's model
+
+# ---- Which transcriber answers /asr when the site does not name one: "groq" (default) or "gemini".
+# A provider is available only when its key SECRET exists (GROQ_API_KEY / GEMINI_API_KEY); GET /health lists
+# the available ones. Both providers use the SAME caps above.
+# OPTIONAL second transcriber, Gemini 3.5 Transcribe (docs/SETUP_FREE_ACCOUNTS.md, section 4-k):
+#   - not tested against Google's live API (written from the documentation, tested against a stub);
+#   - free-tier limits are not published, and free-tier content may be used by Google to improve its
+#     products: use it for lectures that are already public;
+#   - always verbatim with word timestamps; with timestamps Google accepts at most 30 minutes per request.
+ASR_PROVIDER = "groq"
+# GEMINI_ASR_MODEL = "gemini-3.5-transcribe"
+# GEMINI_ASR_LANG_AR = "ar-EG"     # language code sent to Gemini for Arabic (e.g. "ar-SA")
 
 # ---- OPTIONAL "by meaning" helper (off unless LLM_PROVIDER is set). Use a model that is in YOUR free tier today.
 # LLM_PROVIDER = "groq"            # or "gemini" (needs the secret GEMINI_API_KEY)
@@ -66,4 +78,5 @@ enabled = true
 #   period = 60
 
 # SECRETS are never written in this file:
-#   npx wrangler secret put GROQ_API_KEY        (and, only for gemini:  npx wrangler secret put GEMINI_API_KEY)
+#   npx wrangler secret put GROQ_API_KEY        (and, only for gemini — /llm or the second transcriber:
+#   npx wrangler secret put GEMINI_API_KEY)     The command asks for the key: paste it at the prompt only.

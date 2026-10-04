@@ -197,3 +197,79 @@ test("sample document with the display text: the partial hadith's footnote quote
   assert.ok(before.footnotes.some(f => f.runs[0].text.includes("يُراجَع لفظ المصدر")) && !before.footnotes.some(f => f.runs[0].text.includes("لفظ المصدر: «")));
   assert.ok(citedDocx({ words, ledger: page, title: "محاضرة", hadithText: true }).bytes.length > 2000);
 });
+
+// ---- two transcriptions of the same recording (agree.js): the document, the summary, the exports and the session
+test("two transcriptions: the combined status drives quotation, footnote, summary and CSV; the words stay those of the primary transcript", async () => {
+  const { compareLedgers, applyAgreement } = await import("../public/js/agree.js");
+  const { toCsv, toJson, toRows } = await import("../public/js/exporter.js");
+  const { committeeSummary, summaryLines } = await import("../public/js/report.js");
+  setCorpusForTests(corpus); setDisplayForTests(null);
+  const mk = text => text.split(/\s+/).filter(Boolean).map((w, i) => ({ w, start: i * 0.5, end: i * 0.5 + 0.45 }));
+  const pre = "الحمد لله رب العالمين والصلاة والسلام على رسول الله أما بعد فإن موضوعنا اليوم عن الأخلاق وقد قال الله تعالى";
+  const post = "وهذه الآية جامعة لمعاني الخير كلها كما ذكر أهل العلم ثم قال الله تعالى";
+  const q = "إن الله يأمر بالعدل والإحسان وإيتاء ذي القربى وينهى عن الفحشاء والمنكر والبغي يعظكم لعلكم تذكرون";
+  const q2 = "قل هو الله أحد الله الصمد لم يلد ولم يولد ولم يكن له كفوا أحد";
+  const page = text => { const ws = mk(text), r = analyze(ws, corpus); return { ws, ledger: r.ledger.map(e => ({ ...finish(e, ws, r.tokenToWord), key: `m:${e.wordStart}-${e.wordEnd}` })) }; };
+  // the primary mis-heard one word of 16:90; both transcripts have «الصنم» for «الصمد» in 112
+  const A = page(`${pre} ${q.replace("والإحسان", "والإيمان")} ${post} ${q2.replace("الصمد", "الصنم")} ${post}`);
+  const B = page(`${pre} ${q} ${post} ${q2.replace("الصمد", "الصنم")} ${post}`);
+  const single = JSON.parse(JSON.stringify(A.ledger));
+  applyAgreement(A.ledger, compareLedgers(A.ledger, B.ledger));
+  const up = A.ledger.find(e => e.source && e.source.ref === "16:90"), kept = A.ledger.find(e => e.source && e.source.surah === 112);
+  assert.deepEqual([up.status, up.statusCombined, kept.status, kept.statusCombined], ["partial", "verbatim", "partial", "partial"]);
+  assert.equal(kept.agreement2.verdict, "difference_confirmed");
+
+  const d = buildCitedDoc({ words: A.ws, ledger: A.ledger, title: "محاضرة", date: "٤ أكتوبر", mushaf: true, transcribers: ["Whisper (Groq) · whisper-large-v3", "Gemini 3.5 Transcribe"] });
+  const quotes = d.paragraphs.flatMap(p => p.runs).filter(r => r.quote);
+  assert.equal(quotes.length, 2);
+  assert.ok(quotes[0].text.includes("والإيمان"), "quoted as transcribed: the Mushaf text needs the primary words to map one to one");
+  assert.equal(d.counts.mushaf, 0);
+  assert.deepEqual([d.counts.verbatim, d.counts.partial, d.counts.two], [1, 1, 1]);
+  const fn = d.footnotes.map(f => f.runs[0].text);
+  assert.ok(fn[0].includes("حرفي بترجيح تفريغين؛ في التفريغ فروق يُرجَّح أنها من التفريغ") && fn[0].endsWith(" *"), fn[0]);
+  assert.ok(!fn[0].includes("يخالف نص المصحف"), "no «differs from the Mushaf» sentence for a quotation two transcriptions support");
+  assert.ok(fn[1].includes("يخالف نص المصحف"), "a confirmed difference keeps the partial footnote");
+  assert.ok(footnoteFor(up, "yes").text.includes("بترجيح تفريغين") && !footnoteFor(up, "yes").text.endsWith("*"));
+  // a citation only the second transcription has: a footnote that says so, and no quotation marks around the primary's words
+  const lone = footnoteFor({ ...kept, pass: "t2", status: "verbatim", statusCombined: undefined, agreement2: undefined }, null);
+  assert.ok(lone.quote === false && lone.text.includes("التفريغ الثاني وحده") && lone.text.endsWith(" *"), lone.text);
+  const sub = d.paragraphs.find(p => p.style === "Subtitle").runs[0].text;
+  assert.ok(sub.includes("Whisper (Groq) · whisper-large-v3") && sub.includes("Gemini 3.5 Transcribe"), sub);
+  const closing = d.paragraphs[d.paragraphs.length - 1].runs[0].text;
+  assert.ok(closing.includes("قورن تفريغان"), closing);
+  // one transcription: nothing of this appears
+  const one = buildCitedDoc({ words: A.ws, ledger: single, title: "محاضرة", date: "٤ أكتوبر", mushaf: true });
+  assert.ok(!text(one).includes("تفريغين") && !one.footnotes.some(f => f.runs[0].text.includes("تفريغين")) && !text(one).includes("قورن"));
+  assert.ok(one.footnotes[0].runs[0].text.includes("يخالف نص المصحف"));
+  assert.equal(buildCitedDoc({ words: A.ws, ledger: single, transcribers: ["Whisper (Groq)"] }).paragraphs.find(p => p.style === "Subtitle").runs[0].text.includes("المفرِّغ: Whisper (Groq)."), true);
+
+  const s = committeeSummary(A.ledger, {});
+  assert.deepEqual([s.status.verbatim, s.status.partial, s.two.verbatim, s.two.confirmed], [1, 1, 1, 1]);
+  assert.ok(summaryLines(s).some(l => l.label === "حرفي بترجيح تفريغين" && l.value.startsWith("١")));
+  assert.equal(committeeSummary(single, {}).two, null);
+  assert.ok(!summaryLines(committeeSummary(single, {})).some(l => l.label === "حرفي بترجيح تفريغين"));
+
+  const rows = toRows(A.ledger, {}), r0 = rows.find(r => r.ref === "16:90"), r1 = rows.find(r => r.ref !== "16:90" && r.two);
+  assert.deepEqual([r0.status, r0.statusStrict, r0.two, r0.twoConfirmed, r0.twoDisagree, r0.twoUnresolved], ["مطابق حرفيًا", "مطابق مع فروق", "يُرجَّح أنه حرفي", 0, 1, 0]);
+  assert.deepEqual([r1.status, r1.two, r1.twoConfirmed], ["مطابق مع فروق", "فرق اتفق عليه التفريغان", 1]);
+  const head = toCsv(A.ledger, {}).split("\r\n")[0];
+  assert.ok(head.includes("الوصف من التفريغ الأول وحده") && head.includes("مواضع غير محسومة"));
+  assert.ok(!toCsv(single, {}).split("\r\n")[0].includes("التفريغ الأول"), "one transcription: the CSV has the columns it always had");
+  const j = JSON.parse(toJson(A.ledger, {}, { transcribers: ["a", "b"] }));
+  assert.deepEqual(j.transcribers, ["a", "b"]);
+  assert.equal(j.ledger.find(e => e.source && e.source.ref === "16:90").statusCombined, "verbatim");
+  assert.equal(j.ledger.find(e => e.source && e.source.ref === "16:90").agreement2.verdict, "verbatim_supported");
+});
+
+test("session: the second transcript and the transcribers are saved and read back; an old session has neither", () => {
+  const w2 = words.slice(0, 30).map((w, i) => ({ ...w, w: i === 3 ? "كلمة" : w.w }));
+  const who = [{ provider: "groq", model: "whisper-large-v3" }, { provider: "gemini", model: "gemini-3.5", junk: { a: 1 } }, { provider: "third" }];
+  const s = fromSession(JSON.parse(toSession({ words, title: "محاضرة", review: {}, words2: w2, transcribers: who })));
+  assert.equal(s.words2.length, 30); assert.equal(s.words2[3].w, "كلمة");
+  assert.ok(Number.isFinite(s.words2[0].start) && Number.isFinite(s.words2[0].end));
+  assert.deepEqual(s.transcribers, [{ provider: "groq", model: "whisper-large-v3", name: "" }, { provider: "gemini", model: "gemini-3.5", name: "" }]);
+  const old = fromSession(JSON.parse(toSession({ words, title: "محاضرة", review: {} })));
+  assert.equal(old.words2, null); assert.deepEqual(old.transcribers, []);
+  assert.ok(!toSession({ words, title: "x", review: {} }).includes("words2"));
+  assert.equal(fromSession({ athar_session: 1, words: words.map(w => [w.w]), words2: "x", transcribers: [1, null, { provider: 5 }] }).words2, null);
+});

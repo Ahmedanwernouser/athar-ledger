@@ -19,8 +19,8 @@ const eq = (a, b, m) => ok(a === b, `${m}  (got ${JSON.stringify(a)}, want ${JSO
 const sec = (s) => console.log("— " + s);
 
 // ---- upstream stub ----
-const up = { calls: [], impl: null };
-globalThis.fetch = async (url, init) => { up.calls.push({ url: String(url), init }); return up.impl(url, init); };
+const up = { calls: [], impl: null, hosts: new Set() };
+globalThis.fetch = async (url, init) => { up.calls.push({ url: String(url), init }); up.hosts.add(new URL(String(url)).host); return up.impl(url, init); };
 const asrOK = () => new Response(JSON.stringify({ task: "transcribe", duration: 12.3, text: "ok", words: [], segments: [] }),
   { status: 200, headers: { "Content-Type": "application/json", "x-ratelimit-remaining-requests": "5", "set-cookie": "a=b" } });
 const chat = (c) => () => new Response(JSON.stringify({ choices: [{ message: { content: c } }] }), { status: 200 });
@@ -62,10 +62,10 @@ const llm = (body, o = {}) => new Request("https://w.dev/llm", { method: "POST",
 
 // ---- every response in this file goes through here: no secret, no stack, CORS exactly when the origin is allowed ----
 const SECRET_RE = /gsk_|AIza|SECRET|org_01|Invalid API Key|internal-host|at .*\.js|Error:/;
-async function call(req, env) {
+async function call(req, env, ctx) {
   const origin = req.headers.get("Origin");
   let r;
-  try { r = await worker.fetch(req, env); } catch (e) { ok(false, "worker threw (would be Cloudflare error 1101): " + e.message); return { status: 0, j: {}, t: "", h: new Headers() }; }
+  try { r = await worker.fetch(req, env, ctx); } catch (e) { ok(false, "worker threw (would be Cloudflare error 1101): " + e.message); return { status: 0, j: {}, t: "", h: new Headers() }; }
   const t = await r.text();
   const hs = JSON.stringify([...r.headers]);
   if (SECRET_RE.test(t + hs)) ok(false, `leak in response ${r.status}: ${t.slice(0, 120)} ${hs}`);
@@ -115,7 +115,7 @@ sec("/asr: the form is rebuilt");
   eq(JSON.stringify(Object.keys(c.init.headers)), '["Authorization"]', "  only Authorization is sent upstream");
   eq(c.init.headers.Authorization, "Bearer " + KEY, "  key attached server-side");
   eq(await c.init.body.get("file").text(), "RIFF-fake-audio", "  file bytes are forwarded unchanged");
-  eq(r.t, JSON.stringify({ task: "transcribe", duration: 12.3, text: "ok", words: [], segments: [] }), "  upstream JSON is passed through");
+  eq(r.t, JSON.stringify({ task: "transcribe", duration: 12.3, text: "ok", words: [], segments: [], provider: "groq", model: "whisper-large-v3" }), "  upstream JSON is passed through, with provider and model added");
   ok(!r.h.has("set-cookie") && !r.h.has("x-ratelimit-remaining-requests"), "  upstream headers are not forwarded"); }
 { up.calls = []; await call(await asr({ fields: [["model", "x"]] }), baseEnv({ ASR_MODEL: "whisper-large-v3-turbo" }));
   eq(up.calls[0].init.body.get("model"), "whisper-large-v3-turbo", "model comes from env ASR_MODEL, never from the caller"); }
@@ -253,6 +253,206 @@ sec("/asr upstream errors are never passed through");
   r = await call(llm({ spoken: SP }), L()); ok(r.status === 502 && r.j.error === "upstream" && asked[1] === 30000, "hanging upstream: /llm gives up after its 30 s timeout -> 502 upstream");
   AbortSignal.timeout = realTimeout; up.impl = asrOK; }
 
+// =====================================================================================================
+// Second transcriber: Gemini 3.5 Transcribe. The stub below follows Google's DOCUMENTED shapes
+// (Files API resumable upload + POST /v1beta/interactions). The live API was never called.
+const GH = "https://generativelanguage.googleapis.com";
+const G_START = GH + "/upload/v1beta/files", G_UP = GH + "/upload/v1beta/files?upload_id=UP123&upload_protocol=resumable";
+const G_FILE = GH + "/v1beta/files/abc-123", G_INT = GH + "/v1beta/interactions", GROQ_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
+const jr = (o, status = 200, h = {}) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json", ...h } });
+const wi = (text, a, b) => ({ type: "word_info", text, speaker: "spk_1", start_offset: a, end_offset: b });
+const INTER = { id: "interactions/abc", status: "completed", steps: [{ id: "step_001", type: "model_output",
+  content: [{ type: "text", text: "Hello world", annotations: [wi("Hello", "0.100s", "0.450s"), wi("world", "0.500s", "1.250s")] }] }] };
+const leak = (status, h = {}) => () => new Response(`{"error":{"message":"API key ${GKEY} invalid for org_01 at internal-host"}}`, { status, headers: h });
+const timeout = () => { throw new DOMException("The operation was aborted due to timeout " + GKEY, "TimeoutError"); };
+function gstub(o = {}) {
+  let polls = 0;
+  return async (url, init) => {
+    url = String(url);
+    if (url === GROQ_URL) return asrOK();
+    if (url === G_START) return o.start ? o.start() : new Response("{}", { status: 200, headers: "uploadUrl" in o ? (o.uploadUrl ? { "x-goog-upload-url": o.uploadUrl } : {}) : { "x-goog-upload-url": G_UP } });
+    if (url === G_UP) return o.upload ? o.upload() : jr({ file: { name: "files/abc-123", uri: G_FILE, mimeType: "audio/wav", state: o.state || "ACTIVE", ...(o.file || {}) } });
+    if (url === G_FILE && init.method === "GET") { polls++; return o.poll ? o.poll(polls) : jr({ name: "files/abc-123", uri: G_FILE, state: polls >= (o.activeAfter ?? 1) ? "ACTIVE" : "PROCESSING" }); }
+    if (url === G_FILE && init.method === "DELETE") return o.del ? o.del() : jr({});
+    if (url === G_INT) return o.inter ? o.inter() : jr(o.interaction ?? INTER);
+    throw new Error("unexpected upstream call: " + init.method + " " + url);
+  };
+}
+const G = (o = {}) => baseEnv({ GEMINI_API_KEY: GKEY, ...o });
+const gasr = (fields = [], file) => asr({ fields: [["provider", "gemini"], ...fields], file });
+const seq = () => up.calls.map((c) => c.init.method + " " + c.url.replace(GH, "").replace("https://api.groq.com", "groq:")).join(" | ");
+const hdr = (c, k) => new Headers(c.init.headers).get(k);
+// the Worker waits 1 s between polls: run those waits instantly, but count them
+const realSetTimeout = globalThis.setTimeout; let pollWaits = 0;
+globalThis.setTimeout = (f, ms, ...a) => { if (ms === 1000) { pollWaits++; ms = 0; } return realSetTimeout(f, ms, ...a); };
+up.hosts.clear();
+
+sec("/asr provider: selection, default, availability");
+{ up.impl = gstub(); up.calls = [];
+  let r = await call(await asr(), G()); ok(r.status === 200 && r.j.provider === "groq" && r.j.model === "whisper-large-v3" && seq() === "POST groq:/openai/v1/audio/transcriptions", "no `provider` field -> the default provider (groq)");
+  up.calls = []; r = await call(await gasr(), G()); ok(r.status === 200 && r.j.provider === "gemini" && r.j.model === "gemini-3.5-transcribe" && up.calls.every((c) => c.url.startsWith(GH + "/")), "provider=gemini -> Gemini only");
+  up.calls = []; r = await call(await asr({ fields: [["provider", "groq"]] }), G({ ASR_PROVIDER: "gemini" })); ok(r.j.provider === "groq" && up.calls.length === 1 && up.calls[0].url === GROQ_URL, "provider=groq wins over ASR_PROVIDER=gemini");
+  for (const d of ["gemini", " Gemini ", "GEMINI"]) { up.calls = []; r = await call(await asr(), G({ ASR_PROVIDER: d })); ok(r.j.provider === "gemini" && up.calls[0].url === G_START, `ASR_PROVIDER=${JSON.stringify(d)} makes gemini the default`); }
+  for (const d of ["", "whisper", "https://evil.example", "gemini,groq"]) { up.calls = []; r = await call(await asr(), G({ ASR_PROVIDER: d })); ok(r.j.provider === "groq" && up.calls.length === 1 && up.calls[0].url === GROQ_URL, `ASR_PROVIDER=${JSON.stringify(d)} -> groq`); }
+  // the field is compared with two literals: anything else is the default, and never a host / path / model
+  for (const v of ["", "GEMINI", "gemini ", "openai", "https://evil.example/asr", "//evil.example", "evil.example", "groq/../gemini", "generativelanguage.googleapis.com@evil.example", "gemini\r\nHost: evil.example", "__proto__", "constructor"]) {
+    up.calls = []; r = await call(await asr({ fields: [["provider", v]] }), G());
+    ok(r.status === 200 && r.j.provider === "groq" && up.calls.length === 1 && up.calls[0].url === GROQ_URL, `provider=${JSON.stringify(v)} -> default provider, one call to Groq`); }
+  up.calls = []; r = await call(await asr({ fields: [["provider", "evil.example"], ["provider", "gemini"]] }), G()); ok(r.j.provider === "groq" && up.calls[0].url === GROQ_URL, "a repeated `provider` field: only the first one counts");
+  up.calls = []; r = await call(await gasr([["model", "gemini-9-ultra"], ["mode", "smart"], ["custom_vocabulary", "x"], ["url", "https://evil.example/a.mp3"], ["uri", "https://evil.example/a.mp3"], ["language_codes", "fr-FR"]]), G());
+  const b = up.calls.find((c) => c.url === G_INT).init.body; ok(r.status === 200 && !/evil|ultra|smart|custom_vocabulary|fr-FR/.test(b), "extra form fields never reach the Gemini request"); }
+{ up.impl = gstub(); up.calls = [];
+  let env = baseEnv(); let r = await call(await gasr(), env);
+  ok(r.status === 400 && r.j.error === "provider_unavailable" && r.j.provider === "gemini" && Object.keys(r.j).length === 2, "provider=gemini without GEMINI_API_KEY -> 400 provider_unavailable {provider}");
+  ok(up.calls.length === 0 && env.CAP.writes === 0, "  nothing sent upstream and no cap unit charged");
+  env = baseEnv({ GROQ_API_KEY: "", GEMINI_API_KEY: GKEY }); r = await call(await asr({ fields: [["provider", "groq"]] }), env);
+  ok(r.status === 400 && r.j.error === "provider_unavailable" && r.j.provider === "groq" && env.CAP.writes === 0 && up.calls.length === 0, "provider=groq without GROQ_API_KEY -> 400 provider_unavailable, not charged");
+  r = await call(await asr(), env); ok(r.status === 500 && r.j.error === "server_not_configured" && env.CAP.writes === 0 && up.calls.length === 0, "default provider without its key (and no `provider` field) -> 500 server_not_configured, no silent switch to the other provider");
+  r = await call(await gasr(), env); ok(r.status === 200 && r.j.provider === "gemini" && env.CAP.writes === 3, "  the available provider still works when asked for by name");
+  env = baseEnv({ GROQ_API_KEY: "", GEMINI_API_KEY: GKEY, ASR_PROVIDER: "gemini" }); r = await call(await asr(), env); ok(r.status === 200 && r.j.provider === "gemini", "Gemini alone (ASR_PROVIDER=gemini, no Groq key) works");
+  env = baseEnv({ GROQ_API_KEY: "" }); up.calls = []; r = await call(await gasr(), env); ok(r.status === 500 && r.j.error === "server_not_configured" && up.calls.length === 0, "no key at all -> 500 server_not_configured");
+  const e2 = baseEnv({ DAILY_CAP: "1" }); const st = [];
+  for (let i = 0; i < 3; i++) st.push((await call(await gasr(), e2)).status);
+  st.push((await call(await asr(), e2)).status, (await call(await asr(), e2)).status); eq(st.join(" "), "400 400 400 200 429", "unavailable-provider requests do not use up the daily cap"); }
+{ up.calls = []; const H = async (env) => { const r = await call(await asr({ method: "GET", path: "/health" }), env); return r; };
+  let env = baseEnv(); let h = await H(env); ok(h.j.configured === true && JSON.stringify(h.j.asr) === '{"default":"groq","available":["groq"]}', "/health: asr {default: groq, available: [groq]} with the Groq key only");
+  h = await H(G()); eq(JSON.stringify(h.j.asr), '{"default":"groq","available":["groq","gemini"]}', "/health lists both providers when both keys exist");
+  h = await H(baseEnv({ GROQ_API_KEY: "", GEMINI_API_KEY: GKEY, ASR_PROVIDER: "gemini" })); ok(h.j.configured === true && JSON.stringify(h.j.asr) === '{"default":"gemini","available":["gemini"]}', "/health: Gemini alone is a complete configuration when it is the default");
+  h = await H(baseEnv({ ASR_PROVIDER: "gemini" })); ok(h.j.configured === false && h.j.missing.join() === "GEMINI_API_KEY" && h.j.asr.default === "gemini" && h.j.asr.available.join() === "groq", "/health: default provider without its key -> configured:false, missing names the key");
+  h = await H(baseEnv({ GROQ_API_KEY: "" })); ok(h.j.asr.available.length === 0 && h.j.asr.default === "groq", "/health: no key -> available: []");
+  env = G(); await H(env); ok(env.CAP.reads === 0 && env.CAP.writes === 0 && up.calls.length === 0, "/health touches neither the caps nor the providers"); }
+
+sec("/asr gemini: the exact upstream calls");
+{ const env = G(); up.impl = gstub({ state: "PROCESSING", activeAfter: 2 }); up.calls = []; pollWaits = 0;
+  const bytes = "RIFF-fake-audio-0123456789";
+  const r = await call(await gasr([["language", "ar"]], { bytes, type: "audio/wav", name: "part-1.wav" }), env);
+  eq(r.status, 200, "gemini transcription with a PROCESSING file -> 200");
+  eq(seq(), "POST /upload/v1beta/files | POST /upload/v1beta/files?upload_id=UP123&upload_protocol=resumable | GET /v1beta/files/abc-123 | GET /v1beta/files/abc-123 | POST /v1beta/interactions | DELETE /v1beta/files/abc-123", "  call order: start, upload, poll, poll, interactions, delete");
+  eq(pollWaits, 2, "  one 1-second wait before each poll");
+  const [s, u, p, , x, d] = up.calls;
+  ok(hdr(s, "x-goog-api-key") === GKEY && hdr(s, "X-Goog-Upload-Protocol") === "resumable" && hdr(s, "X-Goog-Upload-Command") === "start", "  start: key header, resumable protocol, command start");
+  ok(hdr(s, "X-Goog-Upload-Header-Content-Length") === String(bytes.length) && hdr(s, "X-Goog-Upload-Header-Content-Type") === "audio/wav" && hdr(s, "Content-Type") === "application/json", "  start: declares the file's size and mime type");
+  eq(s.init.body, '{"file":{"display_name":"audio"}}', "  start: fixed display name (the caller's file name is not sent)");
+  ok(hdr(u, "X-Goog-Upload-Offset") === "0" && hdr(u, "X-Goog-Upload-Command") === "upload, finalize" && hdr(u, "Content-Type") === "audio/wav", "  upload: offset 0, command `upload, finalize`");
+  ok(u.init.body instanceof Blob && u.init.body.size === bytes.length && (await u.init.body.text()) === bytes, "  upload: the body is the file itself (raw bytes, not base64, not JSON)");
+  ok(hdr(u, "x-goog-api-key") === null, "  upload: the API key is not sent to the upload URL");
+  ok(hdr(p, "x-goog-api-key") === GKEY && p.init.body === undefined, "  poll: GET of the file resource with the key header");
+  eq(x.init.body, JSON.stringify({ model: "gemini-3.5-transcribe", input: [{ type: "audio", uri: G_FILE, mime_type: "audio/wav" }],
+    generation_config: { transcription_config: { language_codes: ["ar-EG"], mode: { type: "verbatim", timestamp_granularities: ["word"] } } } }), "  interactions: model, file URI, ar-EG, verbatim mode with word timestamps — and nothing else");
+  ok(hdr(x, "x-goog-api-key") === GKEY && hdr(x, "Content-Type") === "application/json", "  interactions: key header + JSON");
+  ok(hdr(d, "x-goog-api-key") === GKEY && d.init.method === "DELETE", "  delete: the uploaded file is removed afterwards");
+  ok(up.calls.every((c) => !c.url.includes(GKEY) && !c.url.includes("key=")), "  the key is never in a URL");
+  ok(up.calls.every((c) => c.init.signal instanceof AbortSignal), "  every upstream call has a timeout signal"); }
+{ up.impl = gstub(); up.calls = []; pollWaits = 0; await call(await gasr(), G());
+  ok(seq().split(" | ").length === 4 && !seq().includes("GET") && pollWaits === 0, "an ACTIVE file is not polled: 4 upstream calls (start, upload, interactions, delete)");
+  const body = () => JSON.parse(up.calls.find((c) => c.url === G_INT).init.body); const codes = () => body().generation_config.transcription_config.language_codes.join();
+  up.calls = []; await call(await gasr([["language", "en"]]), G()); eq(codes(), "en-US", "language=en -> en-US");
+  for (const l of ["fr", "", "AR", "en-US"]) { up.calls = []; await call(await gasr([["language", l]]), G()); eq(codes(), "ar-EG", `language=${JSON.stringify(l)} -> ar-EG`); }
+  up.calls = []; await call(await gasr(), G({ GEMINI_ASR_LANG_AR: "ar-SA" })); eq(codes(), "ar-SA", "GEMINI_ASR_LANG_AR changes the Arabic code");
+  up.calls = []; await call(await gasr([["language", "en"]]), G({ GEMINI_ASR_LANG_AR: "ar-SA" })); eq(codes(), "en-US", "  and does not affect English");
+  for (const bad of ['ar"],"mode":"smart', "ar EG", "*", "a"]) { up.calls = []; await call(await gasr(), G({ GEMINI_ASR_LANG_AR: bad })); eq(codes(), "ar-EG", `GEMINI_ASR_LANG_AR=${JSON.stringify(bad)} falls back to ar-EG`); }
+  up.calls = []; const r = await call(await gasr(), G({ GEMINI_ASR_MODEL: "gemini-4-transcribe", ASR_MODEL: "whisper-x" })); ok(body().model === "gemini-4-transcribe" && r.j.model === "gemini-4-transcribe", "GEMINI_ASR_MODEL chooses the model (ASR_MODEL is Groq's)");
+  const mode = body().generation_config.transcription_config.mode; ok(mode.type === "verbatim" && mode.timestamp_granularities.join() === "word" && !("custom_vocabulary" in body().generation_config.transcription_config), "mode is always verbatim with word timestamps; no custom_vocabulary");
+  // the file URI: Google's own, or rebuilt from the validated name
+  up.impl = gstub({ file: { uri: "https://evil.example/v1beta/files/abc-123" } }); up.calls = []; await call(await gasr(), G()); eq(body().input[0].uri, G_FILE, "a file URI that is not Google's is replaced by one built from the file name");
+  up.impl = gstub({ file: { uri: undefined } }); up.calls = []; await call(await gasr(), G()); eq(body().input[0].uri, G_FILE, "a missing file URI is built from the file name");
+  // waitUntil
+  up.impl = gstub(); up.calls = []; const waited = []; const r2 = await call(await gasr(), G(), { waitUntil: (p) => waited.push(p) });
+  ok(r2.status === 200 && waited.length === 1 && typeof waited[0].then === "function", "with ctx.waitUntil the delete is handed to the runtime"); await Promise.all(waited);
+  ok(up.calls.at(-1).init.method === "DELETE", "  and it is still sent"); }
+{ up.impl = gstub(); const mimeOf = async (type, name) => { up.calls = []; const r0 = await call(await gasr([], { type, name }), G()); if (r0.status !== 200) return r0.status + " " + r0.t; return hdr(up.calls[0], "X-Goog-Upload-Header-Content-Type") + "|" + JSON.parse(up.calls.find((c) => c.url === G_INT).init.body).input[0].mime_type + "|" + hdr(up.calls[1], "Content-Type"); };
+  for (const [type, name, want] of [["audio/wav", "a.wav", "audio/wav"], ["audio/x-wav", "a", "audio/wav"], ["audio/mpeg", "a.mp3", "audio/mpeg"], ["audio/mp3", "a", "audio/mpeg"], ["audio/mp4", "a.m4a", "audio/m4a"], ["video/mp4", "v.mp4", "audio/m4a"],
+    ["audio/webm;codecs=opus", "a.webm", "audio/webm"], ["video/webm", "a", "audio/webm"], ["audio/ogg", "a.ogg", "audio/ogg"], ["audio/flac", "a", "audio/flac"], ["audio/aac", "a", "audio/aac"],
+    ["", "a.opus", "audio/opus"], ["application/octet-stream", "talk.FLAC", "audio/flac"], ["application/octet-stream", "a.aiff", "audio/aiff"], ["", "a.mov", "audio/m4a"],
+    ["text/html", "a.html", "audio/mpeg"], ["application/x-msdownload", "a.exe", "audio/mpeg"], ["audio/wav\r\nX-Evil: 1", "noext", "audio/mpeg"], ["constructor", "a.constructor", "audio/mpeg"], ["", "blob", "audio/mpeg"]]) {
+    eq(await mimeOf(type, name), `${want}|${want}|${want}`, `mime ${JSON.stringify(type)} / ${JSON.stringify(name)} -> ${want}`); } }
+
+sec("/asr gemini: the answer is normalised to the Whisper shape");
+{ const norm = async (interaction, env = G()) => { up.impl = gstub({ interaction }); return call(await gasr(), env); };
+  let r = await norm(INTER);
+  eq(r.t, JSON.stringify({ text: "Hello world", duration: 1.25, words: [{ word: "Hello", start: 0.1, end: 0.45 }, { word: "world", start: 0.5, end: 1.25 }], provider: "gemini", model: "gemini-3.5-transcribe" }), "documented example -> {text, duration, words, provider, model}; \"0.100s\" -> 0.1");
+  ok(!("timestamps" in r.j) && !("steps" in r.j) && !("id" in r.j), "  no `timestamps` flag when words exist; nothing of Google's envelope is forwarded");
+  r = await norm({ status: "completed", steps: [
+    { type: "model_output", content: [{ type: "text", text: "بسم الله ", annotations: [wi("بسم", "0s", "0.4s"), wi("الله", "0.400s", "1s")] }, { type: "text", text: "الرحمن", annotations: [wi("الرحمن", "1.2s", "2.050s")] }] },
+    { type: "model_output", content: [{ type: "image", text: "IGNORED", annotations: [wi("IGNORED", "9s", "99s")] }, { type: "text", text: " الرحيم\n", annotations: [wi("الرحيم", "61.5s", "62.75s"), { type: "citation", text: "x", start_offset: "70s", end_offset: "80s" }] }] }] });
+  ok(r.j.text === "بسم الله الرحمن الرحيم" && r.j.words.length === 4 && r.j.duration === 62.75, "several steps and content parts are joined in order; non-text parts and other annotations are ignored");
+  eq(JSON.stringify(r.j.words.map((w) => [w.start, w.end])), "[[0,0.4],[0.4,1],[1.2,2.05],[61.5,62.75]]", "  offsets become numbers of seconds");
+  r = await norm({ status: "completed", steps: [{ content: [{ type: "text", text: "Hello world again" }] }] });
+  ok(r.status === 200 && r.j.text === "Hello world again" && Array.isArray(r.j.words) && r.j.words.length === 0 && r.j.timestamps === false && r.j.duration === 0, "text without word annotations -> words: [], timestamps: false, duration 0");
+  r = await norm({ status: "completed", steps: [{ content: [{ type: "text", text: "a b c", annotations: [wi("a", "abc", "1s"), wi("b", "1.5s", "oops"), wi("c", "3s", "2s"), wi("", "4s", "5s"), wi("d", 6, 6.5), { type: "word_info", text: "e", start_offset: "-1s", end_offset: "1s" }, null, "x"] }] }] });
+  eq(JSON.stringify(r.j.words), '[{"word":"b","start":1.5,"end":1.5},{"word":"c","start":3,"end":3},{"word":"d","start":6,"end":6.5}]', "unusable offsets: no start -> word dropped; bad or earlier end -> end = start; numbers accepted");
+  r = await norm({ status: "completed", steps: [] }); ok(r.status === 200 && r.j.text === "" && r.j.words.length === 0 && r.j.duration === 0 && !("timestamps" in r.j), "a completed interaction with no speech -> empty text (like Whisper on silence)");
+  r = await norm({ status: "completed" }); ok(r.status === 200 && r.j.text === "", "  `steps` missing altogether is handled");
+  r = await norm({ status: "completed", steps: [null, 5, { content: "x" }, { content: [null, 7, { type: "text", text: 9, annotations: "x" }] }] }); ok(r.status === 200 && r.j.text === "", "  malformed steps do not crash the Worker");
+  up.impl = gstub(); r = await call(await asr(), G()); ok(["text", "duration", "words", "provider", "model"].every((k) => k in r.j) && r.j.provider === "groq", "the Groq answer has the same top-level fields"); }
+
+sec("/asr gemini: upstream failures are sanitized at every stage");
+{ const run = async (o, env = G()) => { up.impl = gstub(o); up.calls = []; pollWaits = 0; const r = await call(await gasr(), env); return { ...r, seq: seq(), env }; };
+  const deleted = (r) => r.seq.endsWith("DELETE /v1beta/files/abc-123");
+  const clean = (r) => Object.keys(r.j).every((k) => ["error", "upstream_status", "stage"].includes(k)) && r.h.get("X-Athar-Remaining") === "47";
+  let r = await run({ start: leak(500) }); ok(r.status === 502 && r.j.error === "upstream" && r.j.upstream_status === 500 && r.j.stage === "start" && up.calls.length === 1 && clean(r), "start upload 500 -> 502 upstream (stage start), nothing else is called");
+  r = await run({ start: leak(403) }); ok(r.status === 502 && r.j.upstream_status === 403, "start upload 403 (bad key) -> 502 upstream");
+  r = await run({ start: leak(429, { "Retry-After": "7" }) }); ok(r.status === 429 && r.j.error === "upstream_busy" && r.h.get("Retry-After") === "7" && Object.keys(r.j).length === 1, "start upload 429 -> 429 upstream_busy with Retry-After");
+  r = await run({ start: timeout }); ok(r.status === 502 && r.j.error === "upstream" && !("upstream_status" in r.j), "start upload timeout -> 502 upstream");
+  r = await run({ uploadUrl: "" }); ok(r.status === 502 && r.j.error === "upstream" && up.calls.length === 1, "no upload URL in the answer -> 502 upstream");
+  for (const bad of ["https://evil.example/upload?upload_id=1", "http://generativelanguage.googleapis.com/upload", "https://generativelanguage.googleapis.com.evil.example/u", "https://evilgoogleapis.com/u", "https://user:pw@generativelanguage.googleapis.com/u", "//evil.example/u", "/upload/v1beta/files?x", "javascript:alert(1)"]) {
+    r = await run({ uploadUrl: bad }); ok(r.status === 502 && up.calls.length === 1, `upload URL ${bad} is refused: the file is not sent there`); }
+  r = await run({ upload: leak(500) }); ok(r.status === 502 && r.j.stage === "upload" && r.j.upstream_status === 500 && up.calls.length === 2 && clean(r), "upload 500 -> 502 upstream (stage upload); no file was created, so nothing to delete");
+  r = await run({ upload: leak(429, { "Retry-After": "12" }) }); ok(r.status === 429 && r.j.error === "upstream_busy" && r.h.get("Retry-After") === "12", "upload 429 -> 429 upstream_busy");
+  r = await run({ upload: () => new Response("<html>" + GKEY, { status: 200 }) }); ok(r.status === 502 && r.j.error === "upstream" && up.calls.length === 2, "upload answer that is not JSON -> 502 upstream");
+  r = await run({ upload: timeout }); ok(r.status === 502 && r.j.stage === "upload", "upload timeout -> 502 upstream");
+  for (const name of ["files/../../models/x", "https://evil.example/files/a", "files/a?key=1", "files/", "abc", 5, null]) {
+    r = await run({ file: { name } }); ok(r.status === 502 && up.calls.length === 2, `file name ${JSON.stringify(name)} is refused: no further call is built from it`); }
+  r = await run({ state: "PROCESSING", activeAfter: 99 });
+  ok(r.status === 502 && r.j.error === "upstream" && r.j.stage === "processing" && !r.seq.includes("interactions") && clean(r), "file never becomes ACTIVE -> 502 upstream (stage processing), no transcription attempt");
+  ok(up.calls.filter((c) => c.init.method === "GET").length === 10 && pollWaits === 10 && up.calls.length === 13 && deleted(r), "  exactly 10 polls, 1 s apart, then the file is deleted (13 upstream calls: the maximum on a failure)");
+  r = await run({ state: "PROCESSING", activeAfter: 10 }); ok(r.status === 200 && up.calls.length === 14, "ACTIVE on the 10th poll still works: 14 upstream calls, the maximum for one request (limit 50)");
+  r = await run({ state: "FAILED" }); ok(r.status === 502 && r.j.stage === "processing" && up.calls.length === 3 && deleted(r), "file state FAILED -> 502 upstream, file deleted");
+  r = await run({ state: "PROCESSING", poll: (n) => n === 1 ? jr({ name: "files/abc-123", state: "PROCESSING" }) : jr({ name: "files/abc-123", state: "FAILED" }) }); ok(r.status === 502 && up.calls.filter((c) => c.init.method === "GET").length === 2 && deleted(r), "file turns FAILED while polling -> 502 upstream after 2 polls");
+  r = await run({ state: "PROCESSING", poll: leak(500) }); ok(r.status === 502 && r.j.stage === "processing" && r.j.upstream_status === 500 && deleted(r), "poll 500 -> 502 upstream, file deleted");
+  r = await run({ state: "PROCESSING", poll: () => jr({ name: "files/other", state: "ACTIVE" }) }); ok(r.status === 502 && !r.seq.includes("interactions") && deleted(r), "poll answers about another file -> 502 upstream");
+  r = await run({ state: "PROCESSING", poll: timeout }); ok(r.status === 502 && deleted(r), "poll timeout -> 502 upstream, file deleted");
+  r = await run({ inter: leak(429, { "Retry-After": "30" }) }); ok(r.status === 429 && r.j.error === "upstream_busy" && r.h.get("Retry-After") === "30" && r.h.get("X-Athar-Remaining") === "47" && deleted(r), "interactions 429 -> 429 upstream_busy with Retry-After, file deleted");
+  r = await run({ inter: leak(429, { "Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT" }) }); ok(r.status === 429 && !r.h.has("Retry-After"), "  a Retry-After that is not a number of seconds is dropped");
+  r = await run({ inter: leak(500) }); ok(r.status === 502 && r.j.error === "upstream" && r.j.upstream_status === 500 && r.j.stage === "transcribe" && deleted(r) && clean(r), "interactions 500 -> 502 upstream, file deleted");
+  r = await run({ inter: leak(400) }); ok(r.status === 502 && r.j.upstream_status === 400 && deleted(r), "interactions 400 (e.g. audio longer than 30 minutes) -> 502 upstream");
+  r = await run({ inter: () => new Response("<html>Bad Gateway " + GKEY + "</html>", { status: 200 }) }); ok(r.status === 502 && r.j.error === "upstream" && deleted(r) && clean(r), "interactions answer that is not JSON -> 502 upstream");
+  for (const status of ["failed", "in_progress", "cancelled", "incomplete", "requires_action", undefined, "COMPLETED"]) {
+    r = await run({ interaction: { ...INTER, status, error: { message: "quota of org_01 exceeded " + GKEY } } }); ok(r.status === 502 && r.j.error === "upstream" && deleted(r) && clean(r), `interaction status ${JSON.stringify(status)} -> 502 upstream`); }
+  for (const body of [null, [], "completed", 5]) { r = await run({ inter: () => jr(body) }); ok(r.status === 502 && r.j.error === "upstream", `interactions body ${JSON.stringify(body)} -> 502 upstream`); }
+  r = await run({ inter: timeout }); ok(r.status === 502 && r.j.error === "upstream" && r.j.stage === "transcribe" && deleted(r) && clean(r), "interactions timeout -> 502 upstream, file deleted");
+  r = await run({ del: leak(500) }); ok(r.status === 200 && r.j.text === "Hello world", "delete 500 does not fail the request");
+  r = await run({ del: timeout }); ok(r.status === 200 && r.j.text === "Hello world", "delete timeout does not fail the request");
+  up.impl = gstub({ del: timeout }); const waited = []; r = await call(await gasr(), G(), { waitUntil: (p) => waited.push(p) }); let threw = false; try { await Promise.all(waited); } catch { threw = true; }
+  ok(r.status === 200 && waited.length === 1 && !threw, "  nor does it reject the promise given to ctx.waitUntil");
+  r = await run({ inter: leak(500) }, G({ GEMINI_API_KEY: GKEY })); ok(!r.t.includes(GKEY) && !r.t.includes(KEY) && !/org_01|internal-host|message/.test(r.t), "no upstream text and no key in the error body"); }
+
+sec("/asr gemini: charged like Groq");
+{ up.impl = gstub(); let env = G({ DAILY_CAP: "2" }); const st = [];
+  for (let i = 0; i < 3; i++) { up.calls = []; const r = await call(await gasr(), env); st.push(r.status + (r.j.error ? ":" + r.j.error : "")); if (i === 2) ok(up.calls.length === 0 && r.h.get("Retry-After") === "49170", "  the refused request reaches no provider"); }
+  eq(st.join(" "), "200 200 429:daily_cap", "gemini: daily cap 2 -> third request 429 daily_cap");
+  const eg = G(), eq2 = G(); const rg = await call(await gasr(), eg); const rq = await call(await asr(), eq2);
+  ok(JSON.stringify([...eg.CAP.m]) === JSON.stringify([...eq2.CAP.m]) && eg.CAP.writes === 3 && eq2.CAP.writes === 3, "one gemini request writes exactly the same counters as one groq request (day, hour, IP)");
+  ok(rg.h.get("X-Athar-Remaining") === "47" && rq.h.get("X-Athar-Remaining") === "47" && rg.h.get("X-Athar-Remaining-Hour") === "11", "  and reports the same remaining quota");
+  env = G(); await call(await gasr(), env); await call(await asr(), env); await call(await gasr(), env); ok(env.CAP.m.get("d:2026-10-02") === "3" && env.CAP.m.get("a:2026-10-02T10") === "3", "groq and gemini requests share the same counters");
+  env = G({ HOURLY_CAP: "1" }); await call(await asr(), env); let r = await call(await gasr(), env); ok(r.status === 429 && r.j.error === "rate_limited" && r.j.scope === "hour", "the hourly cap applies across providers");
+  env = G({ DAILY_CAP: "10", IP_DAILY_CAP: "1" }); const s3 = []; for (const ip of ["1.1.1.1", "1.1.1.1", "2.2.2.2"]) s3.push((await call(await asr({ fields: [["provider", "gemini"]], headers: { "CF-Connecting-IP": ip } }), env)).status); eq(s3.join(" "), "200 429 200", "the per-IP cap applies to gemini");
+  // duration-based charging: 1250 s of audio = ceil(1250 / 600) = 3 units
+  env = G(); up.impl = gstub({ interaction: { status: "completed", steps: [{ content: [{ type: "text", text: "a b", annotations: [wi("a", "0s", "1s"), wi("b", "1249.5s", "1250.000s")] }] }] } });
+  r = await call(await gasr(), env); ok(r.status === 200 && r.j.duration === 1250 && env.CAP.m.get("d:2026-10-02") === "3" && env.CAP.m.get("a:2026-10-02T10") === "3" && r.h.get("X-Athar-Remaining") === "45" && r.h.get("X-Athar-Remaining-Hour") === "9", "gemini audio of 1250 s is charged 3 units (from the last word's end)");
+  env = G(); up.impl = gstub({ inter: leak(500) }); r = await call(await gasr(), env); ok(r.status === 502 && env.CAP.m.get("d:2026-10-02") === "1", "a failed gemini transcription costs one unit, as a failed groq one does");
+  env = G({ CAP: undefined }); up.calls = []; r = await call(await gasr(), env); ok(r.status === 500 && r.j.error === "server_not_configured" && up.calls.length === 0, "gemini without the CAP binding -> 500 (fail closed)");
+  up.impl = gstub(); up.calls = []; r = await call(await asr({ fields: [["provider", "gemini"]], headers: { Origin: "https://evil.example" } }), G()); ok(r.status === 403 && up.calls.length === 0, "gemini from a disallowed origin -> 403, nothing upstream");
+  up.calls = []; r = await call(await asr({ fields: [["provider", "gemini"]], file: { bytes: "x".repeat(300) } }), G({ MAX_BYTES: "100" })); ok(r.status === 413 && up.calls.length === 0, "MAX_BYTES applies to gemini too");
+  up.calls = []; r = await call(await asr({ fields: [["provider", "gemini"]], file: null }), G()); ok(r.status === 400 && r.j.error === "bad_file" && up.calls.length === 0, "gemini without a file -> 400 bad_file"); }
+{ eq([...up.hosts].sort().join(), "api.groq.com,generativelanguage.googleapis.com", "in all the provider tests above, only Groq's and Google's hosts were ever contacted");
+  let n = 0; const envs = [G(), G({ ASR_PROVIDER: "gemini" }), baseEnv({ GROQ_API_KEY: "", GEMINI_API_KEY: GKEY }), G({ CAP: kv({ getThrows: true }) })];
+  const boom = () => { throw new Error(GKEY + "\n    at fetch (worker/src.js:1:1)"); };
+  const impls = [gstub(), gstub({ start: leak(500) }), gstub({ upload: leak(401) }), gstub({ inter: leak(500) }), gstub({ inter: leak(429) }), gstub({ start: boom }), gstub({ upload: boom }), gstub({ inter: boom }), gstub({ del: boom }), boom];
+  for (const env of envs) for (const im of impls) for (const rq of [() => gasr(), () => asr(), () => asr({ method: "GET", path: "/health" }), () => asr({ fields: [["provider", "gemini"]], headers: { Origin: "https://evil.example" } })]) { up.impl = im; await call(await rq(), env); n++; }
+  ok(n === 160, "160 more env × upstream × request combinations scanned by call() for keys, stacks and CORS"); }
+globalThis.setTimeout = realSetTimeout;
+
 sec("/llm input handling");
 { let r = await call(llm({ spoken: SP }), baseEnv()); ok(r.status === 501 && r.j.error === "llm_disabled", "/llm is off unless LLM_PROVIDER is set");
   up.calls = [];
@@ -375,7 +575,8 @@ sec("secret scan over a matrix of situations");
   ok(!/gsk_[A-Za-z0-9]{8}|AIza[A-Za-z0-9_-]{8}/.test(src), "src.js contains no key");
   const toml = readFileSync(new URL("./wrangler.toml", import.meta.url), "utf8");
   ok(/^\[\[kv_namespaces\]\]\s*\nbinding = "CAP"/m.test(toml) && /^keep_vars = true/m.test(toml) && /^DAILY_CAP = "48"/m.test(toml) && /^HOURLY_CAP = "12"/m.test(toml) && /^LLM_DAILY_CAP = "150"/m.test(toml) && !/localhost/.test(toml.split("\n").filter((l) => !l.trim().startsWith("#")).join("\n")),
-    "wrangler.toml: KV block is active, keep_vars on, caps 48/12/150, no localhost origin by default"); }
+    "wrangler.toml: KV block is active, keep_vars on, caps 48/12/150, no localhost origin by default");
+  ok(/^ASR_PROVIDER = "groq"/m.test(toml) && !/^\s*GEMINI_API_KEY/m.test(toml), "wrangler.toml: the default transcriber is groq, and no key is written in the file"); }
 
 console.log(`\n${passed} checks passed, ${failed.length} failed`);
 if (failed.length) { console.error("FAILED:\n  " + failed.join("\n  ")); process.exit(1); }
