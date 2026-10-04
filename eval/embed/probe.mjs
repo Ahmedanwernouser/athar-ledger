@@ -1,59 +1,68 @@
-// Feasibility probe (development lecture, seed 101, never reported): would a strong multilingual sentence-embedding model
-// find the source of a quotation BY MEANING where the corpus-trained word vectors do not?
-// Queries: the 24 development paraphrases with their opener removed. Pool: every accepted source, the current system's best
-// 60 candidates for each query (hard negatives) and 4,000 random hadith / 600 random ayahs. Also embedded: 120 stretches of
-// the same lecture that quote nothing, to see how high a false similarity goes.
-// Runs on the test machine (GitHub Actions). Keys come from repository secrets and are never printed or saved.
+// Feasibility probe (development lecture, seed 101, never reported): would a multilingual sentence-embedding model that runs
+// FREE on Cloudflare Workers AI find the source of a quotation BY MEANING — with and without a cue before it — where the
+// corpus-trained word vectors do not, and how often would it "find" a source for speech that quotes nothing?
+//   A. the 26 development paraphrases, opener removed, each embedded as one query            -> rank of the true source
+//   B. the WHOLE lecture cut into 20-word windows every 10 words (no knowledge of where a quotation is)
+//      -> for windows that quote nothing: how high does the best similarity go?   (false alarms)
+//      -> for each paraphrase: does some window over it put the true source first, above that level?   (found without a cue)
+//   C. two real transcripts (YouTube, from the branch yt-probe-results), windows the same way: what would be shown
+// Pool: every accepted source, the current system's best 60 candidates for each query (hard negatives), random hadith and ayahs.
+// Runs on the test machine (GitHub Actions). The Cloudflare token and account id come from repository secrets and are never
+// printed or saved.
 import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCorpus } from "../lib.mjs";
 import { buildLecture } from "../gen.mjs";
-import { fold, stem } from "../../public/js/text.js";
+import { fold, stem, norm } from "../../public/js/text.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)), OUT = path.join(HERE, "out");
 mkdirSync(OUT, { recursive: true });
-const KEYS = String(process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "").split(/[\s,;]+/).filter(k => k.length > 10);
-const redact = s => { let t = String(s); for (const k of KEYS) t = t.split(k).join("<KEY>"); return t; };
+const TOKEN = String(process.env.CLOUDFLARE_API_TOKEN || "").trim(), ACCOUNT = String(process.env.CLOUDFLARE_ACCOUNT_ID || "").trim();
+const redact = s => { let t = String(s); for (const k of [TOKEN, ACCOUNT]) if (k) t = t.split(k).join("<SECRET>"); return t; };
 const save = (name, data) => writeFileSync(path.join(OUT, name), redact(typeof data === "string" ? data : JSON.stringify(data, null, 1)) + "\n");
-const lines = []; const say = s => { console.log(redact(s)); lines.push(redact(s)); };
-if (!KEYS.length) { save("SUMMARY.txt", "no key"); process.exit(0); }
-const BASE = "https://generativelanguage.googleapis.com/v1beta";
+const lines = []; const say = s => { console.log(redact(s)); lines.push(redact(s)); save("SUMMARY.txt", lines.join("\n")); };
+if (!TOKEN || !ACCOUNT) { save("SUMMARY.txt", "no Cloudflare token / account id in the secrets"); process.exit(0); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const T_START = Date.now(), BUDGET_MS = 40 * 60 * 1000;
 
-// ---- which embedding models does the key see? ----
-let models = [];
-try { models = (await (await fetch(BASE + "/models?pageSize=300", { headers: { "x-goog-api-key": KEYS[0] } })).json()).models.filter(m => (m.supportedGenerationMethods || []).some(x => /embed/i.test(x))).map(m => m.name.replace("models/", "")); } catch { /* keep going */ }
-say("embedding models visible: " + models.join(", "));
-const MODEL = process.env.EMBED_MODEL || ["gemini-embedding-2", "gemini-embedding-001", "text-embedding-004"].find(m => models.includes(m)) || models[0];
-say("model used: " + MODEL);
-
-let keyAt = 0, calls = 0; const statuses = {}; const T_START = Date.now(), BUDGET_MS = 14 * 60 * 1000;
-/** embeds as many of `texts` as the time budget allows, the keys taken in turn; -> vectors (shorter than texts when time ran out) */
-async function embed(texts, taskType, dim, label) {
+// ---- Workers AI over its REST API ----
+const MODELS = (process.env.EMBED_MODELS || "@cf/baai/bge-m3 @cf/qwen/qwen3-embedding-0.6b @cf/google/embeddinggemma-300m").split(/\s+/).filter(Boolean);
+const stats = {};
+async function call(model, body) {
+  const st = stats[model] ||= { calls: 0, status: {}, firstError: null };
+  for (let tries = 0; tries < 5; tries++) {
+    let r;
+    try { r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${ACCOUNT}/ai/run/${model}`, { method: "POST", headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(60000) }); }
+    catch (e) { st.status.network = (st.status.network || 0) + 1; await sleep(2000); continue; }
+    st.calls++; st.status[r.status] = (st.status[r.status] || 0) + 1;
+    const txt = await r.text();
+    if (r.ok) { try { const j = JSON.parse(txt); const res = j.result || j; const data = res.data || res.embeddings || (res.response && res.response.data); if (Array.isArray(data) && Array.isArray(data[0])) return data; st.firstError ||= "unexpected shape: " + txt.slice(0, 300); return null; } catch { st.firstError ||= "not JSON: " + txt.slice(0, 200); return null; } }
+    st.firstError ||= `HTTP ${r.status}: ${txt.slice(0, 400).replace(/\s+/g, " ")}`;
+    if (r.status === 429 || r.status >= 500) { await sleep(3000 * (tries + 1)); continue; }
+    return null;
+  }
+  return null;
+}
+/** texts -> vectors, 50 per call; `kind` "q" (a query) or "d" (a passage) for the models that tell them apart */
+async function embed(model, texts, kind, label) {
   const out = [];
   for (let i = 0; i < texts.length; i += 50) {
-    if (Date.now() - T_START > BUDGET_MS) { say(`${label}: time budget reached at ${out.length}/${texts.length}`); break; }
-    const body = { requests: texts.slice(i, i + 50).map(t => ({ model: "models/" + MODEL, content: { parts: [{ text: t }] }, taskType, ...(dim ? { outputDimensionality: dim } : {}) })) };
-    let done = false;
-    for (let tries = 0; tries < 3 * KEYS.length + 6 && !done; tries++) {
-      keyAt = (keyAt + 1) % KEYS.length;
-      const r = await fetch(`${BASE}/models/${MODEL}:batchEmbedContents`, { method: "POST", headers: { "x-goog-api-key": KEYS[keyAt], "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      calls++; statuses[r.status] = (statuses[r.status] || 0) + 1;
-      if (r.ok) { const j = await r.json(); for (const e of j.embeddings) out.push(Float32Array.from(e.values)); done = true; break; }
-      const txt = (await r.text()).slice(0, 400);
-      if (!statuses["first_" + r.status]) { statuses["first_" + r.status] = 1; say(`first HTTP ${r.status} from the embedding API: ${txt.replace(/\s+/g, " ")}`); }
-      if (r.status === 429 || r.status === 503 || r.status === 500) { await sleep(tries % KEYS.length === KEYS.length - 1 ? 15000 : 800); continue; }
-      break;
-    }
-    if (!done) { say(`${label}: gave up at ${out.length}/${texts.length}`); break; }
-    if (i % 500 === 0) console.log(`${label}: ${out.length}/${texts.length} after ${Math.round((Date.now() - T_START) / 1000)} s`);
+    if (Date.now() - T_START > BUDGET_MS) { say(`${model} ${label}: time budget reached at ${out.length}/${texts.length}`); return null; }
+    const part = texts.slice(i, i + 50);
+    let data = null;
+    if (/qwen3/.test(model)) data = await call(model, kind === "q" ? { queries: part } : { documents: part });
+    if (!data) data = await call(model, { text: part });
+    if (!data || data.length !== part.length) { say(`${model} ${label}: gave up at ${out.length}/${texts.length} — ${stats[model].firstError || "no data"}`); return null; }
+    for (const v of data) out.push(Float32Array.from(v));
+    if (i % 1000 === 0) console.log(`${model} ${label}: ${out.length}/${texts.length} after ${Math.round((Date.now() - T_START) / 1000)} s`);
   }
   return out;
 }
 const unit = (v, d) => { const x = d ? v.subarray(0, d) : v; let n = 0; for (const a of x) n += a * a; n = Math.sqrt(n) || 1; return Float32Array.from(x, a => a / n); };
-const q8 = v => Float32Array.from(v, a => Math.max(-127, Math.min(127, Math.round(a * 127))) / 127);
+const q8 = v => { let m = 0; for (const a of v) if (Math.abs(a) > m) m = Math.abs(a); return unit(Float32Array.from(v, a => Math.round((a / (m || 1)) * 127))); };
 const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+const pct = (a, p) => (a.length ? a[Math.min(a.length - 1, Math.floor(a.length * p))] : null);
 
 // ---- the material ----
 const corpus = await loadCorpus(); corpus.ensureStems();
@@ -62,44 +71,71 @@ const lec = buildLecture(corpus, 101, SIZES, "dev", { par: "strip" });
 const W = lec.words.map(w => (typeof w === "string" ? w : w.w));
 const par = lec.items.filter(x => x.kind === "par");
 const queries = par.map(it => W.slice(it.a, it.b).join(" "));
-// stretches that quote nothing: 16 words, not touching any item
-const inItem = new Uint8Array(W.length); for (const it of lec.items) for (let i = Math.max(0, it.a - 4); i < Math.min(W.length, it.b + 4); i++) inItem[i] = 1;
-const fillers = []; for (let i = 0; i + 16 < W.length && fillers.length < 120; i += 37) { let ok = true; for (let k = i; k < i + 16; k++) if (inItem[k]) { ok = false; break; } if (ok) fillers.push(W.slice(i, i + 16).join(" ")); }
+const WIN = 20, STEP = 10;
+const windowsOf = words => { const out = []; for (let i = 0; i < words.length; i += STEP) { out.push({ a: i, b: Math.min(words.length, i + WIN) }); if (i + WIN >= words.length) break; } return out; };
+const wins = windowsOf(W);
+const itemAt = new Int16Array(W.length).fill(-1); lec.items.forEach((it, k) => { for (let i = it.a; i < it.b; i++) itemAt[i] = k; });
+for (const w of wins) {
+  const cnt = new Map(); for (let i = w.a; i < w.b; i++) if (itemAt[i] >= 0) cnt.set(itemAt[i], (cnt.get(itemAt[i]) || 0) + 1);
+  let best = -1, bn = 0; for (const [k, c] of cnt) if (c > bn) { bn = c; best = k; }
+  w.item = best; w.overlap = bn; w.kind = best < 0 ? "none" : lec.items[best].kind;
+}
 // the current system's best candidates by shared stems (its lexical channel), as hard negatives
-const lexTop = q => { const sc = new Map(); for (const w of new Set(q.split(" ").map(x => stem(fold(x))))) { const post = corpus.stemPost.get(w); if (!post) continue; const v = corpus.stemIdf(w); for (const pid of post) if (!lec.blocked.has(pid) && !corpus.quranLike(pid)) sc.set(pid, (sc.get(pid) || 0) + v); } return [...sc].sort((a, b) => b[1] - a[1]).slice(0, 60).map(x => x[0]); };
+const lexTop = q => { const sc = new Map(); for (const w of new Set(q.split(" ").map(x => stem(fold(x))))) { const post = corpus.stemPost.get(w); if (!post) continue; const v = corpus.stemIdf(w); for (const pid of post) if (!lec.blocked.has(pid)) sc.set(pid, (sc.get(pid) || 0) + v); } return [...sc].sort((a, b) => b[1] - a[1]).slice(0, 60).map(x => x[0]); };
 let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
 const pool = new Set();
 for (const it of par) for (const p of it.accept) pool.add(p);
 const lexRank = [];
 queries.forEach((q, i) => { const top = lexTop(q); top.forEach(p => pool.add(p)); const acc = new Set(par[i].accept); lexRank.push(top.findIndex(p => acc.has(p))); });
-while (pool.size < 2200) { const pid = corpus.NQ + Math.floor(rnd() * (corpus.coreN - corpus.NQ)); if (!lec.blocked.has(pid)) pool.add(pid); }
-for (let k = 0; k < 200; k++) pool.add(Math.floor(rnd() * corpus.NQ));
-let pids = [...pool]; const texts0 = pids.map(p => corpus.P[p].n.split(" ").slice(0, 160).join(" "));
-say(`queries ${queries.length}, fillers ${fillers.length}, pool ${pids.length} passages`);
-
-const t0 = Date.now();
-const Q = await embed(queries, "RETRIEVAL_QUERY", 768, "queries");
-const F = await embed(fillers.slice(0, 60), "RETRIEVAL_QUERY", 768, "fillers");
-const D = await embed(texts0, "RETRIEVAL_DOCUMENT", 768, "passages");
-pids = pids.slice(0, D.length);          // (the accepted sources and the hard negatives come first in the pool)
-say(`embedded ${Q.length} queries, ${F.length} fillers, ${D.length}/${texts0.length} passages in ${Math.round((Date.now() - t0) / 1000)} s with ${calls} calls; HTTP statuses ${JSON.stringify(statuses)}; vector length ${D[0] ? D[0].length : "-"}`);
-if (Q.length < queries.length || D.length < 300) { save("SUMMARY.txt", lines.join("\n")); process.exit(0); }
+const POOL = +(process.env.EMBED_POOL || 8000);
+while (pool.size < POOL) { const pid = corpus.NQ + Math.floor(rnd() * (corpus.coreN - corpus.NQ)); if (!lec.blocked.has(pid)) pool.add(pid); }
+for (let k = 0; k < 600; k++) pool.add(Math.floor(rnd() * corpus.NQ));
+const pids = [...pool]; const texts0 = pids.map(p => corpus.P[p].n.split(" ").slice(0, 160).join(" "));
+// two real transcripts (public lectures analysed from their links earlier; kept on a results branch, not in the code)
+const real = [];
+for (const id of ["ikgqwDVXs8E", "1foxMsRygJg"]) {
+  try { const r = await fetch(`https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY}/yt-probe-results/yt/${id}.transcript.txt`); if (r.ok) { const words = norm(await r.text()).split(" ").filter(Boolean); real.push({ id, words, wins: windowsOf(words) }); } } catch { /* not there: skipped */ }
+}
+say(`queries ${queries.length}; lecture ${W.length} words in ${wins.length} windows (${wins.filter(w => w.kind === "none").length} quote nothing); pool ${pids.length} passages (~${Math.round(texts0.join(" ").split(" ").length / 1000)}k words); real transcripts ${real.map(r => r.id + " " + r.words.length + " words").join(", ") || "none"}`);
+say(`for comparison, the current lexical channel alone (shared stems): source first ${lexRank.filter(r => r === 0).length}/${lexRank.length}, in 5 ${lexRank.filter(r => r >= 0 && r < 5).length}, in 60 ${lexRank.filter(r => r >= 0).length}`);
 
 const report = {};
-for (const [name, dim, quant] of [["768 float", 768, false], ["256 float", 256, false], ["256 int8", 256, true], ["128 int8", 128, true]]) {
-  const prep = v => { const u = unit(v, dim); return quant ? unit(q8(u)) : u; };
-  const d = D.map(prep), q = Q.map(v => unit(v, dim)), f = F.map(v => unit(v, dim));
-  const ranks = [], top1 = [], gold = [];
-  q.forEach((qv, i) => {
-    const acc = new Set(par[i].accept), sims = d.map((dv, k) => [dot(qv, dv), k]).sort((a, b) => b[0] - a[0]);
-    const r = sims.findIndex(([, k]) => acc.has(pids[k])); ranks.push(r); top1.push(+sims[0][0].toFixed(3)); gold.push(r >= 0 ? +sims[r][0].toFixed(3) : 0);
-  });
-  const fmax = f.map(fv => { let m = -1; for (const dv of d) { const s = dot(fv, dv); if (s > m) m = s; } return +m.toFixed(3); }).sort((a, b) => a - b);
-  const at = k => ranks.filter(r => r >= 0 && r < k).length;
-  report[name] = { first: at(1), in3: at(3), in5: at(5), in10: at(10), n: ranks.length, ranks, goldSim: gold, top1Sim: top1,
-    fillerMaxSim: { median: fmax[fmax.length >> 1], p90: fmax[Math.floor(fmax.length * 0.9)], max: fmax.at(-1) } };
-  say(`${name}: source first ${at(1)}/${ranks.length}, in 3 ${at(3)}, in 5 ${at(5)}, in 10 ${at(10)} | similarity of the true source: min ${Math.min(...gold)} median ${[...gold].sort((a, b) => a - b)[gold.length >> 1]} | speech that quotes nothing, best similarity: median ${fmax[fmax.length >> 1]} p90 ${fmax[Math.floor(fmax.length * 0.9)]} max ${fmax.at(-1)}`);
+for (const model of MODELS) {
+  const t0 = Date.now();
+  const Q = await embed(model, queries, "q", "queries"); if (!Q) continue;
+  const WV = await embed(model, wins.map(w => W.slice(w.a, w.b).join(" ")), "q", "windows"); if (!WV) continue;
+  const RV = []; for (const r of real) RV.push(await embed(model, r.wins.map(w => r.words.slice(w.a, w.b).join(" ")), "q", "real " + r.id));
+  const D = await embed(model, texts0, "d", "passages"); if (!D) continue;
+  say(`${model}: embedded ${Q.length} queries, ${WV.length} windows, ${D.length} passages in ${Math.round((Date.now() - t0) / 1000)} s; vector length ${D[0].length}; calls ${stats[model].calls}, HTTP ${JSON.stringify(stats[model].status)}`);
+  report[model] = {};
+  const full = D[0].length;
+  for (const [name, dim, quant] of [[`${full} float`, 0, false], ["256 int8 (first 256)", 256, true], ["384 int8 (first 384)", 384, true]]) {
+    if (dim && dim >= full) continue;
+    const d = D.map(v => (quant ? q8(unit(v, dim)) : unit(v, dim))), prepQ = v => unit(v, dim);
+    const best = qv => { let s1 = -2, k1 = -1; for (let k = 0; k < d.length; k++) { const s = dot(qv, d[k]); if (s > s1) { s1 = s; k1 = k; } } return [s1, k1]; };
+    // A. one query per paraphrase
+    const ranks = [], gold = [];
+    Q.map(prepQ).forEach((qv, i) => { const acc = new Set(par[i].accept), sims = d.map((dv, k) => [dot(qv, dv), k]).sort((a, b) => b[0] - a[0]); const r = sims.findIndex(([, k]) => acc.has(pids[k])); ranks.push(r); gold.push(r >= 0 ? +sims[r][0].toFixed(3) : 0); });
+    const at = k => ranks.filter(r => r >= 0 && r < k).length;
+    // B. the whole lecture in windows
+    const wb = WV.map(prepQ).map(best);
+    const none = wins.map((w, i) => (w.kind === "none" ? wb[i][0] : null)).filter(x => x != null).sort((a, b) => a - b);
+    const levels = { p90: pct(none, 0.9), p99: pct(none, 0.99), max: none.at(-1) };
+    const perPar = par.map((it, pi) => { const k = lec.items.indexOf(it), acc = new Set(it.accept); let top = 0, any = 0; wins.forEach((w, i) => { if (w.item !== k || w.overlap < 8) return; if (wb[i][0] > any) any = wb[i][0]; if (acc.has(pids[wb[i][1]]) && wb[i][0] > top) top = wb[i][0]; }); return { top: +top.toFixed(3), any: +any.toFixed(3) }; });
+    const sweep = {}; for (const [ln, lv] of Object.entries(levels)) sweep[ln] = { level: +lv.toFixed(3), paraphrasesFoundFirst: perPar.filter(x => x.top > lv).length, paraphrasesWithAWrongFirstAbove: perPar.filter(x => x.any > lv && x.top < x.any).length, windowsThatQuoteNothingAbove: none.filter(x => x > lv).length };
+    // by the kind of item under the window: how high is the best similarity where a text IS quoted word for word?
+    const byKind = {}; for (const kd of ["vq", "vh", "ph", "ooc", "cue"]) { const a = wins.map((w, i) => (w.kind === kd && w.overlap >= 8 ? wb[i][0] : null)).filter(x => x != null).sort((x, y) => x - y); if (a.length) byKind[kd] = { n: a.length, median: +pct(a, 0.5).toFixed(3) }; }
+    report[model][name] = { paraphraseAsOneQuery: { first: at(1), in3: at(3), in5: at(5), in10: at(10), n: ranks.length, ranks, goldSim: gold }, windowsThatQuoteNothing: { n: none.length, median: +pct(none, 0.5).toFixed(3), ...Object.fromEntries(Object.entries(levels).map(([k, v]) => [k, +v.toFixed(3)])) }, sweep, perParaphraseBestWindow: perPar, windowSimilarityByItemKind: byKind };
+    say(`${model} | ${name}: A) paraphrase as one query: source first ${at(1)}/${ranks.length}, in 3 ${at(3)}, in 5 ${at(5)}, in 10 ${at(10)}; similarity of the true source: min ${Math.min(...gold)} median ${[...gold].sort((a, b) => a - b)[gold.length >> 1]}`);
+    say(`${model} | ${name}: B) windows that quote nothing (${none.length}): best similarity median ${pct(none, 0.5).toFixed(3)}, p90 ${levels.p90.toFixed(3)}, p99 ${levels.p99.toFixed(3)}, max ${levels.max.toFixed(3)}; ` + Object.entries(sweep).map(([k, v]) => `above ${k} (${v.level}): ${v.paraphrasesFoundFirst}/${par.length} paraphrases found with the true source first, ${v.paraphrasesWithAWrongFirstAbove} with a wrong text first, ${v.windowsThatQuoteNothingAbove} empty windows`).join(" | ") + `; by item kind ${JSON.stringify(byKind)}`);
+    // C. real transcripts: what would be shown above the level that no empty window of the lecture reaches
+    if (!dim) real.forEach((r, ri) => { if (!RV[ri]) return; const rb = RV[ri].map(prepQ).map(best); const sims = rb.map(x => x[0]).sort((a, b) => a - b);
+      const shown = rb.map((x, i) => ({ sim: +x[0].toFixed(3), said: r.words.slice(r.wins[i].a, r.wins[i].b).join(" "), source: corpus.P[pids[x[1]]].r, text: corpus.P[pids[x[1]]].n.split(" ").slice(0, 30).join(" ") })).sort((a, b) => b.sim - a.sim).slice(0, 12);
+      report[model][name]["real_" + r.id] = { windows: rb.length, median: +pct(sims, 0.5).toFixed(3), max: +sims.at(-1).toFixed(3), aboveLectureMax: sims.filter(x => x > levels.max).length, top: shown };
+      say(`${model} | ${name}: C) real transcript ${r.id}: ${rb.length} windows, best similarity median ${pct(sims, 0.5).toFixed(3)}, max ${sims.at(-1).toFixed(3)}, above the lecture's empty-window max: ${sims.filter(x => x > levels.max).length}`); });
+  }
+  save("probe.json", { queries, report, lexRank, stats });
 }
-say(`for comparison, the current lexical channel alone (shared stems): source first ${lexRank.filter(r => r === 0).length}/${lexRank.length}, in 5 ${lexRank.filter(r => r >= 0 && r < 5).length}, in 60 ${lexRank.filter(r => r >= 0).length}`);
-save("probe.json", { model: MODEL, queries, report, lexRank });
+for (const m of MODELS) if (!report[m]) say(`${m}: no result — ${stats[m] ? stats[m].firstError || JSON.stringify(stats[m].status) : "not called"}`);
+save("probe.json", { queries, report, lexRank, stats });
 save("SUMMARY.txt", lines.join("\n"));
