@@ -26,7 +26,7 @@ export class AsrError extends Error {
 }
 
 const SERVER_CODES = new Set(["bad_file", "bad_form", "length_required", "origin", "too_large", "daily_cap", "rate_limited", "upstream_busy", "upstream", "busy",
-  "server_not_configured", "internal", "llm_disabled", "bad_json", "too_short", "provider_unavailable"]);
+  "server_not_configured", "internal", "llm_disabled", "bad_json", "too_short", "provider_unavailable", "bad_video", "bad_window", "yt_unavailable", "too_long"]);
 function codeOf(status, body) {
   const e = body && typeof body.error === "string" ? body.error : "";
   if (SERVER_CODES.has(e)) return e;
@@ -83,7 +83,7 @@ export async function asrProviders(cfg, timeout = 4000) {
     if (!a || typeof a !== "object" || !Array.isArray(a.available)) return null;
     const available = PROVIDERS.filter(p => a.available.includes(p));
     if (!available.length) return null;
-    return { default: available.includes(a.default) ? a.default : available[0], available };
+    return { default: available.includes(a.default) ? a.default : available[0], available, youtube: j.youtube === true };
   } catch { return null; }
   finally { clearTimeout(timer); }
 }
@@ -263,6 +263,69 @@ export async function transcribePrepared(prep, language, cfg, onProgress = () =>
 export async function transcribe(file, cfg, onProgress = () => {}, signal = null) {
   if (!cfg.asrUrl) throw new AsrError("disabled");
   return transcribePrepared(await prepare(file, onProgress, signal), cfg.language === "en" ? "en" : "ar", cfg, onProgress, signal);
+}
+
+// ---------------- a YouTube video from its link (the Worker's /yt, Gemini) ----------------
+const YT_WINDOW = 600, YT_OVERLAP = 8;
+const plainWord = w => String(w).normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, "").replace(/[\u064B-\u0652\u0670\u0640]/g, "").toLowerCase();
+async function ytPost(cfg, body, signal) {
+  const post = async () => {
+    let r;
+    try { r = await fetch(endpoint(cfg, "/yt"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal }); }
+    catch { throw new AsrError(signal && signal.aborted ? "aborted" : "network"); }
+    let j = null; try { j = await r.json(); } catch { /* not json */ }
+    return { r, j };
+  };
+  let { r, j } = await post();
+  // the Worker's counters take one write a second, and a model can be busy for a moment: one patient retry
+  if (r.status === 503 || (r.status === 429 && j && j.error === "upstream_busy")) { await sleep(r.status === 503 ? 2000 : 8000, signal); ({ r, j } = await post()); }
+  if (!r.ok) throw errorOf(r, j);
+  if (!j || typeof j !== "object") throw new AsrError("bad_response");
+  return j;
+}
+/** the windows a video of `seconds` is asked for in: each begins a little before the previous one ended */
+export function ytPlan(seconds) {
+  const out = [];
+  for (let k = 0; k * YT_WINDOW < seconds; k++) out.push({ from: Math.max(0, k * YT_WINDOW - (k ? YT_OVERLAP : 0)), to: Math.min(Math.ceil(seconds), (k + 1) * YT_WINDOW), cut: k * YT_WINDOW });
+  return out;
+}
+/**
+ * Join two neighbouring windows. The second begins a few seconds before the first ended, so the same words stand at the end
+ * of A and at the start of B: the join is made at the LAST run of three words they share there (A up to it, B after it).
+ * A word cut off by the end of window A is thus never kept. When no such run is found the cut is made by time.
+ */
+export function ytStitch(A, B, cut) {
+  if (!A.length || !B.length) return A.concat(B);
+  const tail = A.slice(-70), a0 = A.length - tail.length, head = B.filter(w => w.start < cut + 20).slice(0, 70);
+  const ta = tail.map(w => plainWord(w.w)), hb = head.map(w => plainWord(w.w));
+  for (let j = hb.length - 3; j >= 0; j--) {
+    if (!hb[j] || !hb[j + 1] || !hb[j + 2]) continue;
+    for (let i = ta.length - 3; i >= 0; i--) {
+      if (ta[i] === hb[j] && ta[i + 1] === hb[j + 1] && ta[i + 2] === hb[j + 2]) return A.slice(0, a0 + i + 3).concat(B.slice(j + 3));
+    }
+  }
+  return A.filter(w => w.start < cut).concat(B.filter(w => w.start >= cut));
+}
+/**
+ * @returns {words, provider, model, seconds, approx: true, truncated}  — word times are estimated inside each short piece
+ */
+export async function transcribeYoutube(video, language, cfg, onProgress = () => {}, signal = null) {
+  if (!cfg.asrUrl) throw new AsrError("disabled");
+  onProgress(0.02, { code: "yt.length" });
+  const { seconds } = await ytPost(cfg, { video }, signal);
+  if (!(seconds > 0)) throw new AsrError("yt_unavailable");
+  const plan = ytPlan(seconds); let words = [], model = "", truncated = false;
+  for (let k = 0; k < plan.length; k++) {
+    onProgress(0.05 + 0.95 * (k / plan.length), { code: "yt.part", args: [k + 1, plan.length] });
+    if (k) await sleep(1100, signal);                       // the Worker's counter cannot take two writes within a second
+    const j = await ytPost(cfg, { video, from: plan[k].from, to: plan[k].to, language: language === "en" ? "en" : "ar" }, signal);
+    if (typeof j.model === "string" && j.model) model = j.model.slice(0, 80);
+    if (j.truncated) truncated = true;
+    const part = wordsFromWhisper(j, 0, null).filter(w => w.start != null);
+    words = k ? ytStitch(words, part, plan[k].cut) : part;
+  }
+  onProgress(1, { code: "asr.done" });
+  return { words, provider: "gemini", model, seconds, approx: true, truncated };
 }
 
 // ---------------- optional "by meaning" helper ----------------

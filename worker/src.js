@@ -1,5 +1,6 @@
 // Cloudflare Worker — the only place where the API keys live. The browser never sees them.
 //
+//   POST /yt    JSON {video} or {video, from, to, language}: a public YouTube video transcribed from its link (Gemini).
 //   POST /asr   multipart: `file` (audio/video) + `language` ("ar" | "en") + `provider` ("groq" | "gemini").
 //               Every other field is IGNORED. The Worker builds the upstream request itself (model, format,
 //               timestamps, mode); `provider` only chooses between two fixed hosts and never becomes a URL.
@@ -99,16 +100,16 @@ export default {
         const asr = asrProviders(env);          // looks at the secrets' presence only; never touches the caps
         if (!asr.available.includes(asr.default)) missing.push(ASR_KEY_NAME[asr.default]);
         if (!allowed.length) missing.push("ALLOWED_ORIGINS");
-        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr }, 200, cors);
+        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!env.GEMINI_API_KEY }, 200, cors);
       }
-      const route = req.method === "POST" && (path === "/asr" || path === "/llm") ? path : null;
+      const route = req.method === "POST" && (path === "/asr" || path === "/llm" || path === "/yt") ? path : null;
       if (!route) return json({ error: "not_found" }, 404, cors);
 
       if (!allowed.includes(origin)) return json({ error: "origin" }, 403, cors);
       // FAIL CLOSED: no counter store => no service. (Otherwise the caps would silently be off.)
       if (!env.CAP) return json({ error: "server_not_configured" }, 500, cors);
 
-      return route === "/asr" ? await asrRoute(req, env, cors, ctx) : await llmRoute(req, env, cors);
+      return route === "/asr" ? await asrRoute(req, env, cors, ctx) : route === "/yt" ? await ytRoute(req, env, cors) : await llmRoute(req, env, cors);
     } catch {
       return json({ error: "internal" }, 500, cors);   // never a stack trace, never without CORS
     }
@@ -512,6 +513,155 @@ async function geminiTranscribe(file, lang, env, ctx) {
       if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(gone); else await gone;
     }
   }
+}
+
+// =====================================================================================================
+// /yt  (a public YouTube video transcribed from its link; needs GEMINI_API_KEY)
+// =====================================================================================================
+// POST /yt   JSON {video: "<11-character id>"}                      -> {seconds}            (how long the video is; costs nothing)
+//            JSON {video, from, to, language: "ar" | "en"}           -> {text, words, ...}   (one window of at most 11 minutes; one cap unit)
+//
+// What was measured against the live API on 4 Oct 2026 (eval/yt/probe.mjs), and what this code relies on:
+//   - the transcription model (gemini-3.5-transcribe) does NOT take a YouTube link: it answers "completed" with nothing in it.
+//     So a general Gemini model does this, told to write what is said and nothing else. It is a language model: it can
+//     smooth or "correct" a word. The answer says so (approx: true) and the site tells the reader.
+//   - `video_metadata.start_offset / end_offset` clip the video; times in the answer stay those of the full video.
+//   - a window that begins after the end of the video is answered with HTTP 500, so the length is asked first:
+//     countTokens reports the audio as exactly 32 tokens per second.
+//   - a private, removed or mistyped video is answered with HTTP 403.
+// The caller never names a URL: the link is built HERE from an id that matched [A-Za-z0-9_-]{11}.
+const YT_ID = /^[A-Za-z0-9_-]{11}$/;
+const YT_MAX_WINDOW = 660;              // seconds per request: 10 minutes + the overlap the site asks for
+const YT_MAX_SECONDS = 6 * 3600;
+const YT_AUDIO_TOKENS_PER_SECOND = 32;
+const YT_TIMEOUT_MS = 170_000;
+const YT_COUNT_TIMEOUT_MS = 20_000;
+const YT_DEF_MODELS = "gemini-3.8-flash,gemini-3.5-flash";
+const ytModels = (env) => { const m = String(env.GEMINI_YT_MODELS || YT_DEF_MODELS).split(",").map((x) => x.trim()).filter((x) => /^gemini-[a-z0-9.-]{1,40}$/.test(x)); return m.length ? m.slice(0, 4) : YT_DEF_MODELS.split(","); };
+const ytUrl = (id) => "https://www.youtube.com/watch?v=" + id;
+const ytClock = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+const ytPrompt = (from, to, lang) =>
+  `Transcribe the speech in this video between ${ytClock(from)} and ${ytClock(to)} verbatim, in the language it is spoken in (mostly ${lang === "en" ? "English; Arabic recitation or quotation is written in Arabic script" : "Arabic"}). ` +
+  "Write exactly what is said, word for word, including repetitions, hesitations and mistakes. Do NOT correct, complete or normalise any quotation of the Qur'an or of hadith: " +
+  "if the speaker misquotes, write the misquotation. No translation, no summary, no commentary, no diacritics, no speaker names. Give each piece of at most 12 words with the time at which it " +
+  "starts, as MM:SS counted from the beginning of the FULL video. If there is no speech in this part, return an empty list.";
+const YT_SCHEMA = { type: "ARRAY", items: { type: "OBJECT", properties: { t: { type: "STRING" }, x: { type: "STRING" } }, required: ["t", "x"] } };
+function ytBody(model, id, from, to, lang) {
+  return { contents: [{ role: "user", parts: [
+      { file_data: { file_uri: ytUrl(id) }, video_metadata: { start_offset: from + "s", end_offset: to + "s", fps: 0.2 } },
+      { text: ytPrompt(from, to, lang) }] }],
+    generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: YT_SCHEMA,
+      ...(/^gemini-3/.test(model) ? { thinkingConfig: { thinkingLevel: "low" } } : {}) } };
+}
+/** "MM:SS" | "H:MM:SS" | "123" | 123 -> seconds, or NaN */
+function ytSeconds(v) {
+  if (typeof v === "number") return Number.isFinite(v) && v >= 0 ? v : NaN;
+  const m = /^\s*(?:(\d{1,2}):)?(\d{1,3}):(\d{2})(?:[.,]\d+)?\s*$/.exec(typeof v === "string" ? v : "");
+  if (m) return (+(m[1] || 0)) * 3600 + +m[2] * 60 + +m[3];
+  const n = /^\s*(\d{1,5})(?:\.\d+)?\s*s?\s*$/.exec(typeof v === "string" ? v : "");
+  return n ? +n[1] : NaN;
+}
+/**
+ * the model's answer -> the normalised answer of /asr, or null when it is not the list that was asked for.
+ * Each piece carries the second it starts at; its words are spread from there to the start of the next piece
+ * (never more than 0.8 s a word), so word times are estimates within a piece.
+ */
+function ytNormalise(j, model, from, to) {
+  const cand = j && Array.isArray(j.candidates) ? j.candidates[0] : null;
+  const parts = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts : null;
+  if (!parts) return null;
+  let list;
+  try { list = JSON.parse(parts.map((p) => (p && typeof p.text === "string" ? p.text : "")).join("")); } catch { return null; }
+  if (!Array.isArray(list) || list.length > 4000) return null;
+  const pieces = []; let last = from;
+  for (const it of list) {
+    if (!it || typeof it !== "object" || typeof it.x !== "string") continue;
+    // letters, digits and ordinary punctuation only; no control characters, no markup
+    const ws = it.x.replace(/[\u0000-\u001f\u007f<>{}\[\]`\\]/g, " ").slice(0, 600).split(/\s+/).filter(Boolean);
+    if (!ws.length) continue;
+    let at = ytSeconds(it.t);
+    if (Number.isNaN(at) || at < from - 5 || at > to + 5) at = last;       // a time outside the window is the model's slip: stay where we were
+    at = Math.min(Math.max(at, last), to);                                  // never backwards
+    pieces.push({ at, ws }); last = at;
+  }
+  const words = []; let cursor = from;
+  for (let i = 0; i < pieces.length; i++) {
+    const p = pieces[i], n = p.ws.length, start = Math.min(Math.max(p.at, cursor), to);     // two pieces given the same second follow one another
+    const next = i + 1 < pieces.length ? pieces[i + 1].at : Math.min(to, start + n * 0.5);
+    const span = Math.min(Math.max(Math.min(next - start, n * 0.8), 0.2 * n), Math.max(to - start, 0)), d = span / n;
+    p.ws.forEach((w, k) => words.push({ word: w, start: +(start + k * d).toFixed(2), end: +(start + (k + 1) * d).toFixed(2) }));
+    cursor = start + span;
+  }
+  return { text: words.map((w) => w.word).join(" "), duration: to - from, words, provider: "gemini", model, source: "youtube", approx: true,
+    ...(cand.finishReason && cand.finishReason !== "STOP" ? { truncated: true } : {}) };
+}
+
+async function ytRoute(req, env, cors) {
+  const key = env.GEMINI_API_KEY;
+  if (!key) return json({ error: "provider_unavailable", provider: "gemini" }, 400, cors);
+  const cl = req.headers.get("Content-Length") || "";
+  if (/^\d+$/.test(cl) && Number(cl) > 400) return json({ error: "bad_json" }, 400, cors);
+  let b;
+  try { const t = await req.text(); if (t.length > 400) throw 0; b = JSON.parse(t); } catch { return json({ error: "bad_json" }, 400, cors); }
+  const id = b && typeof b.video === "string" ? b.video : "";
+  if (!YT_ID.test(id)) return json({ error: "bad_video" }, 400, cors);
+  const t = clock();
+  const { ip, tag } = await ipTag(req, t.day);
+  if (await burstLimited(env.RL, "/yt:" + ip)) return json({ error: "rate_limited", scope: "burst" }, 429, { ...cors, "Retry-After": "60" });
+  const models = ytModels(env);
+  const head = { "x-goog-api-key": key, "Content-Type": "application/json" };
+
+  // ---- how long is it? (asked before the first window; no cap unit) ----
+  if (b.from == null && b.to == null) {
+    try {
+      const r = await fetch(`${GEM_BASE}/v1beta/models/${models[0]}:countTokens`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_COUNT_TIMEOUT_MS),
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ file_data: { file_uri: ytUrl(id) } }] }] }) });
+      if (!r.ok) { try { await r.body?.cancel(); } catch { /* ignore */ }
+        if (r.status === 403 || r.status === 404 || r.status === 400) return json({ error: "yt_unavailable" }, 404, cors);
+        if (r.status === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...(retryAfter(r) ? { "Retry-After": retryAfter(r) } : {}) });
+        return json({ error: "upstream", upstream_status: r.status, stage: "count" }, 502, cors); }
+      const j = await r.json();
+      const audio = (Array.isArray(j.promptTokensDetails) ? j.promptTokensDetails : []).find((d) => d && d.modality === "AUDIO");
+      const seconds = audio && Number.isFinite(audio.tokenCount) ? Math.round(audio.tokenCount / YT_AUDIO_TOKENS_PER_SECOND) : 0;
+      if (!(seconds > 0)) return json({ error: "yt_unavailable" }, 404, cors);
+      if (seconds > YT_MAX_SECONDS) return json({ error: "too_long", seconds, max_seconds: YT_MAX_SECONDS }, 413, cors);
+      return json({ seconds }, 200, cors);
+    } catch { return json({ error: "upstream", stage: "count" }, 502, cors); }
+  }
+
+  // ---- one window ----
+  const from = b.from, to = b.to;
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to <= from || to - from > YT_MAX_WINDOW || to > YT_MAX_SECONDS + YT_MAX_WINDOW) return json({ error: "bad_window" }, 400, cors);
+  const lang = b.language === "en" ? "en" : "ar";
+  const cap = posInt(env.DAILY_CAP, DEF_DAILY_CAP), hourCap = posInt(env.HOURLY_CAP, DEF_HOURLY_CAP), ipCap = posInt(env.IP_DAILY_CAP, DEF_IP_DAILY_CAP);
+  const specs = [
+    { key: "d:" + t.day, cap, ttl: 172800, code: "daily_cap", scope: "day", retry: t.nextDay },
+    { key: "a:" + t.hour, cap: hourCap, ttl: 7200, code: "rate_limited", scope: "hour", retry: t.nextHour },
+  ];
+  if (ipCap < cap) specs.push({ key: "i:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay });
+  const g = await guard(env.CAP, specs, true);          // the same counters as /asr: one unit = up to 10 minutes, whoever transcribes
+  if (g.busy || g.over) return capResponse(g, cors);
+  const left = { "X-Athar-Remaining": String(Math.max(cap - g.used[0], 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1], 0)) };
+
+  let lastStatus = 0, retry = null;
+  for (const model of models) {
+    try {
+      const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:generateContent`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_TIMEOUT_MS),
+        body: JSON.stringify(ytBody(model, id, from, to, lang)) });
+      if (!r.ok) {
+        lastStatus = r.status; if (r.status === 429) retry = retryAfter(r);
+        try { await r.body?.cancel(); } catch { /* ignore */ }
+        if (r.status === 403 || r.status === 404) return json({ error: "yt_unavailable" }, 404, { ...cors, ...left });
+        continue;                                          // 429 / 500 / 503 / 400 on this model: the next one may answer
+      }
+      const out = ytNormalise(await r.json(), model, from, to);
+      if (!out) { lastStatus = 0; continue; }
+      return new Response(JSON.stringify(out), { status: 200, headers: { ...cors, ...left, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+    } catch { lastStatus = 0; }
+  }
+  // never forward the upstream body
+  if (lastStatus === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...left, ...(retry ? { "Retry-After": retry } : {}) });
+  return json({ error: "upstream", ...(lastStatus ? { upstream_status: lastStatus } : {}), stage: "youtube" }, 502, { ...cors, ...left });
 }
 
 // =====================================================================================================

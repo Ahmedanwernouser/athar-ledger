@@ -1,6 +1,6 @@
 // app.js — the page. All matching runs in js/worker.js; this file only draws and listens.
 import { fmtTime, fnv1a, wordsFromText } from "./text.js";
-import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, AsrError, llmStops } from "./asr.js";
+import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, transcribeYoutube, AsrError, llmStops } from "./asr.js";
 import { compareLedgers, applyAgreement, marksOf, statusOf, timeTolerance } from "./agree.js";
 import { flagsOf } from "./flags.js";
 import { toCsv, toJson, download } from "./exporter.js";
@@ -144,7 +144,8 @@ function boot() {
   loadCorpus();
 
   if (!CFG.asrUrl) { $("drop").classList.add("off"); $("file").disabled = true; }
-  else asrProviders(CFG).then(a => { S.asr = a; drawProviders(); });       // asked once, never waited for
+  else asrProviders(CFG).then(a => { S.asr = a; drawProviders(); $("ytForm").hidden = !(a && a.youtube); });       // asked once, never waited for
+  $("ytForm").onsubmit = ev => { ev.preventDefault(); const id = youtubeId($("ytUrl").value.trim()); if (!id) return showError(msg("err.yt.link")); runYoutube(id); };
   $("asrProv").onchange = () => store.set("athar:asrprov", $("asrProv").value);
   fetch(new URL("../samples/manifest.json", import.meta.url)).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then(list => {
     for (const s of list) {
@@ -406,6 +407,21 @@ async function runAudio(file) {
   } catch (e) { return fail(run, asrMsg(e)); }
   if (!live(run)) return;
   await runWords(run, words, { title: file.name, audioFile: file, extra, warnings, second, transcribers });
+}
+
+/** a public YouTube video, from its link alone: the Worker asks Gemini to write what is said, ten minutes at a time */
+async function runYoutube(id) {
+  const run = beginRun(), signal = run.ctl.signal, lang = $("recLang").value === "ar" ? "ar" : "en";
+  busy(0.02, msg("yt.length"));
+  let res;
+  try {
+    res = await transcribeYoutube(id, lang, CFG, (f, m) => { if (live(run)) busy(0.02 + 0.7 * f, m && m.code ? msg(m.code, ...(m.args || []).map(num)) : null); }, signal);
+    if (!res.words.length) throw new AsrError("empty");
+  } catch (e) { return fail(run, asrMsg(e)); }
+  if (!live(run)) return;
+  const who = { provider: res.provider, model: res.model }, warnings = [msg("warn.yt", () => transcriberLabel(who))];
+  if (res.truncated) warnings.push(msg("warn.yt.cut"));
+  await runWords(run, res.words, { title: t("yt.title", id), video: id, warnings, transcribers: [who] });
 }
 
 class InputError extends Error { constructor(key) { super(key); this.key = key; } }

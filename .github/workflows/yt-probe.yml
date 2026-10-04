@@ -1,4 +1,4 @@
-# One-off probe: which Gemini request shape transcribes a public YouTube video from its link.
+# Live end-to-end check of "a YouTube video from its link" (client code + Worker code + real Gemini + engine).
 # Keys are repository secrets; never printed, never written. Results go to the branch `yt-probe-results`.
 name: yt-probe
 on:
@@ -19,7 +19,7 @@ jobs:
       - name: probe
         env:
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
-        run: node eval/yt/probe.mjs
+        run: node eval/yt/run.mjs
       - name: publish results
         if: always()
         run: |

@@ -70,6 +70,14 @@
             <span class="drop-main" id="dropMain">اختر ملفًّا أو اسحبه إلى هنا</span>
             <span class="drop-sub" id="dropSub">يُرسَل الصوت إلى خدمة التفريغ ولا يُحفَظ عندنا. يُحتفَظ بعدّاد مجهول قصير الأجل فقط لتطبيق الحد اليومي المجاني.</span>
           </label>
+          <form class="ytform" id="ytForm" hidden>
+            <label for="ytUrl" id="ytLabel">أو رابط يوتيوب فقط</label>
+            <div class="ytrow">
+              <input type="url" id="ytUrl" dir="ltr" inputmode="url" placeholder="https://youtu.be/…" autocomplete="off" aria-describedby="ytNote">
+              <button type="submit" class="btn" id="btnYt">حلِّل من الرابط</button>
+            </div>
+            <p class="hint" id="ytNote">للفيديوهات العامة. يفرّغه نموذج Gemini العام من الرابط مباشرة بلا تحميل؛ الأزمنة تقريبية، وقد يختلف لفظ كلمة عمّا قيل. للتدقيق ارفع الملف.</p>
+          </form>
           <label class="reclang"><span id="recLangLabel">لغة التسجيل</span>
             <select id="recLang"><option value="ar">عربي</option><option value="en">إنجليزي</option><option value="en+ar">إنجليزي مع تلاوة عربية (تفريغ مرّتين)</option></select>
           </label>

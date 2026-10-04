@@ -563,6 +563,68 @@ sec("/llm caps");
   const e4 = L({ LLM_DAILY_CAP: "2", CAP: kv({ delay: 5 }) }); up.calls = [];
   await Promise.all(Array.from({ length: 40 }, () => call(llm({ spoken: SP }), e4))); eq(up.calls.length, 2, "/llm 40 concurrent calls with cap 2 -> exactly 2 reach the provider"); }
 
+sec("/yt: a YouTube video from its link (Gemini)");
+{ const yt = (body, o = {}) => new Request("https://w.dev/yt", { method: "POST", headers: { Origin: OK, "Content-Type": "application/json", ...(o.headers || {}) }, body: typeof body === "string" ? body : JSON.stringify(body) });
+  const Y = (o = {}) => baseEnv({ GEMINI_API_KEY: GKEY, ...o });
+  const VID = "1foxMsRygJg";
+  const count = (audio) => () => new Response(JSON.stringify({ totalTokens: 1, promptTokensDetails: [{ modality: "VIDEO", tokenCount: 999 }, { modality: "AUDIO", tokenCount: audio }] }), { status: 200 });
+  const pieces = (list, extra = {}) => () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(list) }] }, finishReason: "STOP", ...extra }] }), { status: 200 });
+
+  // -- validation: nothing reaches Google
+  up.calls = []; up.impl = count(5101);
+  eq((await call(yt({ video: "https://evil.example/x" }), Y())).j.error, "bad_video", "/yt a URL is not an id");
+  eq((await call(yt({ video: "short" }), Y())).j.error, "bad_video", "/yt a short id");
+  eq((await call(yt("{not json"), Y())).j.error, "bad_json", "/yt broken JSON");
+  eq((await call(yt({ video: VID, pad: "x".repeat(500) }), Y())).j.error, "bad_json", "/yt an oversized body");
+  eq((await call(yt({ video: VID, from: 0, to: 5000 }), Y())).j.error, "bad_window", "/yt a window longer than 11 minutes");
+  eq((await call(yt({ video: VID, from: 10, to: 5 }), Y())).j.error, "bad_window", "/yt a window that ends before it starts");
+  eq((await call(yt({ video: VID, from: 1.5, to: 60 }), Y())).j.error, "bad_window", "/yt a fractional offset");
+  eq((await call(yt({ video: VID }), baseEnv())).j.error, "provider_unavailable", "/yt without a Gemini key");
+  eq((await call(yt({ video: VID }, { headers: { Origin: "https://evil.example" } }), Y())).status, 403, "/yt from another origin");
+  eq(up.calls.length, 0, "/yt none of the refused requests reached Google");
+
+  // -- length
+  { const env = Y(); up.calls = []; up.impl = count(5101);
+    const r = await call(yt({ video: VID }), env);
+    ok(r.status === 200 && r.j.seconds === 159, "/yt length: 5101 audio tokens / 32 = 159 s");
+    const c = up.calls[0], b = JSON.parse(c.init.body);
+    ok(/:countTokens$/.test(c.url) && new URL(c.url).host === "generativelanguage.googleapis.com", "/yt length is asked with countTokens on Google's host");
+    eq(b.contents[0].parts[0].file_data.file_uri, "https://www.youtube.com/watch?v=" + VID, "/yt the link is built by the Worker from the id");
+    eq(env.CAP.writes, 0, "/yt asking the length costs no cap unit");
+    ok(!c.url.includes(GKEY) && c.init.headers["x-goog-api-key"] === GKEY, "/yt the key travels in a header, never in the URL"); }
+  { up.impl = () => new Response("PERMISSION_DENIED " + GKEY, { status: 403 }); const r = await call(yt({ video: VID }), Y()); ok(r.status === 404 && r.j.error === "yt_unavailable", "/yt a private or missing video -> yt_unavailable"); }
+  { up.impl = count(32 * 7 * 3600); const r = await call(yt({ video: VID }), Y()); ok(r.status === 413 && r.j.error === "too_long", "/yt a 7-hour video is refused"); }
+  { up.impl = count(0); eq((await call(yt({ video: VID }), Y())).j.error, "yt_unavailable", "/yt no audio at all"); }
+
+  // -- one window
+  { const env = Y(); up.calls = [];
+    up.impl = pieces([{ t: "01:00", x: "قال رسول الله" }, { t: "01:04", x: "إنما الأعمال بالنيات" }, { t: "99:99", x: "وإنما لكل امرئ ما نوى" }, { t: "01:02", x: "<script>x</script> ثم" }]);
+    const r = await call(yt({ video: VID, from: 60, to: 120, language: "ar" }), env);
+    ok(r.status === 200 && r.j.provider === "gemini" && r.j.source === "youtube" && r.j.approx === true, "/yt window answered in the /asr shape, marked approximate");
+    const w = r.j.words;
+    eq(w.map((x) => x.word).join(" "), "قال رسول الله إنما الأعمال بالنيات وإنما لكل امرئ ما نوى script x /script ثم", "/yt words in order; markup characters removed");
+    ok(w[0].start === 60 && w[3].start === 64, "/yt each piece starts at its stated second");
+    ok(w.every((x, i) => x.end >= x.start && (!i || x.start >= w[i - 1].start) && x.start >= 60 && x.end <= 120.01), "/yt times never run backwards or leave the window (a wrong time stays where the text was)");
+    const b = JSON.parse(up.calls[0].init.body), part = b.contents[0].parts[0];
+    ok(part.video_metadata.start_offset === "60s" && part.video_metadata.end_offset === "120s" && part.file_data.file_uri.endsWith("v=" + VID), "/yt the window is clipped upstream");
+    ok(/Do NOT correct/.test(b.contents[0].parts[1].text) && b.generationConfig.temperature === 0 && b.generationConfig.responseSchema, "/yt the prompt forbids correcting quotations; temperature 0; a fixed answer shape");
+    eq(env.CAP.m.get("d:2026-10-02"), "1", "/yt one window = one cap unit (the same counter as /asr)"); }
+  { up.calls = []; let n = 0;
+    up.impl = (url) => (++n === 1 ? new Response("overloaded " + GKEY, { status: 503 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    const r = await call(yt({ video: VID, from: 0, to: 600 }), Y());
+    ok(r.status === 200 && up.calls.length === 2 && up.calls[0].url !== up.calls[1].url && r.j.model === "gemini-3.5-flash", "/yt a model that is overloaded is followed by the next one"); }
+  { up.impl = () => new Response("quota " + GKEY, { status: 429, headers: { "Retry-After": "30" } }); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y());
+    ok(r.status === 429 && r.j.error === "upstream_busy" && r.h.get("Retry-After") === "30", "/yt every model busy -> upstream_busy with the wait"); }
+  { up.impl = () => new Response("boom " + GKEY, { status: 500 }); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 502 && r.j.error === "upstream" && r.j.upstream_status === 500, "/yt upstream failure: status only, never the body"); }
+  { up.impl = () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "not a list" }] } }] }), { status: 200 }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.error, "upstream", "/yt an answer that is not the list -> upstream"); }
+  { up.impl = pieces([]); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 200 && r.j.words.length === 0 && r.j.text === "", "/yt a window without speech is an empty transcript, not an error"); }
+  { up.impl = pieces([{ t: "00:01", x: "كلام" }], { finishReason: "MAX_TOKENS" }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.truncated, true, "/yt a cut-off answer says so"); }
+  { const env = Y({ DAILY_CAP: "1" }); up.impl = pieces([{ t: "00:01", x: "كلام" }]); up.calls = [];
+    const a = await call(yt({ video: VID, from: 0, to: 600 }), env), b2 = await call(yt({ video: VID, from: 600, to: 1200 }), env);
+    ok(a.status === 200 && b2.status === 429 && b2.j.error === "daily_cap" && up.calls.length === 1, "/yt the daily cap stops the second window before Google"); }
+  { const h = await call(await asr({ method: "GET", path: "/health" }), Y()); eq(h.j.youtube, true, "/health says the link path is available"); const h2 = await call(await asr({ method: "GET", path: "/health" }), baseEnv()); eq(h2.j.youtube, false, "/health: no Gemini key, no link path"); }
+}
+
 sec("secret scan over a matrix of situations");
 { const envs = [baseEnv(), baseEnv({ GROQ_API_KEY: "" }), baseEnv({ CAP: undefined }), L(), L({ LLM_PROVIDER: "gemini", GEMINI_API_KEY: GKEY }), L({ CAP: kv({ getThrows: true }) })];
   const impls = [asrOK, chat("x"), () => new Response("err " + KEY, { status: 500 }), () => new Response("busy " + KEY, { status: 429 }), () => { throw new Error(KEY + "\n    at fetch (worker/src.js:1:1)"); }];

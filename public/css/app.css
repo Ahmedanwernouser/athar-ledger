@@ -907,3 +907,12 @@ html[dir=ltr] .entry[data-rv="unsure"] .ord::after { content: " ?"; }
   .player .progress #progressText { white-space: nowrap; }
   :root { --player-h: 132px; }
 }
+
+/* ---- a YouTube link instead of a file ---- */
+.ytform { margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.ytform label { display: block; margin-bottom: 6px; font-size: var(--fs-ui); font-weight: 600; color: var(--ink); }
+.ytrow { display: flex; gap: 8px; }
+.ytrow input { flex: 1; min-width: 0; min-height: var(--h); padding: 0 12px; border: 1px solid var(--edge); border-radius: var(--r-s); background: var(--sheet); font-size: var(--fs-ui); text-align: left; }
+.ytrow input:focus { border-color: var(--indigo); }
+.ytform .hint { margin: 8px 0 0; }
+@media (max-width: 560px) { .ytrow { flex-wrap: wrap; } .ytrow .btn { flex: 1 1 100%; } }
