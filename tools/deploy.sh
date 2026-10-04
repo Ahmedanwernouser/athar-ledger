@@ -82,3 +82,4 @@ say "Worker refuses another origin: $(curl -sS -m 30 -X POST -H 'Origin: https:/
 # never leave an identifier in the published log
 sed -i "s#$CLOUDFLARE_API_TOKEN#<TOKEN>#g; s#$CLOUDFLARE_ACCOUNT_ID#<ACCOUNT>#g; s#$KV#<KV>#g" "$LOG"
 exit $fail
+# run
