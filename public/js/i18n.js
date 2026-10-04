@@ -217,6 +217,12 @@ const D = {
   "doc.fn.partial.h.text": ["بلفظ يختلف عن المنطوق؛ لفظ المصدر: «{0}».", "The source's wording differs from what was said; the source reads: «{0}»."],
   "doc.fn.viaen": ["(طابق ترجمة إنجليزية منشورة.)", "(Matched through a published English translation.)"],
   "doc.fn.attr": ["نُسب في الكلام إلى غير هذا الموضع — يُراجَع.", "The speaker attributed it elsewhere — check."],
+  // ---- the speaker's own grading of a hadith, as spoken (never the tool's judgement)
+  "e.grade.weak": ["قال المتكلم قريبًا من هذا الحديث ({0}): «{1}». هذا حكمه هو كما قيل، لم تتحقق منه الأداة، وقد لا يقصد هذا النص بعينه — يُراجَع في التسجيل.", "Near this hadith the speaker said ({0}): “{1}”. This is the speaker's own judgement as spoken; the tool has not checked it and it may not be about this exact text — check the recording."],
+  "e.grade.strong": ["قال المتكلم قريبًا من هذا الحديث ({0}): «{1}». هذا حكمه هو كما قيل، لم تتحقق منه الأداة، وقد لا يقصد هذا النص بعينه — يُراجَع في التسجيل.", "Near this hadith the speaker said ({0}): “{1}”. This is the speaker's own judgement as spoken; the tool has not checked it and it may not be about this exact text — check the recording."],
+  "doc.fn.grade": ["قال المتكلم قريبًا منه: «{0}» (حكمه المنطوق، لم يُتحقَّق منه).", "The speaker said near it: “{0}” (his own judgement, not checked)."],
+  "sumry.grade": ["أحكام منطوقة على أحاديث (ضعّف / صحّح)", "Spoken gradings of hadith (weak / sound)"],
+  "sumry.distinct": ["مصادر الحديث المختلفة", "Different hadith sources"],
   "doc.fn.tail": ["ما قيل بعده مباشرةً ليس تتمّة النص في المصدر.", "What was said right after is not how the source continues."],
   "doc.fn.unsure": ["[يحتاج نظرًا]", "[needs a look]"],
   "doc.fn.meaning": ["لم يطابق لفظًا. لعل المقصود: {0} (اقتراح آلي غير مؤكَّد).", "No wording match. Possibly: {0} (an unconfirmed automatic suggestion)."],

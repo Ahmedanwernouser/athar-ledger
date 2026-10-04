@@ -12,7 +12,7 @@
 // still clears the evidence thresholds is "partial", with the differences listed in `diff`.
 import { tokenizeTranscript, stem, isLatin, wordText, fold, normMixed } from "./text.js";
 import { align, summarize } from "./align.js";
-import { findCues, findCollectionSpans, findQuranReferences, formulaMask, dhikrMask, DEVOTIONAL, FUNCTION_WORDS, QURAN_HOMOGRAPHS, OPEN_PARTICLES } from "./cues.js";
+import { findCues, findGradings, findCollectionSpans, findQuranReferences, formulaMask, dhikrMask, DEVOTIONAL, FUNCTION_WORDS, QURAN_HOMOGRAPHS, OPEN_PARTICLES } from "./cues.js";
 
 export const STATUS = {
   verbatim: { ar: "مطابق حرفيًا", fidelity: "حرفي", rank: 4 },
@@ -27,6 +27,8 @@ export const DEFAULTS = {
   seedMin: 12,          // minimum summed idf of seed hits to verify a cluster
   seedMinCue: 5,        // ... when a citation cue is nearby
   cueReach: 45,         // tokens after a cue in which a quotation is expected
+  gradeReach: 40,       // tokens after a hadith in which a spoken grading ("هذا حديث ضعيف") is attached to it
+  gradeAhead: 8,        // ... and before the next hadith, when the grading comes first
   cueAnswer: 16,        // a citation must begin within this many tokens after a cue to count as its quotation
   margin: 25,           // transcript tokens added around a cluster before aligning
   band: 16,             // the alignment is computed within this many words of the diagonals on which speech and source share word pairs (0 = everywhere)
@@ -684,7 +686,7 @@ export function analyze(words, corpus, options = {}) {
     if (mm && mm.strong) {
       extra.push({ ts: cue.pos, te: mm.te, cue, status: "meaning", meaning: mm });
       for (let i = cue.pos; i < mm.te; i++) taken[i] = 1;
-    } else if (commentaryAt(ftok, cue.end)) {
+    } else if (commentaryAt(ftok, cue.end, wEnd)) {
       continue;   // the words after the cue are the speaker explaining ("أما الثاني فهو ..."), not an announced quotation
     } else {
       // stop the span at a sentence-ish length; the quotation boundary is unknown
@@ -813,6 +815,25 @@ export function analyze(words, corpus, options = {}) {
       note: "ذكر المتحدث هذا المرجع صراحة ولم يُعثر قربه على نص مطابق. النص المعروض هو نص المرجع المذكور." });
   }
   ledger.sort((a, b) => a.ts - b.ts || a.te - b.te);
+  // The speaker's own grading of a hadith, as spoken: shown beside the nearest hadith (the one just said, or the one about to be)
+  // with the speaker's words and their time. The tool does not interpret it and does not claim to know which text it is about.
+  const gradings = findGradings(ftok);
+  const spokenWords = (a, b) => { const seen = new Set(), out = []; for (let i = a; i < b; i++) { const k = src[i]; if (!seen.has(k)) { seen.add(k); out.push(wOf(k)); } } return out.join(" "); };   // the speaker's words as transcribed
+  if (gradings.length) {
+    const isH = e => (e.source && e.source.type === "h") || (e.status === "notfound" && e.cue === "hadith") || (e.status === "meaning" && e.source && e.source.type === "h");
+    const hs = ledger.filter(isH);
+    for (const g of gradings) {
+      let host = null, where = "after";
+      for (const e of hs) if (e.te <= g.pos + 1 && g.pos - e.te <= o.gradeReach) host = e;          // the nearest hadith said before it
+      if (!host) { host = hs.find(e => e.ts >= g.end - 1 && e.ts - g.end <= o.gradeAhead) || null; where = "before"; }
+      if (!host) continue;
+      const list = host.spokenGrades || (host.spokenGrades = []), last = list[list.length - 1];
+      if (last && last.kind === g.kind && g.pos - last.endTok <= 4) { last.endTok = g.end; last.text = spokenWords(last.fromTok, Math.min(n, g.end + 2)); continue; }   // "ضعيف لا يصح": one grading, not two
+      const from = Math.max(0, g.pos - 5);
+      list.push({ kind: g.kind, where, text: spokenWords(from, Math.min(n, g.end + 2)), start: wObj(src[clamp(g.pos, 0, n - 1)]).start ?? null, fromTok: from, endTok: g.end });
+    }
+    for (const e of hs) if (e.spokenGrades) { if (e.spokenGrades.length > 3) e.spokenGrades.length = 3; for (const x of e.spokenGrades) { delete x.fromTok; delete x.endTok; } }
+  }
   ledger.forEach((e, i) => { e.id = i + 1; });
 
   return {
@@ -843,6 +864,15 @@ function sourceWindow(pid, corpus, forced) {
     if (!forced && q >= pid + 10) break;
   }
   return { P, FP, bounds, first: lo, last: hi };
+}
+
+
+// The compiler's own words after a hadith ("قال أبو عيسى هذا حديث حسن غريب ... وروي بعضهم هذا الحديث عن ...") are in the index with it, but
+// they are not the Prophet's words: a match that lies wholly after the first such marker quotes the commentary, not the hadith.
+const COMMENT_MARKS = ["قال أبو عيسى", "هذا حديث حسن", "هذا حديث صحيح", "هذا حديث غريب", "هذا حديث ضعيف"].map(p => p.split(" ").map(w => fold(w)));
+function commentaryStart(FP) {
+  for (let i = 8; i < FP.length; i++) for (const m of COMMENT_MARKS) if (m.every((w, k) => FP[i + k] === w)) return i;
+  return -1;
 }
 
 function verify(cl, X) {
@@ -970,6 +1000,7 @@ function verify(cl, X) {
     if (op.pi >= 0) { if (op.pi < ps) ps = op.pi; const z = op.pi2 ?? op.pi; if (z + 1 > pe) pe = z + 1; }
   }
   const ts = a + lts, te = a + lte;
+  if (!isQ && !isB) { const cm = commentaryStart(FP); if (cm >= 0 && ps >= cm) return null; }   // a match inside the compiler's commentary is not a quotation
 
   // A particle that turns the meaning round, standing in the source directly before (or after) the quoted words and not
   // spoken: shown as an omitted word. Never across an ayah / passage boundary.
@@ -1119,7 +1150,14 @@ function renderDiff(m, tok) {
 // announced no quotation, so no "announced but not found" is raised for it. A closed list of discourse markers, used only
 // where nothing was found; a quotation that really is in the corpus is found by its words and never reaches this test.
 const COMMENTARY = new Set(["اما", "فاما", "واما", "يعني", "اي", "فهو", "وهو", "فهذا", "وهذا", "هذا", "هذه", "ذلك", "فذلك", "اذن", "فاذن", "هنا", "فهنا", "المراد", "والمراد", "المعني", "ومعني"]);
-function commentaryAt(ftok, i) { return COMMENTARY.has(ftok[i]) || COMMENTARY.has(ftok[i + 1]) && ftok[i].length <= 2; }
+// Words of talk ABOUT narrators and chains ("متأخر", "متقدم", "تلميذ", "السند", "يعني", "طبعا"): three of them in the window after a cue
+// ("عن معاذ وطبعا مكحول متأخر خالص يعني ...") mean the speaker is discussing an isnad, not announcing a text.
+const ISNAD_TALK = new Set(["متاخر", "متقدم", "تلميذ", "تلميذه", "راوي", "الراوي", "الاسناد", "اسناد", "السند", "سند", "مدلس", "ترجمه", "طبقه", "يعني", "طبعا"].map(w => fold(w)));
+function commentaryAt(ftok, i, wEnd = i + 20) {
+  if (COMMENTARY.has(ftok[i]) || COMMENTARY.has(ftok[i + 1]) && ftok[i].length <= 2) return true;
+  let k = 0; for (let j = i; j < Math.min(wEnd, ftok.length, i + 25); j++) if (ISNAD_TALK.has(ftok[j])) k++;
+  return k >= 3;
+}
 function meaningCandidates(cue, wEnd, tok, ftok, corpus, o) {
   corpus.ensureStems();
   const kindOk = cue.kind === "quran" ? pid => corpus.quranLike(pid) : cue.kind === "saying" ? pid => corpus.isBook(pid) : pid => !corpus.quranLike(pid);

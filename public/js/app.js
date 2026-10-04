@@ -1083,6 +1083,7 @@ function drawEntry(e) {
     const a = tOpt("attr." + e.attribution.code);       // a code this page does not know yet shows nothing rather than a raw key
     if (a) li.append(el("p", "note " + (e.attribution.code === "collection_other_wording" ? "" : e.attribution.agrees ? "ok" : "warn"), a));
   }
+  for (const g of (e.spokenGrades || [])) li.append(mixed(el("p", "note " + (g.kind === "weak" ? "warn" : ""), t("e.grade." + (g.kind === "strong" ? "strong" : "weak"), S.hasTimes && g.start != null ? fmtTime(g.start) : "", g.text)), g.text));
   if (src && src.type === "h" && src.matnOnly === false && e.status !== "meaning" && !viaEn) li.append(el("p", "note", t("note.isnad")));
 
   const linkOrText = p => { const x = el("li"), label = srcLabel(p); if (p.url) { const a = mixed(el("a", null, label), label); a.href = p.url; a.target = "_blank"; a.rel = "noopener"; x.append(a); } else { x.textContent = label; mixed(x, label); } return x; };

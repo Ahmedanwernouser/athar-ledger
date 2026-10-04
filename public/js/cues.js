@@ -149,6 +149,49 @@ export function findCues(ftok) {
   return merged;
 }
 
+// ---- spoken gradings ("هذا حديث ضعيف", "لا يصح", "إسناده منقطع", "صححه الألباني") ----
+// The speaker's OWN judgement on a hadith, as spoken. The tool never decides whether it is right and never says which hadith it
+// is about: the engine shows the words, at their time, beside the nearest hadith, and the reviewer decides. Closed lists, folded.
+const G_SUBJECT = new Set(["الحديث", "حديث", "هذا", "هذه", "اسناده", "سنده", "اسناد", "الاسناد", "الخبر", "الاثر", "الروايه", "هو", "وهو", "فهو"].map(F));
+const G_SUBJECT_STRICT = new Set(["الحديث", "حديث", "اسناده", "سنده", "اسناد", "الاسناد", "الروايه"].map(F));
+const G_WEAK_FREE = ["لا يصح", "لم يصح", "لا يثبت", "لم يثبت", "لا اصل له", "ضعفه", "ضعفوه", "ضعفها", "ليس بصحيح", "غير صحيح", "ليس بثابت", "غير ثابت"];
+const G_WEAK_SUBJ = ["ضعيف", "ضعيفه", "ضعيف جدا", "منكر", "موضوع", "باطل", "مكذوب", "منقطع", "شاذ", "مرسل", "مضطرب", "معلول", "فيه علة", "فيه ضعف"];
+const G_STRONG_FREE = ["صححه", "حسنه", "صححوه", "حسنوه"];
+const G_STRONG_SUBJ = ["صحيح", "صحيحه", "حسن", "حسنه", "ثابت", "ثابته"];
+const GRADES = [
+  ...G_WEAK_FREE.map(p => [p, "weak", false]), ...G_WEAK_SUBJ.map(p => [p, "weak", true]),
+  ...G_STRONG_FREE.map(p => [p, "strong", false]), ...G_STRONG_SUBJ.map(p => [p, "strong", "strict"]),
+].map(([p, kind, subj]) => ({ toks: F(p).split(" "), kind, subj })).sort((a, b) => b.toks.length - a.toks.length);
+const G_BY_FIRST = new Map();
+for (const g of GRADES) { let a = G_BY_FIRST.get(g.toks[0]); if (!a) G_BY_FIRST.set(g.toks[0], a = []); a.push(g); }
+/** -> [{pos, end, kind: "weak" | "strong"}] sorted; a grading word counts only where the sentence is about a hadith or an isnad */
+export function findGradings(ftok) {
+  const out = [];
+  for (let i = 0; i < ftok.length; i++) {
+    const cands = G_BY_FIRST.get(ftok[i]);
+    if (!cands) continue;
+    for (const g of cands) {
+      const L = g.toks.length;
+      if (i + L > ftok.length || !g.toks.every((t, k) => ftok[i + k] === t)) continue;
+      if (g.subj) {
+        const set = g.subj === "strict" ? G_SUBJECT_STRICT : G_SUBJECT;
+        let ok = false;
+        for (let k = Math.max(0, i - 4); k < i; k++) if (set.has(ftok[k])) { ok = true; break; }
+        if (!ok) continue;
+      }
+      // "لا يصح أن تفعل" / "لا يصح لمسلم": a ruling about conduct, not about a hadith
+      if (["لا يصح", "لم يصح"].includes(g.toks.join(" ").replace(/\s+/g, " ")) || g.toks.length === 2 && g.toks[1] === F("يصح")) {
+        const nx = ftok[i + L] || "";
+        if (nx === F("ان") || nx === F("أن") || (nx.length > 2 && nx[0] === "ل" && nx !== F("له"))) continue;
+      }
+      out.push({ pos: i, end: i + L, kind: g.kind });
+      i += L - 1;
+      break;
+    }
+  }
+  return out;
+}
+
 // ---- spoken attribution ("رواه البخاري ومسلم", "متفق عليه", "في سورة البقرة") ----
 // A collection name counts only after a transmission verb or reporting phrase ("رواه", "أخرجه", "في صحيح", "reported by")
 // or directly after another collection name ("... البخاري ومسلم"): "كل مؤمن ومسلم", "a believer and Muslim" and

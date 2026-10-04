@@ -35,6 +35,7 @@ export function footnoteFor(e, verdict) {
     if (s.via === "en") x += " " + t("doc.fn.viaen");
     if (e.attribution && e.attribution.agrees === false) x += " " + t("doc.fn.attr");
     if (e.tailUnmatched) x += " " + t("doc.fn.tail");
+    if (e.spokenGrades && e.spokenGrades.length) x += " " + t("doc.fn.grade", e.spokenGrades.map(g => g.text).join(" / "));
     if (verdict === "unsure") x += " " + t("doc.fn.unsure");
     if (e.manual) x += " " + t("doc.fn.manual");
     return { text: x + star, quote: true, kind: s.type };
@@ -254,10 +255,11 @@ const TEXTUAL = ["verbatim", "partial"], STATUSES = ["verbatim", "partial", "mea
  * unless the reviewer marked it incorrect.
  */
 export function committeeSummary(ledger, reviews = {}) {
-  const s = { total: ledger.length, quran: 0, hadith: 0, books: 0, collections: {}, notfound: 0, attribution: 0, manual: 0,
+  const s = { total: ledger.length, quran: 0, hadith: 0, books: 0, collections: {}, notfound: 0, attribution: 0, manual: 0, graded: { weak: 0, strong: 0 }, distinctHadith: 0,
     status: Object.fromEntries(STATUSES.map(k => [k, 0])), review: { yes: 0, no: 0, unsure: 0, none: 0 },
     two: null };      // when a second transcription was compared: {verbatim, confirmed, unresolved}
   if (ledger.some(e => e.agreement2)) s.two = { verbatim: 0, confirmed: 0, unresolved: 0 };
+  let seen = null;
   for (const e of ledger) {
     const v = (reviews[e.key] || {}).v || null;
     s.review[["yes", "no", "unsure"].includes(v) ? v : "none"]++;
@@ -267,11 +269,13 @@ export function committeeSummary(ledger, reviews = {}) {
     if (e.manual) s.manual++;
     if (status === "notfound" && e.cue) s.notfound++;
     if (e.attribution && e.attribution.agrees === false) s.attribution++;
+    if (v !== "no" && e.spokenGrades) for (const k of new Set(e.spokenGrades.map(g => g.kind))) s.graded[k]++;
     if (v === "no" || !e.source || !(e.manual || TEXTUAL.includes(status))) continue;
     if (e.source.type === "q") s.quran++;
     else if (e.source.type === "b") s.books++;
-    else { s.hadith++; const c = e.source.collection || "?"; s.collections[c] = (s.collections[c] || 0) + 1; }
+    else { s.hadith++; const c = e.source.collection || "?"; s.collections[c] = (s.collections[c] || 0) + 1; (seen || (seen = new Set())).add(e.source.ref || e.source.label); }
   }
+  s.distinctHadith = seen ? seen.size : 0;
   return s;
 }
 /** the summary as lines in the interface language: [{label, value}] (value null = a remark) */
@@ -281,9 +285,11 @@ export function summaryLines(s) {
   return [
     { label: t("sumry.quran"), value: num(s.quran) },
     { label: t("sumry.hadith"), value: num(s.hadith) + (cols ? ` (${cols})` : "") },
+    ...(s.hadith > 0 ? [{ label: t("sumry.distinct"), value: num(s.distinctHadith) }] : []),
     { label: t("sumry.books"), value: num(s.books) },
     { label: t("sumry.notfound"), value: num(s.notfound) },
     { label: t("sumry.attr"), value: num(s.attribution) },
+    ...(s.graded.weak + s.graded.strong ? [{ label: t("sumry.grade"), value: `${num(s.graded.weak)} / ${num(s.graded.strong)}` }] : []),
     { label: t("sumry.status"), value: STATUSES.map(k => pair(t("short." + k), s.status[k])).join(sep) },
     ...(s.two ? [{ label: t("sumry.two"), value: t("sumry.two.value", num(s.two.verbatim), num(s.two.confirmed), num(s.two.unresolved)) }] : []),
     { label: t("sumry.review"), value: [["yes", "rv.yes"], ["no", "rv.no"], ["unsure", "rv.unsure"], ["none", "sumry.none"]].map(([k, key]) => pair(t(key), s.review[k])).join(sep) },

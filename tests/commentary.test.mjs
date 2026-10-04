@@ -33,3 +33,31 @@ test("a hadith announced and NOT in the corpus is still reported", () => {
   const l = run("وقال النبي صلى الله عليه وسلم احذروا بيع الأرنب الزرقاء مقابل الحصان الأخضر الطائر فوق الجبل البعيد");
   assert.ok(l.some(e => e.status === "notfound" || e.status === "meaning" || e.status === "lead"));
 });
+
+test("talk about narrators after a cue ('عن معاذ وطبعا مكحول متأخر ... يعني ...') is not an announced quotation", () => {
+  const l = run("عن معاذ وطبعا مكحول متأخر خالص يعني يمكن أبو وائل شقيق ابن سلم متقدم عن مكحول");
+  assert.deepEqual(l.filter(e => e.status === "notfound"), []);
+});
+test("a narrator's name that occurs only in the compiler's commentary of a hadith is not a hadith quotation", () => {
+  const l = run("وهذا الحديث رواه عبد الرحمن بن جبير بن نفير عن أبيه");
+  assert.deepEqual(l.filter(e => e.status === "verbatim" || e.status === "partial"), []);
+});
+test("a spoken grading is shown beside the nearest hadith, in the speaker's words, and only there", () => {
+  const l = run(`قال النبي صلى الله عليه وسلم ${H} وهذا الحديث ضعيف لا يصح من هذا الوجه`);
+  const e = l.find(x => x.status === "verbatim");
+  assert.equal(e.spokenGrades.length, 1);
+  assert.equal(e.spokenGrades[0].kind, "weak");
+  assert.match(e.spokenGrades[0].text, /ضعيف/);
+  assert.equal(typeof e.spokenGrades[0].start, "number");
+});
+test("a ruling about conduct or a word like 'حسن' on its own is not a grading", () => {
+  for (const tail of ["ولا يصح أن تقول هذا لأحد", "وهذا كلام حسن جدا", "ولا يصح لمسلم أن يفعل ذلك"]) {
+    const e = run(`قال النبي صلى الله عليه وسلم ${H} ${tail}`).find(x => x.status === "verbatim");
+    assert.ok(e && !(e.spokenGrades || []).length, tail);
+  }
+});
+test("the grading of a different hadith far away is not attached", () => {
+  const far = ("ثم تكلمنا في أمور كثيرة عن الصبر والرضا والتوكل والإخلاص والخشوع والتواضع والزهد والورع والتقوى وحسن الخلق والصدق والأمانة وبر الوالدين وصلة الأرحام ").repeat(3);
+  const e = run(`قال النبي صلى الله عليه وسلم ${H} ${far} وهذا الحديث ضعيف`).find(x => x.status === "verbatim");
+  assert.ok(e && !(e.spokenGrades || []).length);
+});
