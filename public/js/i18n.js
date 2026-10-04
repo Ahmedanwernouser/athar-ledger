@@ -85,7 +85,7 @@ const D = {
   "err.network": ["انقطع الاتصال أو تعذّر الوصول إلى الخادم", "the connection failed or the server could not be reached"],
   "err.file": ["الملف {0}، رمز {1}", "file {0}, code {1}"], "err.generic": ["خطأ غير متوقَّع", "unexpected error"],
   // ---- transcribers, and the comparison of two transcriptions of the same recording
-  "prov.groq": ["Whisper (Groq)", "Whisper (Groq)"], "prov.gemini": ["Gemini 3.5 Transcribe", "Gemini 3.5 Transcribe"],
+  "prov.groq": ["Whisper (Groq)", "Whisper (Groq)"], "prov.gemini": ["Gemini 3.5 Transcribe", "Gemini 3.5 Transcribe"], "prov.gemini-yt": ["Gemini (نموذج عام، من رابط يوتيوب)", "Gemini (general model, from the YouTube link)"],
   "prov.both": ["الاثنان معًا للمقارنة (أدق، أبطأ)", "Both, compared (more accurate, slower)"],
   "prov.file": ["ملف «{0}»", "file “{0}”"],
   "tr.by.one": ["المفرِّغ: {0}.", "Transcriber: {0}."],

@@ -37,14 +37,20 @@ globalThis.fetch = async (url, init = {}) => {
 
 const corpus = await loadCorpusWith(["daif"]);
 const VIDEOS = String(process.env.YT_VIDEOS || "1foxMsRygJg").split(/[\s,]+/).filter(Boolean);
-// a longer one from the same public playlist, to exercise more than one window (the first whose length is 11–40 minutes)
+// a longer one from the same public playlist, to exercise more than one window: the first whose length (asked through the
+// Worker, as the site does) is 11–40 minutes
 try {
   const html = await (await realFetch("https://www.youtube.com/playlist?list=PLZbyN8Td38XgDoErS9Ca3jIxwVsGKizxT&hl=en", { headers: { "Accept-Language": "en", "Cookie": "CONSENT=YES+1" } })).text();
-  const ids = [...new Set([...html.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map(m => m[1]))];
-  const lens = [...html.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"[\s\S]{0,1500}?"lengthSeconds":"(\d+)"/g)].map(m => [m[1], +m[2]]);
-  say(`playlist: ${ids.length} videos seen, ${lens.length} with a length`);
-  const long = lens.find(([id, s]) => s >= 660 && s <= 2400 && !VIDEOS.includes(id));
-  if (long) { VIDEOS.push(long[0]); say(`longer video picked: ${long[0]} (${long[1]} s)`); }
+  const ids = [...new Set([...html.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map(m => m[1]))].filter(id => !VIDEOS.includes(id));
+  say(`playlist: ${ids.length} other videos seen`);
+  const lens = [];
+  for (const id of ids.slice(0, 25)) {
+    const r = await globalThis.fetch("https://w.dev/yt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video: id }) });
+    const j = await r.json().catch(() => ({}));
+    lens.push(`${id}:${j.seconds ?? j.error}`);
+    if (j.seconds >= 660 && j.seconds <= 2400) { VIDEOS.push(id); say(`longer video picked: ${id} (${j.seconds} s)`); break; }
+  }
+  say("lengths asked: " + lens.join(" "));
 } catch (e) { say("playlist not readable from here: " + (e && e.message)); }
 
 for (const id of VIDEOS) {
@@ -61,5 +67,21 @@ for (const id of VIDEOS) {
       `last word at ${words.length ? words.at(-1).start : "-"} s, ${back} words out of time order, ${res.ledger.length} ledger entries: ` +
       res.ledger.map(e => `${Math.round(e.start)}s ${e.status}${e.source ? " " + e.source.label : ""}`).join(" | "));
   } catch (e) { say(`${id}: FAILED ${e && e.code ? e.code + " " + (e.detail || "") : e && e.message}; upstream ${JSON.stringify(upstream)}`); }
+}
+// ---- the DEPLOYED Worker, asked as the site asks it (its own key, its own counters): the length, then the first window ----
+const LIVE = String(process.env.LIVE_WORKER || "").replace(/\/+$/, ""), LIVE_ORIGIN = String(process.env.LIVE_ORIGIN || "");
+if (LIVE && LIVE_ORIGIN) {
+  try {
+    const ask = async (body) => { const t0 = Date.now(); const r = await realFetch(LIVE + "/yt", { method: "POST", headers: { Origin: LIVE_ORIGIN, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      return { status: r.status, ms: Date.now() - t0, left: r.headers.get("X-Athar-Remaining"), j: await r.json().catch(() => ({})) }; };
+    const h = await (await realFetch(LIVE + "/health")).json().catch(() => ({}));
+    const a = await ask({ video: VIDEOS[0] });
+    const to = Math.min(a.j.seconds || 60, 600);
+    const b = await ask({ video: VIDEOS[0], from: 0, to, language: "ar" });
+    say(`deployed Worker: health youtube=${h.youtube}; length ${a.status} ${JSON.stringify(a.j)} in ${a.ms} ms; window 0–${to}: ${b.status} in ${b.ms} ms, ${(b.j.words || []).length} words, model ${b.j.model || "-"}, error ${b.j.error || "-"}, units left today ${b.left}`);
+    if (b.j.text) save("deployed.transcript.txt", b.j.text);
+    const bad = await ask({ video: "AAAAAAAAAAA" });
+    say(`deployed Worker, a video that does not exist: ${bad.status} ${JSON.stringify(bad.j)}`);
+  } catch (e) { say("deployed Worker not reachable: " + (e && e.message)); }
 }
 save("SUMMARY.txt", summary.join("\n"));

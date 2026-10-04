@@ -419,7 +419,7 @@ async function runYoutube(id) {
     if (!res.words.length) throw new AsrError("empty");
   } catch (e) { return fail(run, asrMsg(e)); }
   if (!live(run)) return;
-  const who = { provider: res.provider, model: res.model }, warnings = [msg("warn.yt", () => transcriberLabel(who))];
+  const who = { provider: "gemini-yt", model: res.model }, warnings = [msg("warn.yt", () => transcriberLabel(who))];
   if (res.truncated) warnings.push(msg("warn.yt.cut"));
   await runWords(run, res.words, { title: t("yt.title", id), video: id, warnings, transcribers: [who] });
 }

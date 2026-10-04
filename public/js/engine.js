@@ -598,6 +598,8 @@ export function analyze(words, corpus, options = {}) {
       if (home) {
         if (home.best.isQ) continue;                      // a weak-hadith book quoting an ayah says nothing about the ayah
         if (corpus.tier(home.best.pidA) !== 1 && cueDirect[home.best.ts] !== KIND.hadith && !home.weakOnly) continue;   // nor about a passage of a tafsir or a fiqh book
+        // the weak-hadith book must hold most of what was quoted: a formula two hadith share ("فقد برئت منه ذمة الله") is another hadith
+        if (m.sum.inf < 0.7 * home.best.sum.inf) continue;
         const w = home.weak || (home.weak = []);
         if (w.length < 12 && !w.some(x => x.pidA === m.pidA)) w.push(m);
       } else if (rank(m) >= 3 && m.hasCue && (cueDirect[m.ts] === KIND.hadith || cueLead[m.ts] === KIND.hadith)) {
@@ -715,7 +717,7 @@ export function analyze(words, corpus, options = {}) {
     if (mm && mm.strong) {
       extra.push({ ts: cue.pos, te: mm.te, cue, status: "meaning", meaning: mm });
       for (let i = cue.pos; i < mm.te; i++) taken[i] = 1;
-    } else if (commentaryAt(ftok, cue.end, wEnd)) {
+    } else if (commentaryAt(ftok, cue.end, wEnd, tok) || (tok[cue.pos] === "عن" && (tok[cue.pos - 2] === "عن" || tok[cue.pos - 3] === "عن"))) {      // (a name in the middle of a chain that is being recited is not a cue)
       continue;   // the words after the cue are the speaker explaining ("أما الثاني فهو ..."), not an announced quotation
     } else {
       // stop the span at a sentence-ish length; the quotation boundary is unknown
@@ -1195,10 +1197,24 @@ const COMMENTARY = new Set(["اما", "فاما", "واما", "يعني", "اي"
 // Words of talk ABOUT narrators and chains ("متأخر", "متقدم", "تلميذ", "السند", "يعني", "طبعا"): three of them in the window after a cue
 // ("عن معاذ وطبعا مكحول متأخر خالص يعني ...") mean the speaker is discussing an isnad, not announcing a text.
 const ISNAD_TALK = new Set(["متاخر", "متقدم", "تلميذ", "تلميذه", "راوي", "الراوي", "الاسناد", "اسناد", "السند", "سند", "مدلس", "ترجمه", "طبقه", "يعني", "طبعا"].map(w => fold(w)));
-function commentaryAt(ftok, i, wEnd = i + 20) {
+// Terms of the craft that never stand inside a hadith text: one of them right after a cue ("عن معاذ، وطبعا الإسناد هنا منقطع")
+// is the speaker judging a chain.
+const ISNAD_TERMS = new Set(["الاسناد", "اسناد", "اسناده", "السند", "سنده", "الاسانيد", "اسانيد", "منقطع", "مرسل", "معضل", "مدلس", "رواته", "رجاله"].map(w => fold(w)));
+const MET = new Set(["يدرك", "يدركه", "يسمع", "يسمعه", "يلق", "يلقه", "يلقي"]);
+/** @param tok the unfolded words, when the caller has them: a chain being recited ("عن مكحول عن معاذ ...") is told by its bare "عن"s */
+function commentaryAt(ftok, i, wEnd = i + 20, tok = null) {
   if (COMMENTARY.has(ftok[i]) || COMMENTARY.has(ftok[i + 1]) && ftok[i].length <= 2) return true;
-  let k = 0; for (let j = i; j < Math.min(wEnd, ftok.length, i + 25); j++) if (ISNAD_TALK.has(ftok[j])) k++;
-  return k >= 3;
+  const end = Math.min(wEnd, ftok.length, i + 25);
+  let k = 0; for (let j = i; j < end; j++) if (ISNAD_TALK.has(ftok[j])) k++;
+  if (k >= 3) return true;
+  for (let j = i; j < Math.min(end, i + 12); j++) if (ISNAD_TERMS.has(ftok[j])) return true;
+  if (tok) {
+    let an = 0; for (let j = i; j < Math.min(end, i + 7); j++) if (tok[j] === "عن") an++;
+    if (an >= 2) return true;
+    // "... لم يدرك معاذا" / "لم يسمع من ..." / "لم يلق ...": whether two narrators met
+    for (let j = i; j < Math.min(end, i + 8) - 1; j++) if (tok[j] === "لم" && MET.has(tok[j + 1])) return true;
+  }
+  return false;
 }
 function meaningCandidates(cue, wEnd, tok, ftok, corpus, o) {
   corpus.ensureStems();

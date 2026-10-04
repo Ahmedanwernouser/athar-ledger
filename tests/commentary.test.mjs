@@ -61,3 +61,14 @@ test("the grading of a different hadith far away is not attached", () => {
   const e = run(`قال النبي صلى الله عليه وسلم ${H} ${far} وهذا الحديث ضعيف`).find(x => x.status === "verbatim");
   assert.ok(e && !(e.spokenGrades || []).length);
 });
+test("a cue followed by a verdict on the chain, or by the chain itself, announces no text", () => {
+  for (const t of ["عن معاذ بن جبل رضي الله عنه وطبعا الإسناد هنا منقطع ليه لأن مكحولا لم يسمع من معاذ",
+                   "عن معاذ عن مكحول عن معاذ وطبعا مكحول لم يدرك معاذا",
+                   "قال رسول الله صلى الله عليه وسلم وهذا مرسل لا يثبت عند أهل العلم"]) {
+    assert.deepEqual(run(t).filter(e => e.status === "notfound" || (e.suggestions || []).length), [], t);
+  }
+});
+test("... and a real hadith after the same cue is still found, and an absent one still reported", () => {
+  assert.ok(run(`عن معاذ رضي الله عنه قال قال رسول الله صلى الله عليه وسلم ${H}`).some(e => e.status === "verbatim"));
+  assert.ok(run("قال رسول الله صلى الله عليه وسلم اذهبوا الى السوق فان التجارة تسعة اعشار الرزق وزرقاء الخبز تحت المنضدة").some(e => e.status === "notfound"));
+});

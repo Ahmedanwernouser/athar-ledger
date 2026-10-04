@@ -55,3 +55,9 @@ test("the demo lecture: the popular saying is found only in the weak-hadith book
   const tx = l => l.filter(e => !e.weakOnly && ["verbatim", "partial"].includes(e.status)).map(e => [e.status, e.source.ref, e.ts, e.te]);
   assert.deepEqual(tx(b), tx(a));
 });
+test("a formula shared with another hadith in a weak-hadith book does not label this hadith", () => {
+  const l = run("ولا تتركن صلاة مكتوبة متعمدا فإن من ترك صلاة مكتوبة متعمدا فقد برئت منه ذمة الله ولا تشربن خمرا فإنه رأس كل فاحشة");
+  const e = l.find(x => x.source && /4034/.test(x.source.label));
+  assert.ok(e, "found in Ibn Majah");
+  assert.deepEqual(e.weakBooks.map(w => w.book), []);
+});

@@ -19,6 +19,8 @@ jobs:
       - name: probe
         env:
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          LIVE_WORKER: https://athar-asr.athar-7399079d.workers.dev
+          LIVE_ORIGIN: https://athar-ledger.pages.dev
         run: node eval/yt/run.mjs
       - name: publish results
         if: always()
