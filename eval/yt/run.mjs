@@ -36,14 +36,14 @@ globalThis.fetch = async (url, init = {}) => {
 };
 
 const corpus = await loadCorpusWith(["daif"]);
-const VIDEOS = String(process.env.YT_VIDEOS || "1foxMsRygJg").split(/[\s,]+/).filter(Boolean);
+const VIDEOS = String(process.env.YT_VIDEOS || "1foxMsRygJg ikgqwDVXs8E").split(/[\s,]+/).filter(Boolean);
 // ---- is the length the Worker reports (countTokens: audio tokens / 32) the real length, for short AND long videos? ----
 // Ground truth: "lengthSeconds" in the video's own watch page, read from this machine. Candidates: the owner's playlist and a
 // search for long lectures. One video of 11–40 minutes is then transcribed in full, to exercise several windows.
 const page = async (url) => (await realFetch(url, { headers: { "Accept-Language": "en", "Cookie": "CONSENT=YES+1; SOCS=CAI" } })).text();
 const trueLength = async (id) => { try { const m = /"lengthSeconds":"(\d+)"/.exec(await page("https://www.youtube.com/watch?v=" + id + "&hl=en")); return m ? +m[1] : null; } catch { return null; } };
 const askLength = async (id) => { const r = await globalThis.fetch("https://w.dev/yt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video: id }) }); const j = await r.json().catch(() => ({})); return j.seconds ?? j.error; };
-try {
+if (process.env.YT_LENGTH_CHECK === "1") try {
   const cand = [], printed = new Map();
   const pl = await page("https://www.youtube.com/playlist?list=PLZbyN8Td38XgDoErS9Ca3jIxwVsGKizxT&hl=en");
   cand.push(...[...new Set([...pl.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map(m => m[1]))].slice(0, 6));
