@@ -152,7 +152,9 @@ def chunk(paras, key):
             for i, c in enumerate(out) if len(c["words"]) >= MIN_WORDS]
 
 # The book's own words about a hadith's rank, copied from its text (never worded by this tool): the phrase, with a few words round it.
-VERDICTS = [r"هذا حديث (?:لا يصح|موضوع|باطل|ضعيف|لا اصل له)", r"حديث موضوع", r"لا اصل له", r"موضوع", r"لا يصح", r"لا يثبت", r"باطل", r"ضعيف جدا", r"ضعيف", r"كذاب", r"وضاع", r"متروك", r"منكر"]
+VERDICTS = [r"هذا حديث (?:لا يصح|موضوع|باطل|ضعيف|منكر|لا اصل له)", r"حديث موضوع", r"ليس بحديث", r"(?:لا|ليس له) اصل(?: له)?", r"موضوع[هة]?", r"مكذوب[هة]?", r"مختلق[هة]?",
+            r"(?:لا|لم) يصح", r"(?:لا|لم) يثبت", r"باطل[هة]?", r"ضعيف[هة]? جدا", r"(?:اسناده|سنده|بسند|باسناد) (?:ضعيف|واه)", r"ضعيف[هة]?", r"واهي?[هة]?", r"معلول[هة]?", r"منكر[هة]?",
+            r"لم (?:اقف عليه|اجده|اره)", r"لا اعرفه", r"كذاب", r"وضاع", r"متروك"]
 VERDICT_RE = [re.compile(r"(?<![ء-ي])(?:" + v + r")(?![ء-ي])") for v in VERDICTS]      # whole words only ("ضعيفان" is not "ضعيف")
 def verdict(words, before=7, after=11):
     s = " ".join(words)

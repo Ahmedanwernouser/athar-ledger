@@ -40,3 +40,18 @@ test("the ordinary results are the same with and without the weak pack (the pack
     assert.deepEqual(b, a, t);
   }
 });
+test("ordinary speech that also stands in a weak-hadith book (a doxology, a preface) is not reported as a hadith found only there", () => {
+  const l = run("بسم الله الرحمن الرحيم الحمد لله رب العالمين والصلاة والسلام على أشرف المرسلين أما بعد أيها الإخوة الكرام حديثنا اليوم عن حسن الخلق");
+  assert.equal(l.filter(x => x.weakOnly).length, 0);
+});
+test("the demo lecture: the popular saying is found only in the weak-hadith books; every textual entry from the ordinary books is unchanged", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const words = JSON.parse(await readFile(new URL("../public/samples/demo-clean.json", import.meta.url), "utf8")).words;
+  const a = analyze(words, plain).ledger, b = analyze(words, withWeak).ledger;
+  const only = b.filter(e => e.weakOnly);
+  assert.equal(only.length, 1);
+  assert.match(only[0].spoken, /اطلبوا العلم ولو في الصين/);
+  assert.ok(only[0].weakBooks[0].bookWords, "with the book's own words");
+  const tx = l => l.filter(e => !e.weakOnly && ["verbatim", "partial"].includes(e.status)).map(e => [e.status, e.source.ref, e.ts, e.te]);
+  assert.deepEqual(tx(b), tx(a));
+});

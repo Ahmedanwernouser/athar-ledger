@@ -597,9 +597,12 @@ export function analyze(words, corpus, options = {}) {
       for (const c of cites) { const sh = ovShare(c, m); if (sh > best) { best = sh; home = c; } }
       if (home) {
         if (home.best.isQ) continue;                      // a weak-hadith book quoting an ayah says nothing about the ayah
+        if (corpus.tier(home.best.pidA) !== 1 && cueDirect[home.best.ts] !== KIND.hadith && !home.weakOnly) continue;   // nor about a passage of a tafsir or a fiqh book
         const w = home.weak || (home.weak = []);
         if (w.length < 12 && !w.some(x => x.pidA === m.pidA)) w.push(m);
-      } else if (rank(m) >= 3) {
+      } else if (rank(m) >= 3 && m.hasCue && (cueDirect[m.ts] === KIND.hadith || cueLead[m.ts] === KIND.hadith)) {
+        // on its own, a text found only in these books is reported only when the speaker ANNOUNCED a hadith: their prefaces,
+        // doxologies and commentary share ordinary speech with any lecture, and none of that is "a hadith found only in a weak-hadith book"
         cites.push({ ts: m.ts, te: m.te, best: m, alts: [], others: [], refs: [], colAfter: [], colBefore: [], weakOnly: true, weak: [m] });
       }
     }
