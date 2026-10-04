@@ -1,0 +1,26 @@
+[
+ {
+  "start": 20,
+  "status": "verbatim",
+  "cue": "saying",
+  "spoken": "لقد رأيتني وإن عمر لموثقي على الإسلام",
+  "source": "صحيح البخاري — رقم 3862",
+  "agreement": 1,
+  "weakOnly": false,
+  "weakBooks": [],
+  "grades": [],
+  "attribution": "collection_ok"
+ },
+ {
+  "start": 137.67,
+  "status": "notfound",
+  "cue": "saying",
+  "spoken": "مقولة مشهورة كان يقول لمقام أحدهم في الصف ساعة يعدل عبادة أحدكم ولو عمر عمر نوح القصة مش",
+  "source": null,
+  "agreement": null,
+  "weakOnly": false,
+  "weakBooks": [],
+  "grades": [],
+  "attribution": null
+ }
+]

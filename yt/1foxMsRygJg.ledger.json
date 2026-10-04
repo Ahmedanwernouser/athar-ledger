@@ -1,0 +1,29 @@
+[
+ {
+  "start": 15.75,
+  "status": "partial",
+  "cue": null,
+  "spoken": "لا تشرك بالله وإن قتلت وحرقت، ولا",
+  "source": "سنن ابن ماجه — رقم 4034",
+  "agreement": 0.75,
+  "weakOnly": false,
+  "weakBooks": [],
+  "grades": [],
+  "attribution": null
+ },
+ {
+  "start": 23,
+  "status": "partial",
+  "cue": null,
+  "spoken": "ولا تتركن صلاة مكتوبة متعمدا فإن من ترك صلاة مكتوبة متعمدا فقد برئت منه ذمة الله ولا",
+  "source": "سنن ابن ماجه — رقم 4034",
+  "agreement": 0.529,
+  "weakOnly": false,
+  "weakBooks": [],
+  "grades": [
+   "weak: فيه طول شوية. وهذا الحديث لا يصح فقد رواه",
+   "weak: الإمام أحمد في مسنده ولكن لا يصح إسناد من"
+  ],
+  "attribution": null
+ }
+]
