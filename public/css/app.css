@@ -1520,3 +1520,42 @@ html[data-theme="dark"] .err .quiet-btn { background: var(--gold); color: #1B140
 .navbtn.keytab { gap: 8px; }
 .navbtn.keytab i { inline-size: 8px; block-size: 8px; border-radius: 50%; border: 1.5px solid var(--on-dark-3); box-sizing: border-box; }
 .navbtn.keytab.on i { background: #46C7A1; border-color: #46C7A1; }
+
+/* the checker: its one line on the summary, and what it set aside under the ledger */
+.main-col { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.checkline { margin: -8px 0 0; padding: 10px 16px; border-radius: 12px; background: var(--sheet); box-shadow: var(--shadow-s); font-size: var(--fs-note); color: var(--ink-2); }
+.checkline.warn { background: var(--gold-wash); color: var(--warn-ink); box-shadow: none; }
+.dismissed { margin: 0; padding: 14px 20px; border-radius: var(--r-card); background: var(--sheet); box-shadow: var(--shadow); font-size: var(--fs-note); }
+.dismissed > summary { font-weight: 600; font-size: var(--fs-ui); }
+.dm-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
+.dm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 14px; border-radius: 12px; background: var(--well); }
+.dm-said { margin: 0; flex: 1 1 260px; font-family: var(--quote); font-size: 1.1875rem; line-height: 1.9; }
+.dm-src { color: var(--ink-3); flex: 1 1 200px; }
+@media (max-width: 960px) { .main-col { display: contents; } .dismissed { order: 1; } }
+@media print { .dismissed, .checkline { display: none !important; } }
+
+/* the chat: the reader's question, the model's few sentences, and under them the cards drawn from the sources */
+.chat { display: flex; flex-direction: column; gap: 16px; max-width: 920px; width: 100%; margin-inline: auto; }
+.chat > .note { margin: 0; }
+.chat-log { display: flex; flex-direction: column; gap: 14px; }
+.chat-log:empty { display: none; }
+.bubble { max-width: 86%; padding: 12px 18px; border-radius: 18px; background: var(--sheet); box-shadow: var(--shadow-s); }
+.bubble p { margin: 0; line-height: 1.9; }
+.bubble.me { align-self: flex-start; background: var(--indigo); color: var(--on-primary); border-end-start-radius: 6px; }
+.bubble.it { align-self: flex-end; border-end-end-radius: 6px; }
+.bubble-by { display: block; margin-bottom: 4px; font-size: var(--fs-micro); color: var(--ink-3); }
+.bubble.notfound, .bubble.refuse, .bubble.off { background: var(--well); box-shadow: none; }
+.bubble.wait .bubble-by { margin: 0; }
+.bubble.wait { animation: pulse 1.6s ease-in-out infinite; }
+.chat-cards { display: grid; gap: 12px; }
+.chat-cards .dg-card { padding: 18px 22px; gap: 12px; }
+.chat-cards .dg-text { font-size: 1.3125rem; }
+.chat-found > * { margin: 0; }
+.chat-sug { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-form { margin: 0; }
+.chat-ask { max-width: none; margin: 0; }
+.chat-screen .panel { padding-top: 36px; }
+@media (max-width: 960px) { .bubble { max-width: 100%; } .chat-cards .dg-card { padding: 16px; } }
+@media print { #results #tabChat, #results #tabChat[hidden], .chat-screen { display: none !important; } }
+.chat-found .lookup-list { margin: 0; }
+.chat-found .lk { background: none; padding: 0; border: 0; border-radius: 0; }

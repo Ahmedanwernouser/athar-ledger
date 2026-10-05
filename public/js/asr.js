@@ -83,7 +83,7 @@ export async function asrProviders(cfg, timeout = 4000) {
     if (!a || typeof a !== "object" || !Array.isArray(a.available)) return null;
     const available = PROVIDERS.filter(p => a.available.includes(p));
     if (!available.length) return null;
-    return { default: available.includes(a.default) ? a.default : available[0], available, youtube: j.youtube === true, embed: Array.isArray(j.embed) ? j.embed.filter(x => typeof x === "string") : [] };
+    return { default: available.includes(a.default) ? a.default : available[0], available, youtube: j.youtube === true, ask: j.ask === true, embed: Array.isArray(j.embed) ? j.embed.filter(x => typeof x === "string") : [] };
   } catch { return null; }
   finally { clearTimeout(timer); }
 }
@@ -353,6 +353,27 @@ export async function transcribeYoutube(video, language, cfg, onProgress = () =>
   for (let i = 1; i < words.length; i++) if (words[i].start < words[i - 1].start) { words[i] = { ...words[i], start: words[i - 1].start, end: Math.max(words[i].end, words[i - 1].start) }; }   // a join never runs time backwards
   onProgress(1, { code: "asr.done" });
   return { words, provider: "gemini", model, seconds, ...about, approx: true, truncated };
+}
+
+// ---------------- the checker and the chat (Worker /ask) ----------------
+/**
+ * One question to the Worker's /ask: {mode: "check", items} -> {verdicts} ; {mode: "chat", q, facts, prev, lang} -> {type, ids, text}.
+ * A busy counter store is waited for once. Failures are AsrError (the same codes as the other routes).
+ */
+export async function askPost(cfg, body, signal = null) {
+  if (!cfg.asrUrl) throw new AsrError("disabled");
+  const post = async () => {
+    let r;
+    try { r = await fetch(endpoint(cfg, "/ask"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal }); }
+    catch { throw new AsrError(signal && signal.aborted ? "aborted" : "network"); }
+    let j = null; try { j = await r.json(); } catch { /* not json */ }
+    return { r, j };
+  };
+  let { r, j } = await post();
+  if (r.status === 503) { await sleep(2000, signal); ({ r, j } = await post()); }
+  if (!r.ok) throw errorOf(r, j);
+  if (!j || typeof j !== "object") throw new AsrError("bad_response");
+  return j;
 }
 
 // ---------------- optional "by meaning" helper ----------------

@@ -840,16 +840,30 @@ async function ytRoute(req, env, cors) {
 // The system prompts are fixed here; the caller supplies only the items / facts and the question, all cut to size.
 // Measured on Groq's free tier (5 Oct 2026): 1,000 requests a day and 8,000 tokens a minute PER MODEL, so a model that is
 // busy gives way to the next in ASK_MODELS.
-const DEF_ASK_MODELS = "openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b";
+// Live trials (eval/keyprobe/ask.mjs, ten check cases and eight questions): qwen answered the chat best and made no
+// harmful mistake as a checker; gpt-oss-120b once called a true quotation a coincidence. So a match is dismissed only
+// when BOTH models say "coincidence" ("0"); one voice alone, or no second answer, is a doubt ("?") and the match stays.
+const DEF_ASK_MODELS = "qwen/qwen3.8-27b,openai/gpt-oss-120b";
 const DEF_ASK_DAILY_CAP = 800, DEF_ASK_IP_DAILY_CAP = 150, ASK_TIMEOUT_MS = 40_000;
 const askOn = (env) => !!env.GROQ_API_KEY && String(env.ASK || "").toLowerCase() !== "off";
-const askModels = (env) => { const m = String(env.ASK_MODELS || DEF_ASK_MODELS).split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9._/-]{3,60}$/i.test(x)); return m.length ? m.slice(0, 4) : DEF_ASK_MODELS.split(","); };
-function askParams(model, jsonOut) {
-  const id = model.toLowerCase(), p = { temperature: 0, max_completion_tokens: 1200 };
-  if (id.includes("gpt-oss")) { p.reasoning_effort = "low"; p.include_reasoning = false; }
+const askModels = (env) => { const m = String(env.ASK_MODELS || DEF_ASK_MODELS).split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9._/-]{3,60}$/i.test(x)); return m.length ? m.slice(0, 3) : DEF_ASK_MODELS.split(","); };
+function askParams(model, mode) {
+  // (measured: qwen's free tier refuses a request that MAY write more than 1,000 tokens)
+  const id = model.toLowerCase(), reasons = id.includes("gpt-oss"), p = { temperature: 0, max_completion_tokens: mode === "chat" ? (reasons ? 900 : 500) : (reasons ? 400 : 40) };
+  if (reasons) { p.reasoning_effort = "low"; p.include_reasoning = false; }
   else if (/qwen|deepseek/.test(id)) { p.reasoning_effort = "none"; p.reasoning_format = "hidden"; }
-  if (jsonOut) p.response_format = { type: "json_object" };
+  if (mode === "chat") p.response_format = { type: "json_object" };
   return p;
+}
+/** one question to one model -> {text} | {status, retry} (never the upstream body) */
+async function askOne(env, model, mode, system, user) {
+  try {
+    const r = await fetch(GROQ_CHAT, { method: "POST", signal: AbortSignal.timeout(ASK_TIMEOUT_MS), headers: { Authorization: "Bearer " + env.GROQ_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, ...askParams(model, mode), messages: [{ role: "system", content: system }, { role: "user", content: user }] }) });
+    if (!r.ok) { const out = { status: r.status, retry: r.status === 429 ? retryAfter(r) : null }; try { await r.body?.cancel(); } catch { /* ignore */ } return out; }
+    const j = await r.json(), got = j?.choices?.[0]?.message?.content;
+    return { text: typeof got === "string" ? got : "" };
+  } catch { return { status: 0, retry: null }; }
 }
 async function askRoute(req, env, cors) {
   if (!askOn(env)) return json({ error: "llm_disabled" }, 501, cors);
@@ -862,7 +876,6 @@ async function askRoute(req, env, cors) {
   if (!mode) return json({ error: "bad_mode" }, 400, cors);
   const items = mode === "check" ? checkItems(body) : null, inp = mode === "chat" ? chatInput(body) : null;
   if (!items && !inp) return json({ error: mode === "check" ? "bad_items" : "too_short" }, 400, cors);
-  const system = items ? CHECK_SYSTEM : CHAT_SYSTEM(inp.lang), user = items ? checkUser(items) : chatUser(inp);
 
   const t = clock();
   const { ip, tag } = await ipTag(req, t.day);
@@ -873,22 +886,37 @@ async function askRoute(req, env, cors) {
   const g = await guard(env.CAP, specs, true);
   if (g.busy || g.over) return capResponse(g, cors);
 
-  let last = 0, retry = null;
-  for (const model of askModels(env)) {
-    let text = "";
-    try {
-      const r = await fetch(GROQ_CHAT, { method: "POST", signal: AbortSignal.timeout(ASK_TIMEOUT_MS), headers: { Authorization: "Bearer " + env.GROQ_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ model, ...askParams(model, mode === "chat"), messages: [{ role: "system", content: system }, { role: "user", content: user }] }) });
-      if (!r.ok) { last = r.status; if (r.status === 429) retry = retryAfter(r); try { await r.body?.cancel(); } catch { /* ignore */ } continue; }      // busy, or this model is not there: the next one
-      const j = await r.json(); const got = j?.choices?.[0]?.message?.content;
-      text = typeof got === "string" ? got : "";
-    } catch { last = 0; continue; }
-    if (items) { const v = parseCheck(text, items.length); if (v) return json({ verdicts: v, model }, 200, cors); last = 0; continue; }       // not the digits asked for: the next model
-    const a = parseChat(text, inp); if (a) return json({ ...a, model }, 200, cors); last = 0;
+  const models = askModels(env); let last = 0, retry = null;
+  const note = (x) => { last = x.status || 0; if (x.status === 429 && x.retry) retry = x.retry; };
+  if (items) {
+    // the first model that answers in the form asked for gives the first voice
+    let first = null, by = -1;
+    for (let i = 0; i < models.length && !first; i++) {
+      const x = await askOne(env, models[i], "check", CHECK_SYSTEM, checkUser(items));
+      if (x.text != null) { first = parseCheck(x.text, items.length); if (first) by = i; else last = 0; } else note(x);
+    }
+    if (!first) { await refund(env.CAP, specs); return last === 429 ? json({ error: "upstream_busy" }, 429, retry ? { ...cors, "Retry-After": retry } : cors) : json({ verdicts: null }, 200, cors); }
+    // what it called a coincidence is put to another model: dismissed only when that one agrees
+    const zero = [...first].map((c, k) => (c === "0" ? k : -1)).filter((k) => k >= 0), out = [...first];
+    if (zero.length) {
+      let second = null;
+      for (let i = 0; i < models.length && !second; i++) {
+        if (i === by) continue;
+        const x = await askOne(env, models[i], "check", CHECK_SYSTEM, checkUser(zero.map((k) => items[k])));
+        if (x.text != null) second = parseCheck(x.text, zero.length);
+      }
+      zero.forEach((k, n) => { out[k] = second && second[n] === "0" ? "0" : "?"; });
+    }
+    return json({ verdicts: out.join("") }, 200, cors);
+  }
+  for (const model of models) {
+    const x = await askOne(env, model, "chat", CHAT_SYSTEM(inp.lang), chatUser(inp));
+    if (x.text == null) { note(x); continue; }                // busy, or this model is not there: the next one
+    const a = parseChat(x.text, inp); if (a) return json(a, 200, cors);
+    last = 0;                                                 // not the object asked for: the next model
   }
   // nobody answered in the form asked for: the unit goes back, and nothing of the model's words leaves
   await refund(env.CAP, specs);
-  if (items && last !== 429) return json({ verdicts: null }, 200, cors);
   if (last === 429) return json({ error: "upstream_busy" }, 429, retry ? { ...cors, "Retry-After": retry } : cors);
   return json({ error: "upstream", ...(last ? { upstream_status: last } : {}) }, 502, cors);
 }

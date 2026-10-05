@@ -702,6 +702,50 @@ sec("/yt: a YouTube video from its link (Gemini)");
   { const h = await call(await asr({ method: "GET", path: "/health" }), Y()); eq(h.j.youtube, true, "/health says the link path is available"); const h2 = await call(await asr({ method: "GET", path: "/health" }), baseEnv()); eq(h2.j.youtube, false, "/health: no Gemini key, no link path"); }
 }
 
+sec("/ask: the checker and the chat (Groq)");
+{ const ask = (body, o = {}) => new Request("https://w.dev/ask", { method: "POST", headers: { Origin: OK, "Content-Type": "application/json", ...(o.headers || {}) }, body: typeof body === "string" ? body : JSON.stringify(body) });
+  const said = (m) => () => new Response(JSON.stringify({ choices: [{ message: { content: m } }] }), { status: 200 });
+  const modelOf = (c) => JSON.parse(c.init.body).model;
+  const IT = [{ said: "الأشهر الحرم أربعة [[ذو القعدة وذو الحجة والمحرم ورجب]] وإحنا داخلين عليها", source: "السنة اثنا عشر شهرا منها أربعة حرم ذو القعدة وذو الحجة والمحرم ورجب مضر" },
+    { said: "وخلي بالك [[المسلم من سلم المسلمون من لسانه ويده]] دي قاعدة", source: "المسلم من سلم المسلمون من لسانه ويده" }];
+  const FACTS = [{ id: "L1", text: "في المحاضرة عند 0:31 — حديث — مطابق حرفيًا — صحيح البخاري رقم 1 — الدرجة: في صحيح البخاري — قيل: «إنما الأعمال بالنيات»" }, { id: "L2", text: "في المحاضرة عند 1:42 — حديث — لا درجة مسجّلة — قيل: «اطلبوا العلم ولو في الصين»" }];
+  eq((await call(ask({ mode: "check", items: IT }), baseEnv({ GROQ_API_KEY: undefined }))).status, 501, "/ask without a Groq key is off");
+  eq((await call(ask({ mode: "check", items: IT }), baseEnv({ ASK: "off" }))).j.error, "llm_disabled", "/ask can be switched off");
+  eq((await call(ask({ mode: "other" }), baseEnv())).j.error, "bad_mode", "/ask an unknown mode");
+  eq((await call(ask({ mode: "check", items: [{ said: "no mark here at all", source: "some source text" }] }), baseEnv())).j.error, "bad_items", "/ask check: the stretch must be marked");
+  eq((await call(ask({ mode: "chat", q: "" }), baseEnv())).j.error, "too_short", "/ask chat: an empty question");
+  eq((await call(ask({ mode: "check", items: IT }, { headers: { Origin: "https://evil.example" } }), baseEnv())).status, 403, "/ask from another origin");
+  // check: two voices
+  up.calls = []; up.impl = (url, init) => said(JSON.parse(init.body).model.includes("qwen") ? "01" : "0")();
+  let r = await call(ask({ mode: "check", items: IT }), baseEnv());
+  ok(r.status === 200 && r.j.verdicts === "01" && up.calls.length === 2 && modelOf(up.calls[0]).includes("qwen") && JSON.parse(up.calls[1].init.body).messages[1].content.includes("ذو القعدة") && !JSON.parse(up.calls[1].init.body).messages[1].content.includes("من سلم"), "/ask check: what the first model calls a coincidence is put, alone, to a second model; both agree -> 0");
+  up.calls = []; up.impl = (url, init) => said(JSON.parse(init.body).model.includes("qwen") ? "01" : "1")();
+  r = await call(ask({ mode: "check", items: IT }), baseEnv()); eq(r.j.verdicts, "?1", "/ask check: the second model disagrees -> a doubt, not a dismissal");
+  up.impl = (url, init) => (JSON.parse(init.body).model.includes("qwen") ? said("01")() : new Response("busy " + KEY, { status: 429 }));
+  r = await call(ask({ mode: "check", items: IT }), baseEnv()); eq(r.j.verdicts, "?1", "/ask check: no second voice -> a doubt");
+  up.calls = []; up.impl = said("11"); r = await call(ask({ mode: "check", items: IT }), baseEnv()); ok(r.j.verdicts === "11" && up.calls.length === 1, "/ask check: nothing called a coincidence -> one call");
+  up.impl = said("The first one is a list of months, so 0. " + KEY); r = await call(ask({ mode: "check", items: IT }), baseEnv());
+  ok(r.status === 200 && r.j.verdicts === null && !r.t.includes(KEY) && !r.t.includes("months"), "/ask check: an answer that is not the digits asked for -> nothing, and none of its words leave");
+  { const env = baseEnv(); up.impl = () => new Response("quota " + KEY, { status: 429, headers: { "Retry-After": "9" } }); r = await call(ask({ mode: "check", items: IT }), env);
+    ok(r.status === 429 && r.j.error === "upstream_busy" && r.h.get("Retry-After") === "9" && !r.t.includes(KEY), "/ask every model busy -> upstream_busy");
+    eq(env.CAP.m.get([...env.CAP.m.keys()].find((k) => k.startsWith("k:"))), "0", "/ask ... and the unit went back"); }
+  // chat
+  up.calls = []; up.impl = said('{"type":"answer","ids":["L2","L9","L1"],"text":"ذكر الشيخ حديث النية [L1]. وهو حديث ضعيف جدًّا. «نص مخترع طويل ليس في الوقائع إطلاقًا». والحديث في صحيح البخاري."}');
+  r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS }), baseEnv());
+  ok(r.status === 200 && r.j.type === "answer" && JSON.stringify(r.j.ids) === '["L2","L1"]', "/ask chat: ids that were not given are dropped");
+  ok(!r.j.text.includes("ضعيف") && !r.j.text.includes("مخترع") && !r.j.text.includes("L1") && r.j.text.includes("صحيح البخاري"), "/ask chat: a grading the facts do not carry, an invented quotation and the ids are taken out of the text  (" + r.j.text + ")");
+  ok(JSON.parse(up.calls[0].init.body).messages[0].content.includes("لا تُفتِ") && JSON.parse(up.calls[0].init.body).response_format.type === "json_object" && JSON.parse(up.calls[0].init.body).max_completion_tokens <= 1000, "/ask chat: the system prompt is the Worker's, the answer is asked as JSON, within qwen's output limit");
+  up.impl = said('{"type":"refuse","ids":["L1"],"text":"هذا خارج عملي ويُسأل عنه أهل العلم."}'); r = await call(ask({ mode: "chat", q: "ما حكم كذا؟", facts: FACTS }), baseEnv());
+  ok(r.j.type === "refuse" && r.j.ids.length === 0, "/ask chat: a refusal carries no cards");
+  up.calls = []; up.impl = (url, init) => (JSON.parse(init.body).model.includes("qwen") ? said("I think the answer is yes " + KEY)() : said('{"type":"notfound","ids":[],"text":"لم أجد ذلك في الوقائع."}')());
+  r = await call(ask({ mode: "chat", q: "هل ذكر بر الوالدين؟", facts: FACTS }), baseEnv());
+  ok(r.j.type === "notfound" && up.calls.length === 2 && !r.t.includes(KEY), "/ask chat: free text is not an answer; the next model is asked");
+  up.impl = said("free text only"); r = await call(ask({ mode: "chat", q: "سؤال ما هنا", facts: FACTS }), baseEnv()); ok(r.status === 502 && r.j.error === "upstream" && !r.t.includes("free"), "/ask chat: nobody answers in the form asked for -> 502, no model words");
+  r = await call(ask({ mode: "chat", q: "x".repeat(20000), facts: FACTS }), baseEnv()); eq(r.status, 413, "/ask an oversized body");
+  { const env = baseEnv({ ASK_DAILY_CAP: "2", ASK_IP_DAILY_CAP: "2" }); up.impl = said("11"); await call(ask({ mode: "check", items: IT }), env); await call(ask({ mode: "check", items: IT }), env);
+    r = await call(ask({ mode: "check", items: IT }), env); ok(r.status === 429 && r.j.error === "daily_cap", "/ask has its own daily limit"); }
+}
+
 sec("/embed: sentence embeddings (Workers AI binding)");
 { const em = (body, o = {}) => new Request("https://w.dev/embed", { method: "POST", headers: { Origin: OK, "Content-Type": "application/json", ...(o.headers || {}) }, body: typeof body === "string" ? body : JSON.stringify(body) });
   const seen = [];

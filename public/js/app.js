@@ -1,6 +1,6 @@
 // app.js — the page. All matching runs in js/worker.js; this file only draws and listens.
 import { fmtTime, fnv1a, wordsFromText } from "./text.js";
-import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, transcribeYoutube, AsrError, llmStops } from "./asr.js";
+import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, transcribeYoutube, AsrError, llmStops, askPost } from "./asr.js";
 import { compareLedgers, applyAgreement, marksOf, statusOf, timeTolerance } from "./agree.js";
 import { flagsOf } from "./flags.js";
 import { gradeSummary } from "./grade.js";
@@ -51,6 +51,7 @@ const S = {
   // the reviewer's own work on this transcript (kept in localStorage next to the verdicts, and in a saved session)
   fixes: {},            // word index -> corrected text ("" = the word is removed). S.words always holds the words as transcribed
   manual: [],           // citations the reviewer added: {a, b, ref, status, src}
+  checks: {}, keep: {}, dismissed: [], raw: { engine: [], added: [] }, checkStore: "", checkState: null,      // the checker's verdicts on short matches (key -> "1" | "0" | "?"), and what the reader put back
   extra: null,          // the words of the second (Arabic) transcription pass, kept for analysing again after a correction
   onlyOpen: false, keepOpen: new Set(),      // "not reviewed yet" filter; entries reviewed while it is on stay until it is toggled
   fixKey: "", manualKey: "", reworking: false, focusAfter: null,
@@ -60,7 +61,7 @@ const S = {
   transcribers: [],     // who produced the transcript(s): [{provider, model, name}], the primary first
   two: null,            // counts of the last comparison (compareLedgers().stats), or null when there was none
 };
-let corpusReady = null;
+let corpusReady = null, asrInfo = Promise.resolve();
 
 /** a message kept as {key, args} so that it follows the interface language; an argument may be a function evaluated when shown */
 const msg = (key, ...args) => ({ key, args });
@@ -88,7 +89,7 @@ function showError(m) {
   if (CFG.asrUrl && QUOTA_ERR.test(m.key || "")) { const b = el("button", "quiet-btn", t(CFG.userKey ? "key.change" : "key.use")); b.type = "button"; b.onclick = openKey; e.append(" ", b); }
 }
 function clearError() { S.err = null; $("startErr").hidden = true; }
-function screen(name) { for (const n of ["start", "busy", "results"]) $(n).hidden = n !== name; $("btnNew").hidden = name === "start"; }
+function screen(name) { for (const n of ["start", "busy", "results", "chat"]) $(n).hidden = n !== name; $("btnNew").hidden = name === "start"; if (name === "results" || name === "chat") placeChat(name); }
 function busy(frac, m) { S.busy = m || S.busy; screen("busy"); $("busyBar").style.width = Math.round(100 * frac) + "%"; if (S.busy) $("busyMsg").textContent = say(S.busy); }
 
 // ---------------- runs: one analysis at a time, and a superseded one never reaches the screen ----------------
@@ -163,7 +164,7 @@ function applyLang(l) {
   drawAsk(); drawTheme();
   $("corpusRetry").textContent = t("corpus.retry");
   $("samplesErr").hidden = !S.samplesFailed; $("samplesErr").textContent = S.samplesFailed ? t("err.samples") : "";
-  drawPackLabels(); drawProviders(); drawSamples();
+  drawPackLabels(); drawProviders(); drawSamples(); drawChatDoor(); drawChatSug();
   if (S.err) showError(S.err);
   if (S.busy) $("busyMsg").textContent = say(S.busy);
   if (!$("results").hidden) render();
@@ -193,11 +194,12 @@ function boot() {
   loadCorpus();
 
   if (!CFG.asrUrl) { $("file").disabled = true; for (const id of ["askFile", "audioHint", "dropSub", "ytNote", "recLangWrap"]) $(id).hidden = true; }
-  else asrProviders(CFG).then(a => { S.asr = a; drawProviders(); drawAsk(); drawSem(); });       // asked once, never waited for
+  else asrInfo = asrProviders(CFG).then(a => { S.asr = a; drawProviders(); drawAsk(); drawSem(); drawChatDoor(); });       // asked once, never waited for
   $("btnTheme").onclick = () => setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
   $("btnOptions").onclick = () => openOptions($("options").hidden);
   { const k = store.get("athar:gemkey", ""); if (typeof k === "string" && OWN_KEY.test(k)) CFG.userKey = k; }
   $("btnKey").onclick = openKey; $("btnKeyTop").onclick = openKey;
+  wireChat();
   $("keyForm").onsubmit = ev => { ev.preventDefault(); if ($("keyInput").value.trim()) saveKey($("keyInput").value); };
   $("keyForget").onclick = () => saveKey("");
   // the one box: Enter analyses, Shift+Enter is a new line; it grows with what is pasted into it
@@ -252,6 +254,7 @@ function boot() {
   $("readerText").addEventListener("click", ev => { const c = ev.target.closest(".c"); if (!c) return; const e = S.ledger[c.dataset.id - 1]; if (e) { $("reader").close(); selectAndFocus(e); } });
   $("btnDocx").onclick = () => {
     const { bytes } = citedDocx({ words: shownWords(), ledger: S.ledger, reviews: activeReviews(), title: titleNow(), fixed: fixCount(), transcribers: S.transcribers.map(transcriberLabel),
+      digest: digestLines(),
       mushaf: !$("optMushafWrap").hidden && $("optMushaf").checked,
       hadithText: !$("optHadithWrap").hidden && $("optHadith").checked,
       date: new Date().toLocaleDateString(getLang() === "ar" ? "ar-EG" : "en-GB", { year: "numeric", month: "long", day: "numeric" }) });
@@ -313,7 +316,7 @@ function boot() {
 }
 
 // ---------------- the three sections of the results: summary, ledger and review, transcript ----------------
-const TABS = ["summary", "ledger", "text"], tabId = n => "tab" + n[0].toUpperCase() + n.slice(1), tabBtn = n => $("tabBtn" + n[0].toUpperCase() + n.slice(1));
+const TABS = ["summary", "ledger", "text", "chat"], tabId = n => "tab" + n[0].toUpperCase() + n.slice(1), tabBtn = n => $("tabBtn" + n[0].toUpperCase() + n.slice(1));
 /** the height the page keeps clear at the top: the map and the player stick there on a narrow screen, nothing does on a wide one */
 function stickyH() { const p = $("player"); return p && getComputedStyle(p).position === "sticky" ? p.offsetHeight : 0; }
 /** show one section. `focus`: move the keyboard to its tab; `reveal`: in the transcript, bring the selected citation into view */
@@ -338,10 +341,10 @@ function wireTabs() {
   box.addEventListener("click", ev => { const b = ev.target.closest(".tab"); if (b) showTab(b.dataset.tab); });
   box.addEventListener("keydown", ev => {
     const b = ev.target.closest(".tab"); if (!b) return;
-    const rtl = document.documentElement.dir === "rtl", i = TABS.indexOf(b.dataset.tab);
-    const d = ev.key === (rtl ? "ArrowLeft" : "ArrowRight") ? 1 : ev.key === (rtl ? "ArrowRight" : "ArrowLeft") ? -1 : ev.key === "Home" ? -i : ev.key === "End" ? TABS.length - 1 - i : 0;
+    const shown = TABS.filter(n => !tabBtn(n).hidden), rtl = document.documentElement.dir === "rtl", i = shown.indexOf(b.dataset.tab);
+    const d = ev.key === (rtl ? "ArrowLeft" : "ArrowRight") ? 1 : ev.key === (rtl ? "ArrowRight" : "ArrowLeft") ? -1 : ev.key === "Home" ? -i : ev.key === "End" ? shown.length - 1 - i : 0;
     if (!d) return;
-    ev.preventDefault(); showTab(TABS[(i + d + TABS.length) % TABS.length], { focus: true });
+    ev.preventDefault(); showTab(shown[(i + d + shown.length) % shown.length], { focus: true });
   });
 }
 
@@ -449,6 +452,9 @@ const semReady = () => !!(CFG.asrUrl && S.info && S.info.sem && S.asr && (S.asr.
 /** what the engine's worker needs to ask for vectors, or null when it is off (not offered, or the reader unticked it) */
 const semCfg = () => (semReady() && $("semOn").checked ? { url: CFG.asrUrl, model: S.info.sem.model, dim: S.info.sem.dim } : null);
 function drawSem() {
+  $("checkWrap").hidden = !(CFG.asrUrl && S.asr && S.asr.ask);
+  $("checkOn").checked = store.get("athar:check", true) !== false;
+  $("checkOn").onchange = () => store.set("athar:check", $("checkOn").checked);
   $("semWrap").hidden = !semReady();
   $("semOn").checked = store.get("athar.sem", true) !== false;
   $("semOn").onchange = () => store.set("athar.sem", $("semOn").checked);
@@ -725,12 +731,73 @@ async function resolveManual(manual, words, fixes) {
   return manual.map((m, i) => manualEntry(m, res[i] || null, words, fixes));
 }
 /** the ledger on screen = the engine's entries and the reviewer's, in transcript order */
+// ---------------- the checker: is a short match that no cue announced a quotation, or a coincidence of words? ----------------
+// The engine cannot tell "ذو القعدة وذو الحجة والمحرم ورجب" said in passing from the same words recited from a hadith: the
+// words ARE in the hadith. Two language models are asked that one closed question (Worker /ask, mode "check"); a match is
+// set aside only when both call it a coincidence. Nothing a model writes is shown; nothing is added, changed or upgraded;
+// what was set aside is listed under the ledger and comes back with one press.
+const CHECK = { MAX: 20, BATCH: 5, WORDS: 10, AROUND: 18, TIMEOUT: 45000 };
+const matchedWords = e => (e.counts ? e.counts.exact + e.counts.asr + e.counts.near + e.counts.diff : 0);
+/** a match the checker is asked about: found in wording, no cue before it, few words, a hadith or a book passage, Arabic */
+const doubtful = e => (e.status === "verbatim" || e.status === "partial") && !e.manual && !e.cue && !foreign(e) && !!e.source && (e.source.type === "h" || e.source.type === "b") && e.source.via !== "en"
+  && matchedWords(e) > 0 && matchedWords(e) <= CHECK.WORDS;
+const checkKey = e => `${e.wordStart}-${e.wordEnd}|${e.source.ref}|${fnv1a(e.spoken || "")}`;
+const verdictOf = e => (doubtful(e) ? (S.keep[checkKey(e)] ? "kept" : S.checks[checkKey(e)] ?? null) : undefined);
+const checkerOn = () => !!(CFG.asrUrl && S.asr && S.asr.ask && $("checkOn").checked);
+function checkSaid(e, words, fixes) {
+  const n = words.length, join = (i, j) => { const ws = []; for (let k = Math.max(0, i); k <= Math.min(j, n - 1); k++) { const w = wordAt(k, words, fixes); if (w) ws.push(w); } return ws.join(" "); };
+  return `${join(e.wordStart - CHECK.AROUND, e.wordStart - 1)} [[${join(e.wordStart, e.wordEnd)}]] ${join(e.wordEnd + 1, e.wordEnd + CHECK.AROUND)}`.trim();
+}
+/** the source's words around the place that matched (a long hadith is not sent whole) */
+function checkSource(e) {
+  const bare = x => String(x || "").replace(/[\u064B-\u0652\u0670\u0640]/g, ""), f = x => bare(x).replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/[^\u0621-\u064A]/g, "");
+  const s = e.source, ws = bare(s.displayFull || s.arabic || s.display || s.excerpt || "").split(/\s+/).filter(Boolean);
+  if (ws.length <= 100) return ws.join(" ");
+  const key = (e.diff || []).filter(d => d.source).slice(0, 3).map(d => f(d.sourceDisplay || d.source)).filter(Boolean), fw = ws.map(f);
+  let at = -1; for (let i = 0; key.length && i + key.length <= fw.length; i++) if (key.every((k, j) => fw[i + j] === k)) { at = i; break; }
+  if (at < 0) return ws.slice(0, 100).join(" ") + " …";
+  const a = Math.max(0, at - 40), b = Math.min(ws.length, at + 60);
+  return (a ? "… " : "") + ws.slice(a, b).join(" ") + (b < ws.length ? " …" : "");
+}
+/** ask about the doubtful matches that have no verdict yet; `checks` = {v: {key: "1" | "0" | "?"}, keep: {...}} is filled in place */
+async function runChecker(entries, words, fixes, checks, signal, onStep) {
+  const all = entries.filter(doubtful), st = { state: "none", why: null };
+  if (!all.length) return st;
+  if (!checkerOn()) { st.state = "off"; return st; }
+  const todo = all.filter(e => checks.v[checkKey(e)] == null).map(e => ({ e, said: checkSaid(e, words, fixes), source: checkSource(e) })).filter(x => x.source.length >= 8).slice(0, CHECK.MAX);
+  st.state = "done";
+  for (let i = 0; i < todo.length; i += CHECK.BATCH) {
+    const part = todo.slice(i, i + CHECK.BATCH);
+    if (onStep) onStep(i, todo.length);
+    if (i) await new Promise(r => setTimeout(r, 1300));       // the Worker's counter takes one write a second
+    try {
+      const j = await Promise.race([askPost(CFG, { mode: "check", items: part.map(x => ({ said: x.said, source: x.source })) }, signal),
+        new Promise((_, no) => setTimeout(() => no(new AsrError("timeout")), CHECK.TIMEOUT))]);
+      if (typeof j.verdicts === "string" && j.verdicts.length === part.length) part.forEach((x, k) => { if ("01?".includes(j.verdicts[k])) checks.v[checkKey(x.e)] = j.verdicts[k]; });
+    } catch (err) { if (err instanceof AsrError && err.code === "aborted") throw err; st.state = "failed"; st.why = err; break; }
+  }
+  return st;
+}
+const saveChecks = () => { if (S.checkStore) store.set(S.checkStore, { v: S.checks, keep: S.keep }); };
+function restoreDismissed(e) {
+  S.keep[checkKey(e)] = true; saveChecks();
+  const key = e.key; setLedger(S.raw.engine, S.raw.added);
+  const now = S.ledger.find(x => x.key === key); S.sel = now ? now.id : null;
+  redrawInPlace();
+  if (now) selectAndFocus(now);
+}
+
 function setLedger(engine, added) {
   const all = [...engine, ...added];
+  S.raw = { engine, added };
   for (const e of all) if (!e.key) e.key = `${e.pass || "m"}:${e.wordStart}-${e.wordEnd}`;
   all.sort((a, b) => a.wordStart - b.wordStart || a.wordEnd - b.wordEnd || (a.manual ? 1 : 0) - (b.manual ? 1 : 0));
-  all.forEach((e, i) => { e.id = i + 1; });
-  S.ledger = all;
+  // what both models called a coincidence leaves the ledger (and with it the summary, the map and the Word file); it stays listed below it
+  const out = e => verdictOf(e) === "0";
+  S.dismissed = all.filter(out);
+  const kept = all.filter(e => !out(e));
+  kept.forEach((e, i) => { e.id = i + 1; });
+  S.ledger = kept;
   hadithOption();
 }
 /** the Word option "verbatim hadith in the source's wording": offered for Arabic speech when some hadith can be written that way (the display text is optional data); off unless chosen */
@@ -752,7 +819,10 @@ async function reanalyse() {
   const job = ++reJob;
   S.reworking = true; drawFixBar();
   let engine, added;
-  try { engine = await analyse(S.words, S.fixes, S.extra, S.second); added = await resolveManual(S.manual, S.words, S.fixes); }
+  try {
+    engine = await analyse(S.words, S.fixes, S.extra, S.second); added = await resolveManual(S.manual, S.words, S.fixes);
+    const st = await runChecker(engine, S.words, S.fixes, { v: S.checks, keep: S.keep }, run.ctl.signal); if (st.state !== "none") S.checkState = st; saveChecks();
+  }
   catch (e) { if (live(run) && job === reJob) { S.reworking = false; S.warnings.push(msg("err.analysis", () => detail(e))); render(); } return; }
   if (!live(run) || job !== reJob) return;
   S.reworking = false;
@@ -815,9 +885,19 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
     added = await resolveManual(manual, words, fixes);
     if (!live(run)) return;
   } catch (e) { return fail(run, msg("err.analysis", () => detail(e))); }
+  // short matches that no cue announced: quotation or coincidence? (verdicts given before, in this browser, are not asked again)
+  const checkStore = "athar:checks:" + base, saved = store.get(checkStore, {});
+  const checks = { v: saved && typeof saved.v === "object" && saved.v ? { ...saved.v } : {}, keep: saved && typeof saved.keep === "object" && saved.keep ? { ...saved.keep } : {} };
+  let checkState;
+  await asrInfo;                                              // (what the service offers is asked once at start-up and answers within four seconds)
+  try { checkState = await runChecker(ledger, words, fixes, checks, run.ctl.signal, (i, n) => { if (live(run)) busy(0.9 + 0.08 * (n ? i / n : 1), msg("busy.check", num(n))); }); }
+  catch { return; }                                           // the reader started something else
+  if (!live(run)) return;
 
   // ---- from here on this run owns the screen
   stopAudio(); S.ytResume = null;
+  resetChat();
+  S.checks = checks.v; S.keep = checks.keep; S.checkStore = checkStore; S.checkState = checkState; saveChecks();
   S.words = words; S.title = title; S.titleKey = titleKey; S.only = new Set(); S.onlyFlag = false; S.openState = new Map(); S.sel = null;
   S.hasTimes = words.some(w => w.start != null);
   let dur = 0; if (S.hasTimes) for (const w of words) { const x = w.end ?? w.start; if (x > dur) dur = x; }      // (no spread: transcripts can be very long)
@@ -1296,6 +1376,7 @@ function drawEntry(e) {
   const gc = e.status !== "notfound" && !e.weakOnly ? gradeChip(e.source, e.parallels) : null;
   const srcWords = (e.diff || []).filter(d => d.source).map(d => d.sourceDisplay || d.source).join(" ") || (src && (src.excerptDisplay || src.excerpt)) || "";
   const mainLine = () => sourceLine(src, true, { chip: gc, whole: viaEn ? null : wholeButton(src, "", e.key + "/whole", e), dorar: e.status === "notfound" ? "" : srcWords });
+  { const v = verdictOf(e); if (v !== undefined) tag(t("ck.tag") + " · " + t(v === "1" ? "ck.tag.1" : v === "?" ? "ck.tag.q" : v === "kept" ? "ck.tag.kept" : "ck.tag.none"), t("ck.tag.title"), v === "?" ? "grade warn" : ""); }
   if (e.tailUnmatched) li.append(el("p", "note", t("note.tail_unmatched", e.tailUnmatchedSpoken || "")));
   // what a second transcription of the same recording says about these words
   if (g2) {
@@ -1435,7 +1516,7 @@ function drawReview(e) {
 /** The ledger is drawn a screenful first and the rest in slices, so a long one shows at once. */
 let ledgerJob = 0, flushLedger = () => {};
 /** the recorded standing of a hadith source as one tag (grade.js), or null for anything else */
-function gradeChip(src, parallels) {
+function gradeLine(src, parallels) {
   const g = gradeSummary(src, parallels); if (!g) return null;
   const who = by => (by.length > 1 ? t("g.by.more", by[0], num(by.length - 1)) : by[0]);
   const also = g.also ? t("g.also", t("col." + g.also)) : "";
@@ -1445,8 +1526,24 @@ function gradeChip(src, parallels) {
   else if (g.kind === "weak") { text = t("g.one", g.grade, who(g.by)) + also; cls = "warn"; }
   else if (g.kind === "mixed") { text = t("g.mixed", g.strong.grade, who(g.strong.by), g.weak.grade, who(g.weak.by)) + also; cls = "mix"; }
   else { text = (g.note ? g.note + " · " : "") + t("g.none") + also; cls = g.also ? "ok" : "quiet"; }
-  const x = mixed(el("span", "tag grade " + cls, text), text); x.title = title;
+  return { text, cls, title };
+}
+function gradeChip(src, parallels) {
+  const g = gradeLine(src, parallels); if (!g) return null;
+  const x = mixed(el("span", "tag grade " + g.cls, g.text), g.text); x.title = g.title;
   return x;
+}
+/** the digest as plain lines (for the Word file and for the chat's facts): one line per hadith / passage of the Qur'an */
+function digestLines() {
+  const byId = new Map(S.ledger.map(e => [e.id, e])), when = e => (S.hasTimes && e.start != null ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1)));
+  return (S.digestCards || []).map(c => {
+    const all = c.ids.map(id => byId.get(id)).filter(Boolean), w0 = c.wordings[0], mine = w0.ids.map(id => byId.get(id)).filter(Boolean);
+    const g = c.type === "h" ? gradeLine(w0.source, mine.flatMap(e => e.parallels || [])) : null;
+    const said = !w0.said ? t("dg.said.none") : w0.said >= w0.total ? t("dg.said.all", num(w0.total)) : t("dg.said.part", num(w0.said), num(w0.total));
+    const also = c.wordings.slice(1).map(w => srcLabel(w.source));
+    return { type: c.type, ids: c.ids, label: `${t("dg.kind." + c.type)} — ${srcLabel(w0.source)}`, grade: g ? g.text : "",
+      value: [g ? g.text : "", said, counted("dg.times", all.length) + " (" + all.map(when).join(sep()) + ")", also.length ? t("doc.digest.also", also.join(sep())) : ""].filter(Boolean).join(" · ") };
+  });
 }
 
 // ---------------- digest: every hadith / passage of the Qur'an once (built by the worker from the entries' source positions) ----------------
@@ -1461,74 +1558,100 @@ function whenChip(e) {
 function drawStatTexts(nH, nQ) {
   $("statTexts").textContent = [nH && counted("stat.h", nH), nQ && counted("stat.q", nQ)].filter(Boolean).join(" · ") || t("stat.texts.none");
 }
+/** one card of the digest: a hadith or a passage of the Qur'an, whole, with what was said of it and when */
+function digestCardEl(c, byId) {
+  const card = el("article", "dg-card dg-" + c.type);
+  const all = c.ids.map(id => byId.get(id)).filter(Boolean);
+  c.wordings.forEach((w, wi) => {
+    const sec = el("div", "dg-wording" + (wi ? " also" : "")), mine = w.ids.map(id => byId.get(id)).filter(Boolean);
+    const gc = c.type === "h" ? gradeChip(w.source, mine.flatMap(e => e.parallels || [])) : null;
+    const line = sourceLine(w.source, true, { chip: gc, dorar: w.segs.filter(g => g.said).map(g => g.t).join(" ") });
+    line.prepend(wi ? el("span", "dg-as", t("dg.also")) : el("span", "kindpill k-" + c.type, t("dg.kind." + c.type)));
+    sec.append(line);
+    const p = el("p", "dg-text rtl" + (w.original ? " orig" : "") + (c.type === "q" ? " quran" : "")); p.dir = "rtl"; p.lang = "ar";
+    w.segs.forEach((g, i) => { if (i) p.append(" "); p.append(el("span", w.said && !g.said ? "unsaid" : "said", c.type === "q" ? ayahDigits(g.t) : g.t)); });
+    const words = w.segs.reduce((n, g) => n + g.t.split(" ").length, 0);
+    if (words > 90) {
+      p.classList.add("folded");
+      const b = el("button", "quiet-btn dg-more", t("dg.more")); b.type = "button";
+      b.onclick = () => { const f = p.classList.toggle("folded"); b.textContent = t(f ? "dg.more" : "dg.less"); };
+      sec.append(p, b);
+    } else sec.append(p);
+    const meter = el("div", "dg-meter"), bar = el("span", "meter"), fill = el("i"); bar.setAttribute("aria-hidden", "true");
+    fill.style.width = (w.total ? Math.round(100 * Math.min(w.said, w.total) / w.total) : 0) + "%"; bar.append(fill);
+    const saidLine = !w.said ? t("dg.said.none") : w.said >= w.total ? t("dg.said.all", num(w.total)) : t("dg.said.part", num(w.said), num(w.total));
+    if (w.said) meter.append(bar);
+    meter.append(el("span", null, [saidLine, wi ? "" : counted("dg.times", all.length)].filter(Boolean).join(" · ")));
+    sec.append(meter);
+    const when = el("p", "dg-when"); for (const e of mine) when.append(whenChip(e));
+    sec.append(when);
+    card.append(sec);
+  });
+  return card;
+}
+/** a place that is in no card of the digest (announced and not matched in wording, or carrying an alert) */
+function needCardEl(e) {
+  const cut = x => { const ws = String(x || "").split(" "); return ws.length > 45 ? ws.slice(0, 45).join(" ") + " …" : ws.join(" "); };
+  const card = el("article", "dg-card need s-" + st(e) + " t-" + typeOf(e)), head = el("div", "need-head");
+  head.append(kindPill(e), el("span", "status", t("status." + st(e))), el("span", "need-time", S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))));
+  for (const f of flagsOf(e)) head.append(el("span", "flagtag", t("flag." + f)));
+  card.append(head, textBlock(cut(e.spoken), "dg-text need-text"));
+  const near = e.status === "notfound" ? (e.suggestions || [])[0] : (e.candidates || [])[0] || e.source;
+  if (near) { const label = srcLabel(near); card.append(mixed(el("p", "note", t("needs.near", label)), label)); }
+  const b = el("button", "quiet-btn strong", t("needs.open")); b.type = "button"; b.onclick = () => selectAndFocus(e);
+  card.append(b);
+  return card;
+}
+const needsOf = () => S.ledger.filter(e => !digestItem(e) && (!textual(e) || flagsOf(e).length));
 async function drawDigest() {
   const job = ++digestJob, box = $("digest"), list = $("digestList");
   drawNeeds();
-  const none = () => { box.hidden = true; list.textContent = ""; drawStatTexts(0, 0); };
+  const none = () => { box.hidden = true; list.textContent = ""; S.digestCards = []; drawStatTexts(0, 0); };
   const items = S.ledger.map(digestItem).filter(Boolean);
   if (!items.length) return none();
   let cards; try { cards = await call("digest", { items }); } catch { cards = null; }
   if (job !== digestJob) return;
   if (!cards || !cards.length) return none();
   const byId = new Map(S.ledger.map(e => [e.id, e]));
+  S.digestCards = cards;
   const nH = cards.filter(c => c.type === "h").length, nQ = cards.length - nH;
   $("digestGlance").textContent = [nH && t("dg.count.h", num(nH)), nQ && t("dg.count.q", num(nQ))].filter(Boolean).join(sep());
   drawStatTexts(nH, nQ);
   list.textContent = "";
-  for (const c of cards) {
-    const card = el("article", "dg-card dg-" + c.type);
-    const all = c.ids.map(id => byId.get(id)).filter(Boolean);
-    c.wordings.forEach((w, wi) => {
-      const sec = el("div", "dg-wording" + (wi ? " also" : "")), mine = w.ids.map(id => byId.get(id)).filter(Boolean);
-      const gc = c.type === "h" ? gradeChip(w.source, mine.flatMap(e => e.parallels || [])) : null;
-      const line = sourceLine(w.source, true, { chip: gc, dorar: w.segs.filter(g => g.said).map(g => g.t).join(" ") });
-      line.prepend(wi ? el("span", "dg-as", t("dg.also")) : el("span", "kindpill k-" + c.type, t("dg.kind." + c.type)));
-      sec.append(line);
-      const p = el("p", "dg-text rtl" + (w.original ? " orig" : "") + (c.type === "q" ? " quran" : "")); p.dir = "rtl"; p.lang = "ar";
-      w.segs.forEach((g, i) => { if (i) p.append(" "); p.append(el("span", w.said && !g.said ? "unsaid" : "said", c.type === "q" ? ayahDigits(g.t) : g.t)); });
-      const words = w.segs.reduce((n, g) => n + g.t.split(" ").length, 0);
-      if (words > 90) {
-        p.classList.add("folded");
-        const b = el("button", "quiet-btn dg-more", t("dg.more")); b.type = "button";
-        b.onclick = () => { const f = p.classList.toggle("folded"); b.textContent = t(f ? "dg.more" : "dg.less"); };
-        sec.append(p, b);
-      } else sec.append(p);
-      const meter = el("div", "dg-meter"), bar = el("span", "meter"), fill = el("i"); bar.setAttribute("aria-hidden", "true");
-      fill.style.width = (w.total ? Math.round(100 * Math.min(w.said, w.total) / w.total) : 0) + "%"; bar.append(fill);
-      const saidLine = !w.said ? t("dg.said.none") : w.said >= w.total ? t("dg.said.all", num(w.total)) : t("dg.said.part", num(w.said), num(w.total));
-      if (w.said) meter.append(bar);
-      meter.append(el("span", null, [saidLine, wi ? "" : counted("dg.times", all.length)].filter(Boolean).join(" · ")));
-      sec.append(meter);
-      const when = el("p", "dg-when"); for (const e of mine) when.append(whenChip(e));
-      sec.append(when);
-      card.append(sec);
-    });
-    list.append(card);
-  }
+  for (const c of cards) list.append(digestCardEl(c, byId));
   box.hidden = false;
 }
 /** what the digest cannot hold: places that were announced and not matched in wording, and places that carry an alert */
 function drawNeeds() {
   const box = $("needs"), list = $("needsList"); list.textContent = "";
-  const items = S.ledger.filter(e => !digestItem(e) && (!textual(e) || flagsOf(e).length));
+  const items = needsOf(), MAX = 12;
   box.hidden = !items.length;
-  const MAX = 12, cut = x => { const ws = String(x || "").split(" "); return ws.length > 45 ? ws.slice(0, 45).join(" ") + " …" : ws.join(" "); };
-  for (const e of items.slice(0, MAX)) {
-    const card = el("article", "dg-card need s-" + st(e) + " t-" + typeOf(e)), head = el("div", "need-head");
-    head.append(el("span", "status", t("status." + st(e))), el("span", "need-time", S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))), kindPill(e));
-    head.prepend(head.lastChild);
-    for (const f of flagsOf(e)) head.append(el("span", "flagtag", t("flag." + f)));
-    card.append(head, textBlock(cut(e.spoken), "dg-text need-text"));
-    const near = e.status === "notfound" ? (e.suggestions || [])[0] : (e.candidates || [])[0] || e.source;
-    if (near) { const label = srcLabel(near); card.append(mixed(el("p", "note", t("needs.near", label)), label)); }
-    const b = el("button", "quiet-btn strong", t("needs.open")); b.type = "button"; b.onclick = () => selectAndFocus(e);
-    card.append(b); list.append(card);
-  }
+  for (const e of items.slice(0, MAX)) list.append(needCardEl(e));
   if (items.length > MAX) list.append(el("p", "note", t("needs.more", num(items.length - MAX))));
 }
 
+/** what the checker did, in one line; and the matches it set aside, each with the way back */
+function drawChecker() {
+  const line = $("checkLine"), box = $("dismissed"), list = $("dismissedList"), sure = S.ledger.filter(e => verdictOf(e) === "1").length;
+  const doubt = S.ledger.filter(e => verdictOf(e) === "?").length, unasked = S.ledger.filter(e => verdictOf(e) === null).length, out = S.dismissed.length;
+  const bits = [];
+  if (out) bits.push(t("ck.out", counted("ck.n", out)));
+  if (doubt) bits.push(t("ck.doubt", counted("ck.n", doubt)));
+  if (sure) bits.push(t("ck.sure", counted("ck.n", sure)));
+  if (unasked) bits.push(t(S.checkState && S.checkState.state === "failed" ? "ck.unasked.failed" : "ck.unasked", counted("ck.n", unasked)));
+  line.hidden = !bits.length; line.textContent = bits.length ? t("ck.line") + " " + bits.join(" ") : "";
+  line.classList.toggle("warn", !!(doubt || unasked));
+  box.hidden = !out; list.textContent = "";
+  $("dismissedTitle").textContent = t("ck.box", counted("ck.n", out));
+  for (const e of S.dismissed) {
+    const li = el("li", "dm"), label = srcLabel(e.source);
+    li.append(el("span", "need-time", S.hasTimes && e.start != null ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))), textBlock(e.spoken, "dm-said"), mixed(el("span", "dm-src", t("ck.like", label)), label));
+    const b = el("button", "quiet-btn", t("ck.back")); b.type = "button"; b.onclick = () => restoreDismissed(e); li.append(b);
+    list.append(li);
+  }
+}
 function drawLedger() {
-  drawDigest();
+  drawDigest(); drawChecker();
   const L = $("ledger"), job = ++ledgerJob, n = S.ledger.length; L.textContent = "";
   L.classList.toggle("big", n > 40);
   if (!n) { L.append(el("li", "empty", t("empty.none"))); flushLedger = () => {}; return; }
@@ -1710,6 +1833,109 @@ function afterPrint() {
   setTimeout(() => { for (const d of document.querySelectorAll("#ledger details[data-p], #committee[data-p], #legendWrap[data-p]")) delete d.dataset.p; printing = false; }, 300);
 }
 
+// ---------------- the chat: questions about the open lecture and about texts in the sources ----------------
+// Retrieval is the page's own (the ledger of the lecture, and the same search of the sources as "Search the corpus"); a
+// language model only chooses among those facts and writes a few connecting sentences (Worker /ask, mode "chat"). Every
+// verse, hadith, source and grading the reader sees is drawn here from the sources' data, in the cards under the answer.
+const CHAT = { FACT: 400, TOTAL: 6000, SEARCH: 4, PREV: 480 };
+const chatOn = () => !!(CFG.asrUrl && S.asr && S.asr.ask);
+const lectureOpen = () => !$("results").hidden && S.words.length > 0;
+function drawChatDoor() { $("btnAsk").hidden = !chatOn(); $("btnAsk").textContent = t("chat.door"); $("tabBtnChat").hidden = !chatOn(); }
+/** the chat box lives in one place at a time: the fourth tab of the results, or its own screen */
+function placeChat(where) { const host = where === "results" ? $("tabChat") : $("chatHost"), box = $("chatBox"); if (box.parentNode !== host) host.append(box); $("chatTitle").textContent = t(where === "results" ? "chat.title.lecture" : "chat.title"); drawChatSug(); }
+function resetChat() { S.chat = { prev: "", busy: false, n: (S.chat ? S.chat.n : 0) + 1 }; $("chatLog").textContent = ""; $("chatGo").disabled = false; }
+function drawChatSug() {
+  const box = $("chatSug"); if (!box) return; box.textContent = "";
+  const qs = lectureOpen() ? ["chat.sug.l1", "chat.sug.l2", "chat.sug.l3", "chat.sug.l4"] : ["chat.sug.s1", "chat.sug.s2", "chat.sug.s3"];
+  for (const k of qs) { const b = el("button", "chipbtn", t(k)); b.type = "button"; b.onclick = () => { $("chatQ").value = t(k); $("chatForm").requestSubmit(); }; box.append(b); }
+}
+const cutTo = (x, n) => { x = String(x || "").replace(/\s+/g, " ").trim(); return x.length > n ? x.slice(0, n - 1).trimEnd() + "…" : x; };
+const bare = x => String(x || "").replace(/[\u064B-\u0652\u0670\u0640]/g, "");
+/** what the lecture's ledger says, as facts: one per hadith / passage of the Qur'an (the digest), one per place that is in no card */
+function lectureFacts() {
+  if (!lectureOpen()) return [];
+  const byId = new Map(S.ledger.map(e => [e.id, e])), when = e => (S.hasTimes && e.start != null ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))), out = [];
+  for (const d of digestLines()) {
+    const all = d.ids.map(id => byId.get(id)).filter(Boolean), first = all[0]; if (!first) continue;
+    const sts = [...new Set(all.map(e => t("status." + st(e))))].join(sep()), fl = [...new Set(all.flatMap(e => flagsOf(e).map(f => t("flag." + f))))];
+    const text = [t("chat.f.lecture"), d.label, d.type === "h" ? t("chat.f.grade", d.grade || t("g.none")) : "", (d.grade ? d.value.replace(d.grade + " · ", "") : d.value), t("chat.f.status", sts), fl.length ? t("chat.f.flags", fl.join(sep())) : "",
+      t("chat.f.said", cutTo(bare(first.spoken), 130))].filter(Boolean).join(" — ");
+    out.push({ id: "L" + first.id, text: cutTo(text, CHAT.FACT), card: { kind: "digest", ids: d.ids } });
+  }
+  for (const e of needsOf()) {
+    const near = e.status === "notfound" ? (e.suggestions || [])[0] : (e.candidates || [])[0] || e.source, fl = flagsOf(e).map(f => t("flag." + f));
+    const weak = (e.weakBooks || []).map(w => w.label).slice(0, 2);
+    const text = [t("chat.f.lecture.at", when(e)), kindOf(e), t("status." + st(e)), e.weakOnly && weak.length ? t("chat.f.weakonly", weak.join(sep())) : near ? t("needs.near", srcLabel(near)) : "", fl.length ? t("chat.f.flags", fl.join(sep())) : "",
+      t("chat.f.said", cutTo(bare(e.spoken), 150))].filter(Boolean).join(" — ");
+    out.push({ id: "L" + e.id, text: cutTo(text, CHAT.FACT), card: { kind: "entry", id: e.id } });
+  }
+  return out;
+}
+/** the words of the question that may be a text to look for (the question words themselves are left out) */
+const ASKING = /^(ما|ماذا|هل|أين|اين|من|كم|متى|كيف|صحة|صحه|درجة|درجه|حكم|مصدر|مصادر|نص|حديث|الحديث|أحاديث|احاديث|آية|ايه|اية|الآية|الايه|سورة|قول|قال|ورد|وردت|جاء|ذكر|ذُكر|عن|في|هذا|هذه|هو|هي|لي|اكتب|أعطني|اعطني|لخص|لخّص|what|is|the|of|a|an|hadith|verse|where|does|did|how|authentic|grade|source)$/i;
+async function searchFacts(q) {
+  const ws = wordsFromText(q.replace(/[؟?!.،,:«»"“”]/g, " ")).filter(w => !ASKING.test(bare(w.w)));
+  if (ws.length < 2 || S.corpus !== "ready") return [];
+  let r; try { r = await call("lookup", { words: ws }); } catch { return []; }
+  // what matched in wording; a merely similar text is offered only when no lecture is open (beside a ledger it is noise)
+  const textualFirst = [...r.candidates.filter(c => c.status !== "meaning"), ...(lectureOpen() ? [] : r.candidates.filter(c => c.status === "meaning").slice(0, 2))].slice(0, CHAT.SEARCH);
+  return textualFirst.map((c, i) => {
+    const s = c.source, g = s.type === "h" ? gradeLine(s, (c.entry && c.entry.parallels) || []) : null;
+    const matched = c.entry && c.entry.diff ? c.entry.diff.filter(d => d.source).map(d => d.sourceDisplay || d.source).join(" ") : "";
+    const begins = cutTo(bare(matched || (s.type === "q" ? s.display : s.excerptDisplay || s.excerpt || s.arabic || "")), 150);
+    const text = [t("chat.f.search"), tOpt("kind." + (s.type || "h")) || "", t("lk.st." + c.status), srcLabel(s), s.type === "h" ? t("chat.f.grade", g ? g.text : t("g.none")) : "", begins ? t(matched ? "chat.f.matched" : "chat.f.begins", begins) : ""].filter(Boolean).join(" — ");
+    return { id: "S" + (i + 1), text: cutTo(text, CHAT.FACT), card: { kind: "search", c } };
+  });
+}
+function chatBubble(cls, label) { const b = el("div", "bubble " + cls); if (label) b.append(el("span", "bubble-by", label)); $("chatLog").append(b); return b; }
+function chatCards(facts, ids) {
+  const box = el("div", "chat-cards"), byId = new Map(S.ledger.map(e => [e.id, e])), seen = new Set();
+  for (const id of ids) {
+    const f = facts.find(x => x.id === id); if (!f || seen.has(id)) continue; seen.add(id);
+    if (f.card.kind === "digest") { const c = (S.digestCards || []).find(x => x.ids.join() === f.card.ids.join()); if (c) box.append(digestCardEl(c, byId)); }
+    else if (f.card.kind === "entry") { const e = byId.get(f.card.id); if (e) box.append(needCardEl(e)); }
+    else { const card = el("article", "dg-card chat-found t-" + (f.card.c.source.type || "h")), ul = el("ul", "lookup-list"); ul.append(lookupCandidate(f.card.c, false)); card.append(el("span", "dg-as", t("chat.found")), ul); box.append(card); }
+  }
+  return box;
+}
+async function askChat(q) {
+  q = cutTo(q, 300); if (q.length < 2 || S.chat.busy) return;
+  S.chat.busy = true; $("chatGo").disabled = true; const job = ++S.chat.n;
+  mixed(chatBubble("me").appendChild(el("p", null, q)), q);
+  const wait = chatBubble("it", t("chat.thinking")); wait.classList.add("wait");
+  const done = () => { S.chat.busy = false; $("chatGo").disabled = false; wait.remove(); $("chatLog").lastElementChild?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" }); };
+  try {
+    if (S.corpus !== "ready") await corpusReady;
+    const facts = []; let total = 0;
+    for (const f of [...lectureFacts(), ...(await searchFacts(q))]) { if (facts.length >= 30 || total + f.text.length > CHAT.TOTAL) break; total += f.text.length; facts.push(f); }
+    if (job !== S.chat.n) return;
+    let a = null, err = null;
+    if (chatOn()) { try { a = await askPost(CFG, { mode: "chat", q, lang: getLang(), prev: S.chat.prev, facts: facts.map(f => ({ id: f.id, text: f.text })) }); } catch (e) { err = e; } }
+    if (job !== S.chat.n) return;
+    const found = facts.filter(f => f.card.kind === "search" && f.card.c.status !== "meaning").map(f => f.id);
+    if (a && typeof a.text === "string") {
+      const b = chatBubble("it " + (a.type === "answer" ? "" : a.type), a.type === "answer" ? t("chat.by") : t("chat.by." + a.type));
+      mixed(b.appendChild(el("p", null, a.text)), a.text);
+      if (a.type === "answer" && Array.isArray(a.ids) && a.ids.length) b.after(chatCards(facts, a.ids));
+      S.chat.prev = cutTo(q + " ← " + a.text, CHAT.PREV);
+    } else {
+      // no model answer: what the page itself found is still shown, and said to be that
+      const b = chatBubble("it off", t("chat.by.off"));
+      const why = err instanceof AsrError && has("chat.err." + err.code) ? t("chat.err." + err.code) + " " : "";
+      b.append(el("p", null, why + t(found.length ? "chat.off.found" : "chat.off.none")));
+      if (found.length) b.after(chatCards(facts, found));
+    }
+  } finally { if (job === S.chat.n) done(); }
+}
+function wireChat() {
+  resetChat();
+  const box = $("chatQ"), grow = () => { box.style.height = "auto"; box.style.height = Math.min(box.scrollHeight, 160) + "px"; };
+  box.addEventListener("input", grow);
+  box.addEventListener("keydown", ev => { if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); $("chatForm").requestSubmit(); } });
+  $("chatForm").onsubmit = ev => { ev.preventDefault(); const q = box.value.trim(); if (!q || S.chat.busy) return; box.value = ""; grow(); askChat(q); };
+  $("btnAsk").onclick = () => { if (S.words.length && !$("results").hidden) showTab("chat"); else if (!$("busy").hidden) return; else { cancelRun(); screen("chat"); window.scrollTo(0, 0); } $("chatQ").focus({ preventScroll: true }); };
+}
+
 // ---------------- reviewer: keyboard shortcuts ----------------
 const KEY_BY_CODE = { KeyJ: "j", KeyK: "k", KeyP: "p", KeyN: "n", Digit1: "1", Digit2: "2", Digit3: "3", Numpad1: "1", Numpad2: "2", Numpad3: "3" };
 const KEY_BY_CHAR = { "١": "1", "٢": "2", "٣": "3", "؟": "?", ArrowDown: "j", ArrowUp: "k" };
@@ -1727,6 +1953,7 @@ function onShortcut(ev) {
   const k = /^[a-z0-9?]$/i.test(ev.key) ? ev.key.toLowerCase() : KEY_BY_CHAR[ev.key] || (ev.shiftKey ? "" : KEY_BY_CODE[ev.code]) || "";
   if (!"jk123pn?".includes(k) || !k) return;
   if (k === "?") { ev.preventDefault(); $("keys").showModal(); return; }
+  if (S.tab === "chat") return;
   if (S.tab !== "ledger" && k !== "j" && k !== "k") return;      // a verdict is given to an entry the reviewer is looking at
   const shown = S.ledger.filter(e => !isOff(e)); if (!shown.length) return;
   const cur = S.sel ? S.ledger[S.sel - 1] : null, at = cur ? shown.indexOf(cur) : -1;

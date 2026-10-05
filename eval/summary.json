@@ -10983,20 +10983,20 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 289,
+      "k": 290,
       "n": 301,
-      "pct": 96,
-      "min": 94,
+      "pct": 96.3,
+      "min": 95,
       "max": 98.1,
       "ci95": [
-       93,
+       94,
        98
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 289,
+      "k": 290,
       "n": 420,
-      "pct": 68.8,
+      "pct": 69,
       "min": 66.4,
       "max": 72.9,
       "ci95": [

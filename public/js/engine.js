@@ -61,6 +61,8 @@ export const DEFAULTS = {
   fragEvWhole: 12,      // ... a whole ayah in plain speech: at least 3 content words and this much evidence
   fragEvPlain: 19,      // ... part of an ayah in plain speech: at least 3 content words and this much evidence
   fragEvMid: 23,        // ... when it has exactly 3 content words and neither begins nor ends an ayah (idioms: "مشارق الأرض ومغاربها")
+  oneSource: true,      // a hadith told in pieces keeps one source among the places that hold each piece equally well
+  oneSourceReach: 500,  // ... counting what was said within this many words of the piece
   fragMaxOcc: 40,       // identical fragments in other ayahs that are verified (listed as parallels)
   fragDhikr: false,     // true: everyday dhikr that is an ayah ("حسبنا الله ونعم الوكيل") is cited even without a cue (benchmark comparison only)
   chainShare: 0.34,     // a match in which narrators' chain words reach this share (transmission verbs count double) is a chain, not a text
@@ -747,6 +749,31 @@ export function analyze(words, corpus, options = {}) {
     const pick = c.alts.filter(m => !m.isQ && !corpus.isBook(m.pidA) && (rank(m) >= rank(b) || (rank(m) >= 3 && exactM(m) && exactM(b))) && m.sum.q >= b.sum.q - 0.02 && m.sum.inf >= b.sum.inf && said.includes(colOf(m)))
       .sort((x, y) => said.indexOf(colOf(x)) - said.indexOf(colOf(y)) || srank(x) - srank(y))[0];
     if (pick) { c.alts = [b, ...c.alts.filter(x => x !== pick)]; c.best = pick; c.ts = pick.ts; c.te = pick.te; }
+  }
+
+  // one telling, one source: a hadith told in pieces (a piece, its explanation, the next piece …) is found piece by piece,
+  // and a piece often stands word for word in several places (another chapter of the same collection, another collection).
+  // Each piece used to take the first of those places on its own, so one hadith could appear under two or three sources.
+  // Among the places that hold a piece EQUALLY well, the one that holds the most of what was said in the whole
+  // transcript is its source. Nothing else changes: no status, no wording, and never against a collection the speaker named.
+  if (o.oneSource) {
+    const hadithCite = c => !c.weakOnly && !c.best.isQ && !corpus.isBook(c.best.pidA);
+    // "equally well" is meant strictly (the same stretch, no worse in any count): under heavy noise a looser test let a
+    // different hadith with similar words through (measured: first-source accuracy fell by 0.8 points at 30% noise)
+    const asGoodAs = (m, b) => !m.isQ && !corpus.isBook(m.pidA) && m.ts === b.ts && m.te === b.te && rank(m) >= rank(b) && m.sum.q >= b.sum.q && m.sum.diff <= b.sum.diff && m.sum.inf >= b.sum.inf;
+    const colOf = m => corpus.describe(m.pidA).collection;
+    // the pieces of one telling are near one another: only what was said within `oneSourceReach` words counts for a place
+    const holds = cites.map(c => (hadithCite(c) ? new Map([c.best, ...c.alts].filter(m => asGoodAs(m, c.best)).map(m => [m.pidA, m.te - m.ts])) : null));
+    const supportAt = (i, pid) => { let n = 0; for (let k = 0; k < cites.length; k++) if (holds[k] && holds[k].has(pid) && Math.abs(cites[k].ts - cites[i].ts) <= o.oneSourceReach) n += holds[k].get(pid); return n; };
+    for (let i = 0; i < cites.length; i++) {
+      const c = cites[i];
+      if (!hadithCite(c)) continue;
+      const b = c.best, said = c.colAfter.length ? c.colAfter : c.colBefore;
+      if (said.length && said.includes(colOf(b))) continue;
+      let pick = null, top = supportAt(i, b.pidA);
+      for (const m of c.alts) if (asGoodAs(m, b) && (!said.length || said.includes(colOf(m)))) { const n = supportAt(i, m.pidA); if (n > top) { pick = m; top = n; } }
+      if (pick) { c.alts = [b, ...c.alts.filter(x => x !== pick)]; c.best = pick; c.ts = pick.ts; c.te = pick.te; }
+    }
   }
 
   // ---------- 6) cues without a textual match ----------

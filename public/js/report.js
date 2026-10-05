@@ -97,7 +97,7 @@ export function mushafText(e, said) {
  * transcribers: who produced the transcript, in words (one name; two when a second transcription was compared) — said in the subtitle
  * -> { title, rtl, paragraphs, footnotes, counts }
  */
-export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = "", mushaf = false, hadithText = false, fixed = 0, summary = true, transcribers = [] }) {
+export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = "", mushaf = false, hadithText = false, fixed = 0, summary = true, transcribers = [], digest = [] }) {
   const n = words.length, rtl = isArabic(words.slice(0, 60).map(w => w.w).join(" "));
   const owner = new Array(n).fill(null);
   const notes = new Map();      // entry -> footnote
@@ -123,6 +123,12 @@ export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = 
     paragraphs.push({ style: "SummaryHead", rtl: undefined, runs: [{ text: t("sumry.title") }] });
     for (const l of lines) paragraphs.push(l.value == null ? { style: "SummaryNote", rtl: undefined, runs: [{ text: l.label }] }
       : { style: "Summary", rtl: undefined, runs: [{ text: l.label + t("sumry.colon"), bold: true }, { text: l.value }] });
+  }
+  // every hadith and every passage of the Qur'an once, however often and in however many pieces it was said (built by the page: [{label, value}])
+  const texts = (Array.isArray(digest) ? digest : []).filter(d => d && typeof d.label === "string" && d.label);
+  if (texts.length) {
+    paragraphs.push({ style: "SummaryHead", rtl: undefined, runs: [{ text: t("doc.digest.title") }] });
+    for (const d of texts) paragraphs.push({ style: "Summary", rtl: undefined, runs: [{ text: d.label + (d.value ? t("sumry.colon") : ""), bold: true }, { text: String(d.value || "") }] });
   }
   const open = k => (rtl ? (k === "q" ? "﴿" : "«") : "“"), close = k => (rtl ? (k === "q" ? "﴾" : "»") : "”");
   let runs = [], plain = [], inPara = 0;
