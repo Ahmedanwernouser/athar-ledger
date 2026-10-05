@@ -734,7 +734,7 @@ sec("/yt: a YouTube video from its link (Gemini)");
     up.impl = (url) => (modelOf(url) === "gemini-3.6-flash" ? pieces([{ t: "00:01", x: "بسم الله" }])() : modelOf(url) === "gemini-3.8-flash" ? new Response("high demand", { status: 503 }) : dayOut());
     let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
     ok(r.status === 200 && r.j.model === "gemini-3.6-flash", "/yt the chain of models: the one that still has an allowance answers  (asked: " + seen() + ")");
-    eq(seen(), "1:3.8-flash 1:3.5-flash 2:3.5-flash 1:3.7-flash 2:3.7-flash 1:3.5-flash-lite 2:3.5-flash-lite 1:3.1-flash-lite 2:3.1-flash-lite 1:3.6-flash", "/yt order: a busy model is left at once; a model out of quota is asked on the next key; then the next model");
+    eq(seen(), "1:3.8-flash 2:3.8-flash 1:3.5-flash 2:3.5-flash 1:3.7-flash 2:3.7-flash 1:3.5-flash-lite 2:3.5-flash-lite 1:3.1-flash-lite 2:3.1-flash-lite 1:3.6-flash", "/yt order: a model that is busy or out of quota on one key is asked on the next key; then the next model");
     up.calls = []; r = await call(yt({ video: VID, from: 600, to: 1200 }), env);
     eq(seen(), "2:3.6-flash", "/yt the next window asks nobody who is known to be busy or out of quota, and it is the other key's turn");
     // the day's quota is remembered for the KEY, not for its place in the list: a new key in the same place is asked
@@ -836,6 +836,17 @@ sec("/yt: a YouTube video from its link (Gemini)");
     env = E(); up.calls = []; up.impl = through(0, 45); r = await call(yt({ video: VID, from: 0, to: 50 }), env); ok(up.calls.length === 1, "/yt a window of under a minute is never 'too silent'");
     env = E(); up.calls = []; up.impl = (url) => pieces([...Array.from({ length: 24 }, (_, i) => ({ t: `0${Math.floor(i * 20 / 60)}:${String((i * 20) % 60).padStart(2, "0")}`, x: "كلام يقال في هذا الموضع من المحاضرة" })), { t: "09:40", x: "ثم عاد بعد دقيقة ونصف" }])();
     r = await call(yt({ video: VID, from: 0, to: 600 }), env); ok(up.calls.length === 1, "/yt a pause of a minute and a half is a pause"); }
+  { // "high demand" is about the request, not the whole model: the same model is asked on the next key (three keys at most)
+    const KS = ["AQ.key-one-0000000000", "AQ.key-two-0000000000", "AQ.key-three-00000000", "AQ.key-four-000000000"], keyOf = (init) => init.headers["x-goog-api-key"];
+    const modelOf = (url) => /models\/([^:]+):/.exec(String(url))[1].replace("gemini-", "");
+    let env = Y({ GEMINI_API_KEY: KS[0], GEMINI_API_KEYS: KS.join(" ") }); up.calls = [];
+    up.impl = (url, init) => (keyOf(init) === KS[0] ? new Response("high demand", { status: 503 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && r.j.model === "gemini-3.8-flash" && up.calls.length === 2 && keyOf(up.calls[1].init) === KS[1], "/yt a model refused with 'high demand' on one key is served on the next: the best model still answers");
+    env = Y({ GEMINI_API_KEY: KS[0], GEMINI_API_KEYS: KS.join(" ") }); up.calls = [];
+    up.impl = (url) => (modelOf(url) === "3.8-flash" ? new Response("timeout", { status: 524 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && r.j.model === "gemini-3.5-flash" && up.calls.filter((c) => modelOf(c.url) === "3.8-flash").length === 3, "/yt ... but not on every key: after three refusals the model is left for this round"); }
   { // why a request failed can be seen from outside — by position, never by key
     const K1 = "AQ.key-one-0000000000", K2 = "AQ.key-two-0000000000";
     up.impl = () => new Response(JSON.stringify({ error: { code: 429, message: "quota for " + K1, details: [{ violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier" }] }, { retryDelay: "30000s" }] } }), { status: 429 });

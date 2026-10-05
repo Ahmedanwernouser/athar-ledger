@@ -596,7 +596,8 @@ const YT_ID = /^[A-Za-z0-9_-]{11}$/;
 const YT_MAX_WINDOW = 660;              // seconds per request: 10 minutes + the overlap the site asks for
 const YT_MAX_SECONDS = 6 * 3600;
 const YT_AUDIO_TOKENS_PER_SECOND = 32;
-const YT_TIMEOUT_MS = 170_000;
+const YT_TIMEOUT_MS = 100_000;          // measured: a ten-minute window is answered in 14-27 s (53 s under load); a request silent for longer is not coming
+const YT_LANE_TRIES = 3;                // how many keys a model in "high demand" is asked on before it is left for this round
 const YT_COUNT_TIMEOUT_MS = 20_000;
 const YT_GIVE_UP_MS = 150_000;          // no new round of questions after this long: the page is told, and it decides
 const YT_CONFIRM_MS = 60_000;           // how long a thin answer waits for a second model before it is given as it is
@@ -886,6 +887,7 @@ async function ytRoute(req, env, cors) {
     const ctl = new AbortController(), active = new Set(); let wake; const woke = new Promise((r) => { wake = r; });
     const finish = (d) => { if (!done) { done = d; ctl.abort(); wake(); } };
     const lane = async (model) => {
+      let fails = 0;
       for (let ki = 0; ki < K.keys.length; ki++) {
         if (done) return;
         if (dead.has(ki)) continue;
@@ -905,8 +907,11 @@ async function ytRoute(req, env, cors) {
             if (r.status === 429) { blocked[tag2] = Date.now() + w.wait * 1000; if (w.wait > 120 && !K.own) dirty = true; continue; }      // this key's allowance for this model: the next key
             if (w.kind === "key") { if (K.own) return finish({ resp: ownBad() }); keyDied(ki); lastStatus = 0; continue; }
             if (w.kind === "perm") { if (isVideo()) return finish({ resp: json({ error: "yt_unavailable" }, 404, cors) }); continue; }
-            if (r.status >= 500) { cool.set(model, Date.now() + YT_COOL_MS); busyNow.add(short(model)); again = true; }
-            return;                                         // 400 / 404 (this model is not there) / 500 / 503 (high demand): about the model, not the key
+            // 500 / 503 / 524 ("high demand", a timeout on Google's side). Measured: it is not the whole model that is down —
+            // in the same minute one key was refused and the next was served. So the model is asked on the next key, up to
+            // YT_LANE_TRIES times; the other models are being asked meanwhile, so this costs the visitor no time.
+            if (r.status >= 500) { cool.set(model, Date.now() + YT_COOL_MS); busyNow.add(short(model)); again = true; if (++fails < YT_LANE_TRIES) continue; }
+            return;                                         // 400 / 404 (this model is not there), or refused too often: this lane ends
           }
           const j = await r.json(); if (done) return;
           const out = ytNormalise(j, model, from, to);
@@ -923,7 +928,9 @@ async function ytRoute(req, env, cors) {
           return finish({ out, ki, model });
         } catch {
           if (done) return;                                 // abandoned because another lane answered
-          lastStatus = 0; again = true; busyNow.add(short(model)); note(ki, model, 0, "time"); return;      // no answer in time: treated like high demand
+          lastStatus = 0; again = true; busyNow.add(short(model)); note(ki, model, 0, "time");      // no answer in time: treated like high demand
+          if (++fails < YT_LANE_TRIES) continue;
+          return;
         } finally { clearTimeout(limit); ctl.signal.removeEventListener("abort", drop); }
       }
     };
