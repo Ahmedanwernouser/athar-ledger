@@ -490,6 +490,78 @@ async function analyzeWithSem(words, cfg, note) {
   return { r: analyze(words, corpus, { sem: { index: semIndex, lookup: t => semVectors.get(t) || null } }), sem: { asked: want.size, answered: have } };
 }
 
+// ---------------- digest: every hadith and every passage of the Qur'an of the lecture, once ----------------
+// A lecture that explains one hadith for five minutes says pieces of it five times: five ledger entries, each right about its
+// own moment. The digest puts them together: the whole text of the source, which of its words were said anywhere in the
+// lecture (and which never were), every moment it was said, and — when the speaker used the wording of two collections —
+// each wording on its own. Built from the positions the comparison already established (diff[i].srcPos); nothing is matched
+// again and no entry changes.
+/** runs of words [{t, said}] for tokens a..b-1 (said: Set of token indexes); text(i, j) gives the display text of tokens i..j */
+function runs(a, b, said, text) {
+  const out = [];
+  for (let i = a; i < b; ) { const on = said.has(i); let j = i; while (j + 1 < b && said.has(j + 1) === on) j++; out.push({ t: text(i, j), said: on }); i = j + 1; }
+  return out;
+}
+/**
+ * items: [{ id, type: "h" | "q", ref, surah, ayah, ayahEnd, keyed: bool, said: [positions], parallels: [refs] }] in ledger order
+ * (positions as in sourcePositions: from the first indexed word of the passage for a hadith, of the surah for the Qur'an).
+ * -> [{ type, ids, wordings: [{ source, segs, total, said, ids }] }] in order of first mention
+ */
+export function buildDigest(items) {
+  const cards = [];
+  // ---- hadith: one wording per reference; two wordings are one hadith when each lists the other among its parallels
+  const byRef = new Map();
+  for (const it of items) if (it.type === "h" && it.ref && corpus.coreRef.get(it.ref) != null) { let g = byRef.get(it.ref); if (!g) byRef.set(it.ref, g = { ref: it.ref, items: [], par: new Set() }); g.items.push(it); for (const p of it.parallels || []) g.par.add(p); }
+  const parent = new Map([...byRef.keys()].map(r => [r, r])), find = r => { while (parent.get(r) !== r) r = parent.get(r); return r; };
+  for (const g of byRef.values()) for (const p of g.par) { const h = byRef.get(p); if (h && h.par.has(g.ref)) parent.set(find(g.ref), find(p)); }
+  // ... or when one text holds nearly all the words of the other (the same hadith as two collections narrate it: a clause
+  // more in one, a word different in the other)
+  const bag = ref => { const pid = corpus.coreRef.get(ref); return new Set(corpus.ftok(pid).slice(corpus.chainLen(pid)).filter(w => w.length >= 3)); };
+  const refs = [...byRef.keys()], bags = new Map(refs.map(r => [r, bag(r)]));
+  for (let i = 0; i < refs.length; i++) for (let j = i + 1; j < refs.length; j++) {
+    const A = bags.get(refs[i]), B = bags.get(refs[j]), [small, big] = A.size <= B.size ? [A, B] : [B, A];
+    if (small.size < 6) continue;
+    let both = 0; for (const w of small) if (big.has(w)) both++;
+    if (both >= 0.7 * small.size) parent.set(find(refs[i]), find(refs[j]));
+  }
+  const fam = new Map();
+  for (const g of byRef.values()) { const k = find(g.ref); let f = fam.get(k); if (!f) fam.set(k, f = []); f.push(g); }
+  for (const f of fam.values()) {
+    const wordings = f.map(g => {
+      const pid = corpus.coreRef.get(g.ref), toks = corpus.tok(pid), chain = corpus.chainLen(pid), o = origOf(pid);
+      const said = new Set(); for (const it of g.items) if (it.keyed) for (const p of it.said) if (p >= chain && p < toks.length) said.add(p);
+      const text = o ? (i, j) => o.pieces.slice(o.at[i], j + 1 < o.at.length ? o.at[j + 1] : o.pieces.length).join(" ") : (i, j) => toks.slice(i, j + 1).join(" ");
+      return { source: decorateSource(corpus.describe(pid)), segs: runs(chain, toks.length, said, text), total: toks.length - chain, said: said.size, original: !!o, ids: g.items.map(it => it.id) };
+    }).sort((x, y) => y.ids.length - x.ids.length || y.said - x.said);
+    cards.push({ type: "h", ids: wordings.flatMap(w => w.ids), wordings });
+  }
+  // ---- Qur'an: ayahs of one surah that touch or follow one another are one passage
+  const bySurah = new Map();
+  for (const it of items) if (it.type === "q" && it.surah && corpus.surahStart[it.surah] >= 0 && it.ayah >= 1 && it.ayahEnd >= it.ayah) { let g = bySurah.get(it.surah); if (!g) bySurah.set(it.surah, g = []); g.push(it); }
+  for (const [surah, list] of bySurah) {
+    const groups = [];
+    for (const it of list.slice().sort((x, y) => x.ayah - y.ayah || x.ayahEnd - y.ayahEnd)) { const g = groups[groups.length - 1]; if (g && it.ayah <= g.b + 1) { g.b = Math.max(g.b, it.ayahEnd); g.items.push(it); } else groups.push({ a: it.ayah, b: it.ayahEnd, items: [it] }); }
+    for (const g of groups) {
+      const first = corpus.surahStart[surah] + g.a - 1, last = Math.min(corpus.surahEnd[surah], corpus.surahStart[surah] + g.b - 1);
+      const said = new Set(); for (const it of g.items) if (it.keyed) for (const p of it.said) said.add(p);
+      const segs = []; let total = 0, n = 0;
+      for (let pid = first; pid <= last; pid++) {
+        const m = ayahOf(pid), toks = corpus.tok(pid), base = ayahBase(surah, m.ayah), mine = new Set();
+        for (let k = 0; k < toks.length; k++) if (said.has(base + k)) mine.add(k);
+        const text = m.ok && m.pieces ? (i, j) => m.pieces.slice(i, j + 1).join(" ") : (i, j) => toks.slice(i, j + 1).join(" ");
+        const rs = runs(0, toks.length, mine, text);
+        if (rs.length) rs[rs.length - 1].t += ` ﴿${m.ayah}﴾`;
+        segs.push(...rs); total += toks.length; n += mine.size;
+      }
+      const ids = g.items.map(it => it.id);
+      cards.push({ type: "q", ids, wordings: [{ source: corpus.describe(first, last), segs, total, said: n, original: true, ids }] });
+    }
+  }
+  const order = new Map(items.map((it, i) => [it.id, i]));
+  for (const c of cards) { c.ids.sort((x, y) => order.get(x) - order.get(y)); for (const w of c.wordings) w.ids.sort((x, y) => order.get(x) - order.get(y)); }
+  return cards.sort((x, y) => order.get(x.ids[0]) - order.get(y.ids[0]));
+}
+
 let meaningCtl = null;
 async function onMessage(ev) {
   const { id, type } = ev.data;
@@ -514,6 +586,10 @@ async function onMessage(ev) {
       const t1 = Date.now();
       for (const e of r.ledger) finish(e, ev.data.words, r.tokenToWord);
       self.postMessage({ id, ok: true, result: { ledger: r.ledger, stats: r.stats, tokenToWord: r.tokenToWord, sem, displayMs: { load: t1 - t0, decorate: Date.now() - t1 } } });
+    } else if (type === "digest") {
+      const items = ev.data.items || [];
+      await loadDisplayFor(items.filter(it => it.type === "h").map(it => ({ type: "h", ref: it.ref })));
+      self.postMessage({ id, ok: true, result: buildDigest(items) });
     } else if (type === "lookup") {
       // the corpus passages closest to one stretch of words (a selection in the transcript, or typed text)
       self.postMessage({ id, ok: true, result: await lookupWithDisplay(ev.data.words) });

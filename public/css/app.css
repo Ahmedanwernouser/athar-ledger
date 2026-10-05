@@ -954,3 +954,30 @@ html[dir=rtl] .reader-text[dir=rtl] .rt, .reader-text[dir=rtl] .rt { margin: 0 0
 .semopt { display: flex; align-items: flex-start; gap: 10px; margin: 14px 2px 0; font-size: .84rem; line-height: 1.7; color: var(--muted); cursor: pointer; }
 .semopt input { flex: none; margin-top: .45em; accent-color: var(--indigo); }
 @media print { .semopt { display: none; } }
+
+/* the recorded standing of a hadith, as a tag */
+.tag.grade.warn { color: var(--warn-ink); border-color: rgba(160,98,0,.4); background: var(--gold-wash); }
+.tag.grade.mix { color: var(--ink); border-style: dashed; }
+.tag.grade.quiet { color: var(--muted); }
+
+/* digest: every hadith / passage of the Qur'an of the lecture, once */
+.digest { margin: 18px 0 0; padding: 10px 18px 14px; background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); }
+.digest > summary { font-family: var(--display); font-weight: 700; font-size: 1.02rem; color: var(--ink); cursor: pointer; }
+.digest > .note { margin: 6px 0 0; }
+.dg-list { display: grid; gap: 12px; margin-top: 12px; }
+.dg-card { border: 1px solid var(--line); border-inline-start: 4px solid var(--indigo); border-radius: var(--r-s); padding: 12px 16px; background: var(--page); min-width: 0; }
+.dg-card.dg-q { border-inline-start-color: var(--verbatim); }
+.dg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font-size: .88rem; color: var(--muted); }
+.dg-head .kind { font-weight: 700; color: var(--ink); }
+.dg-wording + .dg-wording { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.dg-wording .src { margin: 6px 0 0; }
+.dg-as { color: var(--muted); font-size: .88rem; }
+.dg-text { margin: 10px 0 0; font-family: var(--quran, "Amiri", serif); font-size: 1.18rem; line-height: 2.05; overflow-wrap: anywhere; }
+.dg-text .unsaid { color: #8C93A6; }
+.dg-text .said { color: var(--ink); }
+.dg-text.folded { max-height: 8.4em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 60%, transparent); mask-image: linear-gradient(#000 60%, transparent); }
+.dg-more { display: inline-block; margin-top: 2px; font-size: .86rem; }
+.dg-when { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.dg-at { font-size: .82rem; }
+@media (max-width: 640px) { .digest { padding: 10px 12px 12px; } .dg-card { padding: 10px 12px; } .dg-text { font-size: 1.08rem; } }
+@media print { .dg-text.folded { max-height: none; -webkit-mask-image: none; mask-image: none; } .dg-more { display: none; } .dg-card { break-inside: avoid; } .dg-text .unsaid { color: #777; } }

@@ -20925,7 +20925,7 @@
     "iou8": 58,
     "attrN": 13,
     "attrOK": 4,
-    "weak": 1
+    "weak": 2
    },
    "cueShare": {
     "vq": [
@@ -24138,9 +24138,9 @@
    "m": {
     "vq": [
      40,
+     37,
      36,
-     35,
-     36
+     37
     ],
     "vh": [
      60,
@@ -24158,9 +24158,9 @@
    "r": {
     "lab": {
      "verb": [
-      93,
+      94,
       32,
-      61
+      62
      ],
      "changed": [
       32,
@@ -24174,7 +24174,7 @@
     "critOOC": 1,
     "critOOCverbMost": 0,
     "critFiller": 2,
-    "sideTextual": 3,
+    "sideTextual": 1,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -24739,9 +24739,9 @@
     ],
     "cueN": 14,
     "cueClean": 13,
-    "startErr": 185,
+    "startErr": 198,
     "endErr": 139,
-    "startN": 125,
+    "startN": 126,
     "iou8": 97,
     "attrN": 16,
     "attrOK": 14,
@@ -25128,8 +25128,8 @@
     "critChangedVerbatim": 1,
     "critOOC": 0,
     "critOOCverbMost": 0,
-    "critFiller": 0,
-    "sideTextual": 6,
+    "critFiller": 1,
+    "sideTextual": 3,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -25699,7 +25699,7 @@
     "startN": 97,
     "iou8": 46,
     "attrN": 11,
-    "attrOK": 8,
+    "attrOK": 7,
     "weak": 1
    },
    "cueShare": {
@@ -26054,9 +26054,9 @@
     ],
     "vh": [
      60,
+     36,
      35,
-     34,
-     34
+     35
     ],
     "ph": [
      40,
@@ -26068,9 +26068,9 @@
    "r": {
     "lab": {
      "verb": [
-      60,
+      61,
       5,
-      55
+      56
      ],
      "changed": [
       12,
@@ -26084,7 +26084,7 @@
     "critOOC": 0,
     "critOOCverbMost": 0,
     "critFiller": 0,
-    "sideTextual": 6,
+    "sideTextual": 4,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -26349,7 +26349,7 @@
      [
       34,
       1,
-      0
+      1
      ],
      [
       15,
@@ -26649,13 +26649,13 @@
     ],
     "cueN": 14,
     "cueClean": 14,
-    "startErr": 335,
+    "startErr": 358,
     "endErr": 122,
-    "startN": 72,
+    "startN": 73,
     "iou8": 32,
-    "attrN": 13,
-    "attrOK": 9,
-    "weak": 1
+    "attrN": 14,
+    "attrOK": 10,
+    "weak": 2
    },
    "cueShare": {
     "vq": [
@@ -53860,7 +53860,7 @@
     "iou8": 88,
     "attrN": 13,
     "attrOK": 5,
-    "weak": 0
+    "weak": 1
    },
    "cueShare": {
     "vq": [
@@ -55770,7 +55770,7 @@
     "iou8": 92,
     "attrN": 13,
     "attrOK": 7,
-    "weak": 0
+    "weak": 1
    },
    "cueShare": {
     "vq": [
@@ -60929,7 +60929,7 @@
     "critOOC": 0,
     "critOOCverbMost": 0,
     "critFiller": 2,
-    "sideTextual": 4,
+    "sideTextual": 3,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -61500,7 +61500,7 @@
     "iou8": 71,
     "attrN": 9,
     "attrOK": 6,
-    "weak": 1
+    "weak": 2
    },
    "cueShare": {
     "vq": [
@@ -96154,8 +96154,8 @@
     "critChangedVerbatim": 3,
     "critOOC": 0,
     "critOOCverbMost": 0,
-    "critFiller": 0,
-    "sideTextual": 2,
+    "critFiller": 2,
+    "sideTextual": 1,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -96717,7 +96717,7 @@
     "iou8": 62,
     "attrN": 14,
     "attrOK": 9,
-    "weak": 2
+    "weak": 4
    },
    "cueShare": {
     "vq": [
@@ -97063,7 +97063,7 @@
     "vh": [
      60,
      34,
-     32,
+     33,
      34
     ],
     "ph": [
@@ -97092,7 +97092,7 @@
     "critOOC": 0,
     "critOOCverbMost": 0,
     "critFiller": 2,
-    "sideTextual": 11,
+    "sideTextual": 7,
     "fillerLead": 0,
     "fillerMeaning": 0,
     "ooc": {
@@ -110552,7 +110552,7 @@
     "iou8": 118,
     "attrN": 24,
     "attrOK": 18,
-    "weak": 1
+    "weak": 2
    },
    "cueShare": {
     "vq": [

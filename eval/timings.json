@@ -1,170 +1,170 @@
 {
  "_note": "Running times in seconds on the machine that produced the RESULTS files. They change from run to run and from machine to machine; nothing else in eval/ does.",
  "run": {
-  "totalSeconds": 237,
+  "totalSeconds": 251,
   "workers": 2,
   "engineSecondsPerLecture": {
-   "clean": 5.1,
-   "std10": 4.5,
+   "clean": 6.3,
+   "std10": 5.5,
    "std20": 2.5,
-   "std30": 2.1
+   "std30": 2.3
   },
   "perCall": [
    {
     "key": "main/202/clean/engine",
-    "s": 8.466
+    "s": 11.191
    },
    {
     "key": "main/202/clean/notol",
-    "s": 3.775
+    "s": 4.334
    },
    {
     "key": "main/202/clean/nocues",
-    "s": 1.109
+    "s": 1.152
    },
    {
     "key": "main/202/clean/novec",
-    "s": 2.367
+    "s": 2.456
    },
    {
     "key": "main/202/clean/sem",
-    "s": 7.736
+    "s": 7.646
    },
    {
     "key": "main/202/clean/B0",
-    "s": 0.075
+    "s": 0.074
    },
    {
     "key": "main/202/clean/B1",
-    "s": 1.162
+    "s": 0.905
    },
    {
     "key": "main/202/clean/B2",
-    "s": 1.162
+    "s": 1.17
    },
    {
     "key": "main/202/std10/engine",
-    "s": 7.74
+    "s": 10.408
    },
    {
     "key": "main/202/std10/notol",
-    "s": 3.386
+    "s": 3.61
    },
    {
     "key": "main/202/std10/nocues",
-    "s": 1.24
+    "s": 1.075
    },
    {
     "key": "main/202/std10/novec",
-    "s": 2.079
+    "s": 2.198
    },
    {
     "key": "main/202/std10/sem",
-    "s": 7.241
+    "s": 7.06
    },
    {
     "key": "main/202/std10/B0",
-    "s": 0.067
+    "s": 0.079
    },
    {
     "key": "main/202/std10/B1",
-    "s": 0.989
+    "s": 0.844
    },
    {
     "key": "main/202/std10/B2",
-    "s": 0.935
+    "s": 0.939
    },
    {
     "key": "main/202/std20/engine",
-    "s": 2.999
+    "s": 3.183
    },
    {
     "key": "main/202/std20/notol",
-    "s": 2.506
+    "s": 2.988
    },
    {
     "key": "main/202/std20/nocues",
-    "s": 0.745
+    "s": 0.832
    },
    {
     "key": "main/202/std20/novec",
-    "s": 1.466
+    "s": 1.505
    },
    {
     "key": "main/202/std20/sem",
-    "s": 5.444
+    "s": 5.594
    },
    {
     "key": "main/202/std20/B0",
-    "s": 0.059
+    "s": 0.064
    },
    {
     "key": "main/202/std20/B1",
-    "s": 0.089
+    "s": 0.133
    },
    {
     "key": "main/202/std20/B2",
-    "s": 0.578
+    "s": 0.635
    },
    {
     "key": "main/202/std30/engine",
-    "s": 2.474
+    "s": 2.63
    },
    {
     "key": "main/202/std30/notol",
-    "s": 1.967
+    "s": 2.218
    },
    {
     "key": "main/202/std30/nocues",
-    "s": 0.652
+    "s": 0.829
    },
    {
     "key": "main/202/std30/novec",
-    "s": 1.224
+    "s": 1.013
    },
    {
     "key": "main/202/std30/sem",
-    "s": 4.319
+    "s": 4.579
    },
    {
     "key": "main/202/std30/B0",
-    "s": 0.057
+    "s": 0.046
    },
    {
     "key": "main/202/std30/B1",
-    "s": 0.087
+    "s": 0.102
    },
    {
     "key": "main/202/std30/B2",
-    "s": 0.521
+    "s": 0.751
    },
    {
     "key": "noise/202/rand10/engine",
-    "s": 2.536
+    "s": 2.76
    },
    {
     "key": "noise/202/rand10/B2",
-    "s": 0.712
+    "s": 0.719
    },
    {
     "key": "noise/202/rand20/engine",
-    "s": 2.382
+    "s": 2.795
    },
    {
     "key": "noise/202/rand20/B2",
-    "s": 0.508
+    "s": 0.552
    },
    {
     "key": "noise/202/rand30/engine",
-    "s": 2.001
+    "s": 1.628
    },
    {
     "key": "noise/202/rand30/B2",
-    "s": 0.493
+    "s": 0.447
    },
    {
     "key": "noise/202/two30/engine",
-    "s": 1.608
+    "s": 1.895
    },
    {
     "key": "noise/202/two30/B2",
@@ -172,539 +172,539 @@
    },
    {
     "key": "noise/202/del10/engine",
-    "s": 2.519
+    "s": 2.78
    },
    {
     "key": "noise/202/del10/B2",
-    "s": 0.748
+    "s": 0.935
    },
    {
     "key": "noise/202/del20/engine",
-    "s": 2.424
+    "s": 2.6
    },
    {
     "key": "noise/202/del20/B2",
-    "s": 0.683
+    "s": 0.61
    },
    {
     "key": "noise/202/del30/engine",
-    "s": 2.122
+    "s": 1.896
    },
    {
     "key": "noise/202/del30/B2",
-    "s": 0.499
+    "s": 0.43
    },
    {
     "key": "noise/202/lex10/engine",
-    "s": 2.521
+    "s": 2.9
    },
    {
     "key": "noise/202/lex10/B2",
-    "s": 0.744
+    "s": 0.699
    },
    {
     "key": "noise/202/lex20/engine",
-    "s": 2.005
+    "s": 2.042
    },
    {
     "key": "noise/202/lex20/B2",
-    "s": 0.51
+    "s": 0.706
    },
    {
     "key": "noise/202/lex30/engine",
-    "s": 1.498
+    "s": 1.689
    },
    {
     "key": "noise/202/lex30/B2",
-    "s": 0.372
+    "s": 0.367
    },
    {
     "key": "noise/202/whnorep10/engine",
-    "s": 2.476
+    "s": 2.411
    },
    {
     "key": "noise/202/whnorep10/B2",
-    "s": 0.694
+    "s": 0.711
    },
    {
     "key": "noise/202/whnorep20/engine",
-    "s": 2.505
+    "s": 2.693
    },
    {
     "key": "noise/202/whnorep20/B2",
-    "s": 0.522
+    "s": 0.617
    },
    {
     "key": "noise/202/whnorep30/engine",
-    "s": 1.906
+    "s": 2.098
    },
    {
     "key": "noise/202/whnorep30/B2",
-    "s": 0.515
+    "s": 0.432
    },
    {
     "key": "noise/202/wh10/engine",
-    "s": 3.392
+    "s": 3.437
    },
    {
     "key": "noise/202/wh10/B2",
-    "s": 0.826
+    "s": 0.854
    },
    {
     "key": "noise/202/wh20/engine",
-    "s": 3.178
+    "s": 3.496
    },
    {
     "key": "noise/202/wh20/B2",
-    "s": 0.966
+    "s": 0.9
    },
    {
     "key": "noise/202/wh30/engine",
-    "s": 2.952
+    "s": 2.947
    },
    {
     "key": "noise/202/wh30/B2",
-    "s": 0.753
+    "s": 0.704
    },
    {
     "key": "parUnseen/202/clean/engine",
-    "s": 2.783
+    "s": 3.244
    },
    {
     "key": "parUnseen/202/clean/novec",
-    "s": 1.817
+    "s": 1.819
    },
    {
     "key": "parUnseen/202/clean/sem",
-    "s": 6.737
+    "s": 7.132
    },
    {
     "key": "parStrip/202/clean/engine",
-    "s": 2.586
+    "s": 2.441
    },
    {
     "key": "parStrip/202/clean/novec",
-    "s": 1.583
+    "s": 1.487
    },
    {
     "key": "parStrip/202/clean/sem",
-    "s": 4.625
+    "s": 5.31
    },
    {
     "key": "noCue/202/clean/engine",
-    "s": 1.869
+    "s": 1.643
    },
    {
     "key": "noCue/202/std20/engine",
-    "s": 1.142
+    "s": 1.209
    },
    {
     "key": "unseenCue/202/clean/engine",
-    "s": 2.012
+    "s": 1.938
    },
    {
     "key": "unseenCue/202/std20/engine",
-    "s": 1.558
+    "s": 1.445
    },
    {
     "key": "short/202/clean/engine",
-    "s": 3.604
+    "s": 3.452
    },
    {
     "key": "short/202/std20/engine",
-    "s": 2.334
+    "s": 2.448
    },
    {
     "key": "shortNoCue/202/clean/engine",
-    "s": 2.102
+    "s": 2.37
    },
    {
     "key": "shortNoCue/202/std20/engine",
-    "s": 1.334
+    "s": 1.143
    },
    {
     "key": "shortUnseenCue/202/clean/engine",
-    "s": 2.038
+    "s": 2.175
    },
    {
     "key": "shortUnseenCue/202/std20/engine",
-    "s": 1.521
+    "s": 1.715
    },
    {
     "key": "main/303/clean/engine",
-    "s": 3.472
+    "s": 4.178
    },
    {
     "key": "main/303/clean/notol",
-    "s": 3.409
+    "s": 3.388
    },
    {
     "key": "main/303/clean/nocues",
-    "s": 0.948
+    "s": 1.076
    },
    {
     "key": "main/303/clean/novec",
-    "s": 1.82
+    "s": 1.766
    },
    {
     "key": "main/303/clean/sem",
-    "s": 6.705
+    "s": 7.002
    },
    {
     "key": "main/303/clean/B0",
-    "s": 0.071
+    "s": 0.064
    },
    {
     "key": "main/303/clean/B1",
-    "s": 0.124
+    "s": 0.129
    },
    {
     "key": "main/303/clean/B2",
-    "s": 1.393
+    "s": 1.135
    },
    {
     "key": "main/303/std10/engine",
-    "s": 3.055
+    "s": 3.46
    },
    {
     "key": "main/303/std10/notol",
-    "s": 2.87
+    "s": 2.971
    },
    {
     "key": "main/303/std10/nocues",
-    "s": 1.033
+    "s": 0.793
    },
    {
     "key": "main/303/std10/novec",
-    "s": 1.546
+    "s": 1.456
    },
    {
     "key": "main/303/std10/sem",
-    "s": 6.483
+    "s": 6.318
    },
    {
     "key": "main/303/std10/B0",
-    "s": 0.062
+    "s": 0.064
    },
    {
     "key": "main/303/std10/B1",
-    "s": 0.102
+    "s": 0.115
    },
    {
     "key": "main/303/std10/B2",
-    "s": 0.958
+    "s": 0.96
    },
    {
     "key": "main/303/std20/engine",
-    "s": 2.282
+    "s": 2.115
    },
    {
     "key": "main/303/std20/notol",
-    "s": 1.937
+    "s": 2.107
    },
    {
     "key": "main/303/std20/nocues",
-    "s": 0.532
+    "s": 0.862
    },
    {
     "key": "main/303/std20/novec",
-    "s": 1.244
+    "s": 1.184
    },
    {
     "key": "main/303/std20/sem",
-    "s": 4.507
+    "s": 5.147
    },
    {
     "key": "main/303/std20/B0",
-    "s": 0.053
+    "s": 0.067
    },
    {
     "key": "main/303/std20/B1",
-    "s": 0.109
+    "s": 0.162
    },
    {
     "key": "main/303/std20/B2",
-    "s": 0.696
+    "s": 0.756
    },
    {
     "key": "main/303/std30/engine",
-    "s": 1.991
+    "s": 2.56
    },
    {
     "key": "main/303/std30/notol",
-    "s": 1.918
+    "s": 2.408
    },
    {
     "key": "main/303/std30/nocues",
-    "s": 0.692
+    "s": 0.548
    },
    {
     "key": "main/303/std30/novec",
-    "s": 0.997
+    "s": 1.34
    },
    {
     "key": "main/303/std30/sem",
-    "s": 4.806
+    "s": 5.016
    },
    {
     "key": "main/303/std30/B0",
-    "s": 0.047
+    "s": 0.05
    },
    {
     "key": "main/303/std30/B1",
-    "s": 0.093
+    "s": 0.102
    },
    {
     "key": "main/303/std30/B2",
-    "s": 0.678
+    "s": 0.607
    },
    {
     "key": "noise/303/rand10/engine",
-    "s": 2.3
+    "s": 2.672
    },
    {
     "key": "noise/303/rand10/B2",
-    "s": 0.914
+    "s": 0.964
    },
    {
     "key": "noise/303/rand20/engine",
-    "s": 2.446
+    "s": 2.938
    },
    {
     "key": "noise/303/rand20/B2",
-    "s": 1.018
+    "s": 0.825
    },
    {
     "key": "noise/303/rand30/engine",
-    "s": 2.288
+    "s": 1.737
    },
    {
     "key": "noise/303/rand30/B2",
-    "s": 0.462
+    "s": 0.508
    },
    {
     "key": "noise/303/two30/engine",
-    "s": 1.702
+    "s": 1.597
    },
    {
     "key": "noise/303/two30/B2",
-    "s": 0.403
+    "s": 0.441
    },
    {
     "key": "noise/303/del10/engine",
-    "s": 2.866
+    "s": 2.934
    },
    {
     "key": "noise/303/del10/B2",
-    "s": 0.733
+    "s": 0.734
    },
    {
     "key": "noise/303/del20/engine",
-    "s": 2.263
+    "s": 2.358
    },
    {
     "key": "noise/303/del20/B2",
-    "s": 0.597
+    "s": 0.642
    },
    {
     "key": "noise/303/del30/engine",
-    "s": 1.907
+    "s": 1.949
    },
    {
     "key": "noise/303/del30/B2",
-    "s": 0.495
+    "s": 0.597
    },
    {
     "key": "noise/303/lex10/engine",
-    "s": 2.456
+    "s": 2.48
    },
    {
     "key": "noise/303/lex10/B2",
-    "s": 0.687
+    "s": 0.787
    },
    {
     "key": "noise/303/lex20/engine",
-    "s": 2.477
+    "s": 2.376
    },
    {
     "key": "noise/303/lex20/B2",
-    "s": 0.504
+    "s": 0.611
    },
    {
     "key": "noise/303/lex30/engine",
-    "s": 1.411
+    "s": 1.479
    },
    {
     "key": "noise/303/lex30/B2",
-    "s": 0.337
+    "s": 0.354
    },
    {
     "key": "noise/303/whnorep10/engine",
-    "s": 2.518
+    "s": 2.764
    },
    {
     "key": "noise/303/whnorep10/B2",
-    "s": 0.708
+    "s": 0.731
    },
    {
     "key": "noise/303/whnorep20/engine",
-    "s": 2.129
+    "s": 2.549
    },
    {
     "key": "noise/303/whnorep20/B2",
-    "s": 0.511
+    "s": 0.567
    },
    {
     "key": "noise/303/whnorep30/engine",
-    "s": 1.674
+    "s": 1.967
    },
    {
     "key": "noise/303/whnorep30/B2",
-    "s": 0.399
+    "s": 0.588
    },
    {
     "key": "noise/303/wh10/engine",
-    "s": 2.73
+    "s": 2.906
    },
    {
     "key": "noise/303/wh10/B2",
-    "s": 0.877
+    "s": 0.905
    },
    {
     "key": "noise/303/wh20/engine",
-    "s": 2.893
+    "s": 3.499
    },
    {
     "key": "noise/303/wh20/B2",
-    "s": 0.797
+    "s": 0.884
    },
    {
     "key": "noise/303/wh30/engine",
-    "s": 3.307
+    "s": 3.122
    },
    {
     "key": "noise/303/wh30/B2",
-    "s": 0.782
+    "s": 0.779
    },
    {
     "key": "parUnseen/303/clean/engine",
-    "s": 3.09
+    "s": 3.216
    },
    {
     "key": "parUnseen/303/clean/novec",
-    "s": 1.613
+    "s": 1.784
    },
    {
     "key": "parUnseen/303/clean/sem",
-    "s": 6.276
+    "s": 6.869
    },
    {
     "key": "parStrip/303/clean/engine",
-    "s": 2.253
+    "s": 2.566
    },
    {
     "key": "parStrip/303/clean/novec",
-    "s": 1.437
+    "s": 1.526
    },
    {
     "key": "parStrip/303/clean/sem",
-    "s": 4.538
+    "s": 4.97
    },
    {
     "key": "noCue/303/clean/engine",
-    "s": 2.182
+    "s": 1.987
    },
    {
     "key": "noCue/303/std20/engine",
-    "s": 1.389
+    "s": 1.605
    },
    {
     "key": "unseenCue/303/clean/engine",
-    "s": 1.97
+    "s": 2.619
    },
    {
     "key": "unseenCue/303/std20/engine",
-    "s": 1.642
+    "s": 2.096
    },
    {
     "key": "short/303/clean/engine",
-    "s": 3.188
+    "s": 3.774
    },
    {
     "key": "short/303/std20/engine",
-    "s": 2.745
+    "s": 2.465
    },
    {
     "key": "shortNoCue/303/clean/engine",
-    "s": 2.167
+    "s": 1.893
    },
    {
     "key": "shortNoCue/303/std20/engine",
-    "s": 2.156
+    "s": 1.964
    },
    {
     "key": "shortUnseenCue/303/clean/engine",
-    "s": 2.471
+    "s": 2.513
    },
    {
     "key": "shortUnseenCue/303/std20/engine",
-    "s": 1.69
+    "s": 1.813
    },
    {
     "key": "main/404/clean/engine",
-    "s": 3.5
+    "s": 3.501
    },
    {
     "key": "main/404/clean/notol",
-    "s": 3.088
+    "s": 2.718
    },
    {
     "key": "main/404/clean/nocues",
-    "s": 0.859
+    "s": 1.031
    },
    {
     "key": "main/404/clean/novec",
-    "s": 1.818
+    "s": 2.029
    },
    {
     "key": "main/404/clean/sem",
-    "s": 6.338
+    "s": 6.689
    },
    {
     "key": "main/404/clean/B0",
-    "s": 0.047
+    "s": 0.05
    },
    {
     "key": "main/404/clean/B1",
-    "s": 0.104
+    "s": 0.117
    },
    {
     "key": "main/404/clean/B2",
-    "s": 1.191
+    "s": 1.001
    },
    {
     "key": "main/404/std10/engine",
-    "s": 2.745
+    "s": 2.658
    },
    {
     "key": "main/404/std10/notol",
-    "s": 2.647
+    "s": 2.501
    },
    {
     "key": "main/404/std10/nocues",
-    "s": 0.781
+    "s": 0.816
    },
    {
     "key": "main/404/std10/novec",
-    "s": 1.253
+    "s": 1.476
    },
    {
     "key": "main/404/std10/sem",
-    "s": 5.397
+    "s": 5.354
    },
    {
     "key": "main/404/std10/B0",
-    "s": 0.057
+    "s": 0.047
    },
    {
     "key": "main/404/std10/B1",
@@ -712,329 +712,329 @@
    },
    {
     "key": "main/404/std10/B2",
-    "s": 0.767
+    "s": 0.801
    },
    {
     "key": "main/404/std20/engine",
-    "s": 2.156
+    "s": 2.155
    },
    {
     "key": "main/404/std20/notol",
-    "s": 1.918
+    "s": 2.194
    },
    {
     "key": "main/404/std20/nocues",
-    "s": 0.548
+    "s": 0.729
    },
    {
     "key": "main/404/std20/novec",
-    "s": 1.092
+    "s": 1.794
    },
    {
     "key": "main/404/std20/sem",
-    "s": 4.944
+    "s": 4.863
    },
    {
     "key": "main/404/std20/B0",
-    "s": 0.044
+    "s": 0.047
    },
    {
     "key": "main/404/std20/B1",
-    "s": 0.111
+    "s": 0.123
    },
    {
     "key": "main/404/std20/B2",
-    "s": 0.644
+    "s": 0.679
    },
    {
     "key": "main/404/std30/engine",
-    "s": 1.824
+    "s": 1.81
    },
    {
     "key": "main/404/std30/notol",
-    "s": 1.807
+    "s": 2.022
    },
    {
     "key": "main/404/std30/nocues",
-    "s": 0.935
+    "s": 0.673
    },
    {
     "key": "main/404/std30/novec",
-    "s": 0.918
+    "s": 1.437
    },
    {
     "key": "main/404/std30/sem",
-    "s": 4.06
+    "s": 4.309
    },
    {
     "key": "main/404/std30/B0",
-    "s": 0.05
+    "s": 0.245
    },
    {
     "key": "main/404/std30/B1",
-    "s": 0.143
+    "s": 0.14
    },
    {
     "key": "main/404/std30/B2",
-    "s": 0.52
+    "s": 0.648
    },
    {
     "key": "noise/404/rand10/engine",
-    "s": 2.606
+    "s": 2.561
    },
    {
     "key": "noise/404/rand10/B2",
-    "s": 0.724
+    "s": 0.715
    },
    {
     "key": "noise/404/rand20/engine",
-    "s": 2.29
+    "s": 2.118
    },
    {
     "key": "noise/404/rand20/B2",
-    "s": 0.531
+    "s": 0.573
    },
    {
     "key": "noise/404/rand30/engine",
-    "s": 1.881
+    "s": 1.651
    },
    {
     "key": "noise/404/rand30/B2",
-    "s": 0.574
+    "s": 0.433
    },
    {
     "key": "noise/404/two30/engine",
-    "s": 1.684
+    "s": 1.679
    },
    {
     "key": "noise/404/two30/B2",
-    "s": 0.357
+    "s": 0.37
    },
    {
     "key": "noise/404/del10/engine",
-    "s": 3.107
+    "s": 2.699
    },
    {
     "key": "noise/404/del10/B2",
-    "s": 0.86
-   },
-   {
-    "key": "noise/404/del20/engine",
-    "s": 2.28
-   },
-   {
-    "key": "noise/404/del20/B2",
-    "s": 0.577
-   },
-   {
-    "key": "noise/404/del30/engine",
-    "s": 2.108
-   },
-   {
-    "key": "noise/404/del30/B2",
-    "s": 0.401
-   },
-   {
-    "key": "noise/404/lex10/engine",
-    "s": 2.694
-   },
-   {
-    "key": "noise/404/lex10/B2",
-    "s": 0.665
-   },
-   {
-    "key": "noise/404/lex20/engine",
-    "s": 2.029
-   },
-   {
-    "key": "noise/404/lex20/B2",
-    "s": 0.482
-   },
-   {
-    "key": "noise/404/lex30/engine",
-    "s": 1.911
-   },
-   {
-    "key": "noise/404/lex30/B2",
-    "s": 0.357
-   },
-   {
-    "key": "noise/404/whnorep10/engine",
-    "s": 2.435
-   },
-   {
-    "key": "noise/404/whnorep10/B2",
     "s": 0.786
    },
    {
+    "key": "noise/404/del20/engine",
+    "s": 2.162
+   },
+   {
+    "key": "noise/404/del20/B2",
+    "s": 0.619
+   },
+   {
+    "key": "noise/404/del30/engine",
+    "s": 2.209
+   },
+   {
+    "key": "noise/404/del30/B2",
+    "s": 0.547
+   },
+   {
+    "key": "noise/404/lex10/engine",
+    "s": 2.89
+   },
+   {
+    "key": "noise/404/lex10/B2",
+    "s": 0.712
+   },
+   {
+    "key": "noise/404/lex20/engine",
+    "s": 2.351
+   },
+   {
+    "key": "noise/404/lex20/B2",
+    "s": 0.488
+   },
+   {
+    "key": "noise/404/lex30/engine",
+    "s": 2.14
+   },
+   {
+    "key": "noise/404/lex30/B2",
+    "s": 0.341
+   },
+   {
+    "key": "noise/404/whnorep10/engine",
+    "s": 2.482
+   },
+   {
+    "key": "noise/404/whnorep10/B2",
+    "s": 0.866
+   },
+   {
     "key": "noise/404/whnorep20/engine",
-    "s": 2.117
+    "s": 2.39
    },
    {
     "key": "noise/404/whnorep20/B2",
-    "s": 0.529
+    "s": 0.539
    },
    {
     "key": "noise/404/whnorep30/engine",
-    "s": 1.603
+    "s": 1.711
    },
    {
     "key": "noise/404/whnorep30/B2",
-    "s": 0.416
+    "s": 0.41
    },
    {
     "key": "noise/404/wh10/engine",
-    "s": 2.938
+    "s": 3.098
    },
    {
     "key": "noise/404/wh10/B2",
-    "s": 0.841
+    "s": 0.996
    },
    {
     "key": "noise/404/wh20/engine",
-    "s": 2.861
+    "s": 3.194
    },
    {
     "key": "noise/404/wh20/B2",
-    "s": 0.769
+    "s": 0.779
    },
    {
     "key": "noise/404/wh30/engine",
-    "s": 2.893
+    "s": 3.495
    },
    {
     "key": "noise/404/wh30/B2",
-    "s": 0.644
+    "s": 0.704
    },
    {
     "key": "parUnseen/404/clean/engine",
-    "s": 2.757
+    "s": 3.327
    },
    {
     "key": "parUnseen/404/clean/novec",
-    "s": 1.765
+    "s": 1.702
    },
    {
     "key": "parUnseen/404/clean/sem",
-    "s": 6.171
+    "s": 6.406
    },
    {
     "key": "parStrip/404/clean/engine",
-    "s": 2.311
+    "s": 2.317
    },
    {
     "key": "parStrip/404/clean/novec",
-    "s": 1.364
+    "s": 1.387
    },
    {
     "key": "parStrip/404/clean/sem",
-    "s": 4.532
+    "s": 4.478
    },
    {
     "key": "noCue/404/clean/engine",
-    "s": 1.683
+    "s": 1.839
    },
    {
     "key": "noCue/404/std20/engine",
-    "s": 1.433
+    "s": 1.328
    },
    {
     "key": "unseenCue/404/clean/engine",
-    "s": 1.937
+    "s": 2.003
    },
    {
     "key": "unseenCue/404/std20/engine",
-    "s": 1.291
+    "s": 1.508
    },
    {
     "key": "short/404/clean/engine",
-    "s": 3.201
+    "s": 3.365
    },
    {
     "key": "short/404/std20/engine",
-    "s": 2.167
+    "s": 2.692
    },
    {
     "key": "shortNoCue/404/clean/engine",
-    "s": 1.75
+    "s": 2.163
    },
    {
     "key": "shortNoCue/404/std20/engine",
-    "s": 1.035
+    "s": 1.391
    },
    {
     "key": "shortUnseenCue/404/clean/engine",
-    "s": 2.264
+    "s": 2.274
    },
    {
     "key": "shortUnseenCue/404/std20/engine",
-    "s": 1.738
+    "s": 2.169
    },
    {
     "key": "fresh/505/clean/engine",
-    "s": 2.968
+    "s": 3.079
    },
    {
     "key": "fresh/505/std20/engine",
-    "s": 2.417
+    "s": 2.726
    },
    {
     "key": "fresh/606/clean/engine",
-    "s": 3.03
+    "s": 3.239
    },
    {
     "key": "fresh/606/std20/engine",
-    "s": 2.281
+    "s": 2.199
    },
    {
     "key": "fresh/707/clean/engine",
-    "s": 3.083
+    "s": 3.228
    },
    {
     "key": "fresh/707/std20/engine",
-    "s": 2.525
+    "s": 2.543
    },
    {
     "key": "absent",
-    "s": 2.092
+    "s": 2.209
    }
   ]
  },
  "books": {
   "long/0": {
-   "seconds": 3.5,
+   "seconds": 3.8,
    "words": 8162
   },
   "long/0.15": {
-   "seconds": 1.5,
+   "seconds": 1.6,
    "words": 7978
   },
   "medium/0": {
-   "seconds": 7,
+   "seconds": 7.1,
    "words": 5735
   },
   "medium/0.15": {
-   "seconds": 1.7,
+   "seconds": 1.8,
    "words": 5588
   },
   "short/0": {
-   "seconds": 3.1,
+   "seconds": 3,
    "words": 5189
   },
   "short/0.15": {
-   "seconds": 2.7,
+   "seconds": 3,
    "words": 5073
   },
   "core/0": {
-   "seconds": 1.9,
+   "seconds": 2.1,
    "words": 6189
   },
   "core/0.15": {
-   "seconds": 1.4,
+   "seconds": 1.6,
    "words": 6070
   },
   "jalalayn/0": {
-   "seconds": 0.3,
+   "seconds": 0.4,
    "words": 1811
   },
   "jalalayn/0.15": {
@@ -1044,46 +1044,46 @@
  },
  "english": {
   "909/0": {
-   "seconds": 16.7,
+   "seconds": 17.7,
    "words": 11659
   },
   "910/0": {
-   "seconds": 12.3,
+   "seconds": 12.9,
    "words": 11597
   },
   "911/0": {
-   "seconds": 11.7,
+   "seconds": 12.2,
    "words": 11476
   },
   "909/0.1": {
-   "seconds": 8.9,
+   "seconds": 9.2,
    "words": 11518
   },
   "910/0.1": {
-   "seconds": 9,
+   "seconds": 9.2,
    "words": 11431
   },
   "911/0.1": {
-   "seconds": 9.5,
+   "seconds": 9.7,
    "words": 11306
   },
   "909/0.2": {
-   "seconds": 7.3,
+   "seconds": 7.6,
    "words": 11342
   },
   "910/0.2": {
-   "seconds": 7.5,
+   "seconds": 7.8,
    "words": 11225
   },
   "911/0.2": {
-   "seconds": 7.5,
+   "seconds": 8.3,
    "words": 11097
   }
  },
  "all": {
-  "run.mjs": 238,
-  "books.mjs": 35,
-  "english.mjs": 93,
-  "total": 374
+  "run.mjs": 251,
+  "books.mjs": 41,
+  "english.mjs": 102,
+  "total": 402
  }
 }

@@ -1639,7 +1639,7 @@
     "kind": "wh",
     "noisePct": 10,
     "engine": {
-     "quranDetectedPct": 90,
+     "quranDetectedPct": 90.8,
      "hadithVerbatimDetectedPct": 91.1,
      "hadithVerbatimDetectedCI95": [
       86,
@@ -1746,7 +1746,7 @@
       78
      ],
      "hadithChangedWordingDetectedPct": 60,
-     "criticalErrorsPerLecture": 3
+     "criticalErrorsPerLecture": 4
     },
     "baselineB2": {
      "quranDetectedPct": 54.2,
@@ -1840,10 +1840,10 @@
     "noisePct": 30,
     "engine": {
      "quranDetectedPct": 59.2,
-     "hadithVerbatimDetectedPct": 58.3,
+     "hadithVerbatimDetectedPct": 58.9,
      "hadithVerbatimDetectedCI95": [
-      51,
-      65
+      52,
+      66
      ],
      "hadithChangedWordingDetectedPct": 35.8,
      "criticalErrorsPerLecture": 3
@@ -2249,11 +2249,11 @@
      ]
     },
     "nonIndexedTranslationVerses_textualWithCorrectReference": {
-     "k": 88,
+     "k": 89,
      "n": 150,
      "ci95": [
       51,
-      66
+      67
      ]
     },
     "nonIndexedTranslationVerses_referenceWithinFirst5": {
@@ -2293,11 +2293,11 @@
      ]
     },
     "nonIndexedTranslationVerses_referenceWithinFirst5": {
-     "k": 91,
+     "k": 90,
      "n": 150,
      "ci95": [
-      53,
-      68
+      52,
+      67
      ]
     },
     "wrongReferenceCitations": 6,
@@ -9370,14 +9370,14 @@
     "engine": {
      "lectures": 3,
      "quranDetected": {
-      "k": 108,
+      "k": 109,
       "n": 120,
-      "pct": 90,
+      "pct": 90.8,
       "min": 85,
       "max": 95,
       "ci95": [
-       83,
-       94
+       84,
+       95
       ]
      },
      "hadithVerbatimDetected": {
@@ -9403,8 +9403,8 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 357,
-      "n": 369,
+      "k": 358,
+      "n": 370,
       "pct": 96.8,
       "min": 95.2,
       "max": 98.4,
@@ -9414,32 +9414,32 @@
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 357,
+      "k": 358,
       "n": 420,
-      "pct": 85,
+      "pct": 85.2,
       "min": 82.9,
       "max": 87.1,
       "ci95": [
-       81,
+       82,
        88
       ]
      },
      "labels": {
       "saidWordForWord": {
-       "detected": 272,
+       "detected": 273,
        "labelledVerbatim": {
         "k": 86,
-        "n": 272,
-        "pct": 31.6,
+        "n": 273,
+        "pct": 31.5,
         "ci95": [
          26,
          37
         ]
        },
        "downgradedToPartial": {
-        "k": 186,
-        "n": 272,
-        "pct": 68.4,
+        "k": 187,
+        "n": 273,
+        "pct": 68.5,
         "ci95": [
          63,
          74
@@ -9463,8 +9463,8 @@
      },
      "boundaryIoUAtLeast80": {
       "k": 291,
-      "n": 369,
-      "pct": 78.9,
+      "n": 370,
+      "pct": 78.7,
       "min": 75.8,
       "max": 83.3,
       "ci95": [
@@ -9517,10 +9517,10 @@
       "total": 6
      },
      "notJudged_textualOnASmallPartFromAnotherPassage": {
-      "mean": 2,
+      "mean": 1.3,
       "min": 1,
-      "max": 3,
-      "total": 6
+      "max": 2,
+      "total": 4
      }
     },
     "B2": {
@@ -11053,10 +11053,10 @@
       ]
      },
      "criticalPerLecture": {
-      "mean": 3,
+      "mean": 4,
       "min": 2,
-      "max": 5,
-      "total": 9
+      "max": 7,
+      "total": 12
      },
      "criticalParts": {
       "wrongSource": {
@@ -11072,10 +11072,10 @@
        "total": 4
       },
       "fillerCitation": {
-       "mean": 0.7,
-       "min": 0,
+       "mean": 1.7,
+       "min": 1,
        "max": 2,
-       "total": 2
+       "total": 5
       },
       "outOfCorpusWrongCitation": {
        "mean": 0,
@@ -11091,16 +11091,16 @@
       }
      },
      "criticalPerLectureWithoutLabelErrors": {
-      "mean": 1.7,
-      "min": 1,
-      "max": 2,
-      "total": 5
+      "mean": 2.7,
+      "min": 2,
+      "max": 4,
+      "total": 8
      },
      "notJudged_textualOnASmallPartFromAnotherPassage": {
-      "mean": 4,
-      "min": 2,
-      "max": 6,
-      "total": 12
+      "mean": 2.3,
+      "min": 1,
+      "max": 3,
+      "total": 7
      }
     },
     "B2": {
@@ -12541,14 +12541,14 @@
       ]
      },
      "hadithVerbatimDetected": {
-      "k": 105,
+      "k": 106,
       "n": 180,
-      "pct": 58.3,
+      "pct": 58.9,
       "min": 56.7,
       "max": 60,
       "ci95": [
-       51,
-       65
+       52,
+       66
       ]
      },
      "hadithChangedDetected": {
@@ -12563,10 +12563,10 @@
       ]
      },
      "firstSourceCorrectOfDetected": {
-      "k": 214,
-      "n": 219,
-      "pct": 97.7,
-      "min": 97.1,
+      "k": 216,
+      "n": 220,
+      "pct": 98.2,
+      "min": 97.3,
       "max": 98.7,
       "ci95": [
        95,
@@ -12574,32 +12574,32 @@
       ]
      },
      "firstSourceCorrectOfAll": {
-      "k": 214,
+      "k": 216,
       "n": 420,
-      "pct": 51,
-      "min": 48.6,
+      "pct": 51.4,
+      "min": 49.3,
       "max": 54.3,
       "ci95": [
-       46,
+       47,
        56
       ]
      },
      "labels": {
       "saidWordForWord": {
-       "detected": 176,
+       "detected": 177,
        "labelledVerbatim": {
         "k": 19,
-        "n": 176,
-        "pct": 10.8,
+        "n": 177,
+        "pct": 10.7,
         "ci95": [
          7,
          16
         ]
        },
        "downgradedToPartial": {
-        "k": 157,
-        "n": 176,
-        "pct": 89.2,
+        "k": 158,
+        "n": 177,
+        "pct": 89.3,
         "ci95": [
          84,
          93
@@ -12623,8 +12623,8 @@
      },
      "boundaryIoUAtLeast80": {
       "k": 97,
-      "n": 219,
-      "pct": 44.4,
+      "n": 220,
+      "pct": 44.2,
       "min": 41.6,
       "max": 47.1,
       "ci95": [
@@ -12677,10 +12677,10 @@
       "total": 5
      },
      "notJudged_textualOnASmallPartFromAnotherPassage": {
-      "mean": 6,
+      "mean": 4,
       "min": 1,
-      "max": 11,
-      "total": 18
+      "max": 7,
+      "total": 12
      }
     },
     "B2": {
@@ -15305,13 +15305,13 @@
     },
     "nonIndexedTranslationVerses": {
      "n": 150,
-     "textualWithCorrectReference": 88,
+     "textualWithCorrectReference": 89,
      "ci95": [
       51,
-      66
+      67
      ],
      "perLecture": [
-      28,
+      29,
       30,
       30
      ],
@@ -15404,10 +15404,10 @@
       29,
       27
      ],
-     "referenceWithinFirst5": 91,
+     "referenceWithinFirst5": 90,
      "ci95First5": [
-      53,
-      68
+      52,
+      67
      ]
     },
     "wrongReferenceCitations": [

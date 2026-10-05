@@ -3,6 +3,8 @@ import { fmtTime, fnv1a, wordsFromText } from "./text.js";
 import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, transcribeYoutube, AsrError, llmStops } from "./asr.js";
 import { compareLedgers, applyAgreement, marksOf, statusOf, timeTolerance } from "./agree.js";
 import { flagsOf } from "./flags.js";
+import { gradeSummary } from "./grade.js";
+import { digestItem } from "./digest.js";
 import { toCsv, toJson, download } from "./exporter.js";
 import { citedDocx, toSession, fromSession, parseStampedText, youtubeId, cleanManual, cleanFixes, committeeSummary, summaryLines, descriptionIndex, transcriptParagraphs, transcriptText, transcriptSrt } from "./report.js";
 import { t, tOpt, has, num, setLang, getLang, srcLabel, transcriberLabel, LANGS } from "./i18n.js";
@@ -1124,6 +1126,7 @@ function drawEntry(e) {
     const parts = [e.excerpt.head && t("note.excerpt_head"), e.excerpt.tail && !e.tailUnmatched && t("note.excerpt_tail")].filter(Boolean);
     if (parts.length) tag(`${t("tag.excerpt")}: ${parts.join(sep())}`);
   }
+  { const gc = e.status !== "notfound" && !e.weakOnly ? gradeChip(e.source, e.parallels) : null; if (gc) tags.push(gc); }
   if (e.tailUnmatched) li.append(el("p", "note", t("note.tail_unmatched", e.tailUnmatchedSpoken || "")));
   // what a second transcription of the same recording says about these words
   if (g2) {
@@ -1263,7 +1266,76 @@ function drawReview(e) {
 
 /** The ledger is drawn a screenful first and the rest in slices, so a long one shows at once. */
 let ledgerJob = 0, flushLedger = () => {};
+/** the recorded standing of a hadith source as one tag (grade.js), or null for anything else */
+function gradeChip(src, parallels) {
+  const g = gradeSummary(src, parallels); if (!g) return null;
+  const who = by => (by.length > 1 ? t("g.by.more", by[0], num(by.length - 1)) : by[0]);
+  const also = g.also ? t("g.also", t("col." + g.also)) : "";
+  let text, cls = "", title = t("g.title");
+  if (g.kind === "sahihayn") { text = t("g.sahihayn", t("col." + g.collection)); cls = "ok"; title = t("g.sahihayn.title"); }
+  else if (g.kind === "strong") { text = t("g.one", g.grade, who(g.by)) + also; cls = "ok"; }
+  else if (g.kind === "weak") { text = t("g.one", g.grade, who(g.by)) + also; cls = "warn"; }
+  else if (g.kind === "mixed") { text = t("g.mixed", g.strong.grade, who(g.strong.by), g.weak.grade, who(g.weak.by)) + also; cls = "mix"; }
+  else { text = (g.note ? g.note + " · " : "") + t("g.none") + also; cls = g.also ? "ok" : "quiet"; }
+  const x = mixed(el("span", "tag grade " + cls, text), text); x.title = title;
+  return x;
+}
+
+// ---------------- digest: every hadith / passage of the Qur'an once (built by the worker from the entries' source positions) ----------------
+let digestJob = 0;
+async function drawDigest() {
+  const job = ++digestJob, box = $("digest"), list = $("digestList");
+  const items = S.ledger.map(digestItem).filter(Boolean);
+  if (!items.length) { box.hidden = true; list.textContent = ""; return; }
+  let cards; try { cards = await call("digest", { items }); } catch { cards = null; }
+  if (job !== digestJob) return;
+  if (!cards || !cards.length) { box.hidden = true; list.textContent = ""; return; }
+  const byId = new Map(S.ledger.map(e => [e.id, e]));
+  const nH = cards.filter(c => c.type === "h").length, nQ = cards.length - nH;
+  $("digestGlance").textContent = [nH && t("dg.count.h", num(nH)), nQ && t("dg.count.q", num(nQ))].filter(Boolean).join(sep());
+  list.textContent = "";
+  for (const c of cards) {
+    const card = el("article", "dg-card dg-" + c.type);
+    const all = c.ids.map(id => byId.get(id)).filter(Boolean);
+    const head = el("div", "dg-head");
+    head.append(el("span", "kind", t("dg.kind." + c.type)), el("span", "dg-times", counted("dg.times", all.length)));
+    card.append(head);
+    if (c.wordings.length > 1) card.append(el("p", "note", t("dg.wordings")));
+    for (const w of c.wordings) {
+      const sec = el("div", "dg-wording"), mine = w.ids.map(id => byId.get(id)).filter(Boolean);
+      const line = sourceLine(w.source, true);
+      if (c.wordings.length > 1) line.prepend(el("span", "dg-as", t("dg.wording", "") .trim() + " "));
+      sec.append(line);
+      const row = el("p", "tags"), gc = c.type === "h" ? gradeChip(w.source, mine.flatMap(e => e.parallels || [])) : null;
+      if (gc) row.append(gc);
+      row.append(el("span", "tag", !w.said ? t("dg.said.none") : w.said >= w.total ? t("dg.said.all", num(w.total)) : t("dg.said.part", num(w.said), num(w.total))));
+      sec.append(row);
+      const p = el("p", "dg-text rtl" + (w.original ? " orig" : "") + (c.type === "q" ? " quran" : "")); p.dir = "rtl"; p.lang = "ar";
+      w.segs.forEach((g, i) => { if (i) p.append(" "); p.append(el("span", w.said && !g.said ? "unsaid" : "said", g.t)); });
+      const words = w.segs.reduce((n, g) => n + g.t.split(" ").length, 0);
+      if (words > 90) {
+        p.classList.add("folded");
+        const b = el("button", "link dg-more", t("dg.more")); b.type = "button";
+        b.onclick = () => { const f = p.classList.toggle("folded"); b.textContent = t(f ? "dg.more" : "dg.less"); };
+        sec.append(p, b);
+      } else sec.append(p);
+      const when = el("p", "dg-when");
+      for (const e of mine) {
+        const c2 = e.counts, wd = c2 ? c2.diff + c2.added + c2.omitted : 0;
+        const b = el("button", "chip dg-at s-" + st(e), `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} · ${t("status." + st(e))}${e.status === "meaning" ? "" : " · " + (wd ? counted("n.wdiff", wd) : t("dg.clean"))}`); b.type = "button";
+        b.onclick = () => selectAndFocus(e);
+        when.append(b);
+      }
+      sec.append(when);
+      card.append(sec);
+    }
+    list.append(card);
+  }
+  box.hidden = false;
+}
+
 function drawLedger() {
+  drawDigest();
   const L = $("ledger"), job = ++ledgerJob, n = S.ledger.length; L.textContent = "";
   L.classList.toggle("big", n > 40);
   if (!n) { L.append(el("li", "empty", t("empty.none"))); flushLedger = () => {}; return; }

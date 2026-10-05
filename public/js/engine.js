@@ -82,6 +82,7 @@ export const DEFAULTS = {
   formCues: true,         // cues known by their form ("قال <a name> رضي الله عنه"); off only to measure what they add
   cueLeadFree: 3,         // content words that may stand between a cue and the text it announces
   openTail: true,         // an open particle at the end of a match is not counted towards the minimum of words; off only to measure
+  residual: true,         // what is left of a stretch of seed evidence beside the piece found is verified too; off only to measure
   oneCueOneQuote: true,   // a second text within reach of the same cue must stand on its own; off only to measure
   sem: null,            // { index: SemIndex, lookup(text) -> Int8Array | null, want: Set } — sentence vectors for candidates by meaning (sem.js);
                         // with `want` alone the engine only records the stretches it would ask about
@@ -361,7 +362,20 @@ export function analyze(words, corpus, options = {}) {
   for (const cl of clusters) {
     const mid = (cl.a + cl.b) >> 1;
     if (cover[Math.min(n - 1, mid)] >= 14) continue;
-    accept(verify(cl, X));
+    const m = verify(cl, X);
+    accept(m);
+    // A text said in pieces — a clause of a hadith, some explanation, then the hadith again — leaves ONE stretch of seed
+    // evidence for its passage, and one alignment finds one piece of it. So what is left of the stretch on either side of
+    // the piece found is verified on its own, by the same rules, until nothing more is found there.
+    if (!m || m.frag || !o.residual) continue;
+    const lo = cl.tMin ?? 0, hi = cl.tMax ?? n, todo = [[Math.max(lo, cl.a), m.ts, 0], [m.te, Math.min(hi, cl.b), 0]];
+    for (let k = 0; k < todo.length && k < 8; k++) {
+      const [a, b, depth] = todo[k];
+      if (b - a < 4) continue;
+      const r = verify({ ...cl, a, b, tMin: Math.max(lo, a - 1), tMax: Math.min(hi, b + 1) }, X);
+      if (!r || !accept(r)) continue;
+      if (depth < 2) todo.push([a, r.ts, depth + 1], [r.te, b, depth + 1]);
+    }
   }
 
   // ---------- 3b) a short canonical text right after its cue ("قال ﷺ الدين النصيحة", "قال تعالى فويل للمصلين") ----------
