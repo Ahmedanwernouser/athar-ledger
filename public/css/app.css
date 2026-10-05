@@ -1576,3 +1576,6 @@ html[data-theme="dark"] .err .quiet-btn { background: var(--gold); color: #1B140
 .chat-pass { border-inline-start: 3px solid var(--ks, #8a8fb5); }
 .chat-pass .src { display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center; }
 .chat-pass-text { margin: .5rem 0 0; line-height: 1.95; }
+
+/* a word that only stands in another place than in the source: marked, lighter than a changed word */
+.w-moved { border-bottom: 2px dashed var(--kh, #c9a455); }

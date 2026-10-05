@@ -301,6 +301,13 @@ function boot() {
   wireTabs();
   $("btnStartReview").onclick = () => { showTab("ledger"); if (S.ledger.some(e => !reviewed(e))) nextOpen(); else if (S.ledger[0]) selectAndFocus(S.ledger[0]); };
   $("btnAroundAll").onclick = () => showTab("text", { reveal: true });
+  // "needs your eye": the ledger opens showing exactly those places (what is not word-for-word), so the number and the list agree
+  $("btnOpenNeeds").onclick = () => {
+    const want = STATUS_ORDER.filter(x => x !== "verbatim" && S.ledger.some(e => st(e) === x));
+    S.only = new Set(want); S.onlyFlag = false; S.onlyOpen = false;
+    for (const c of $("filters").querySelectorAll("[data-s]")) c.setAttribute("aria-pressed", String(S.only.has(c.dataset.s)));
+    drawFilterState(); applyVisibility(); showTab("ledger");
+  };
   // the two menus of the results band: one open at a time; a click elsewhere, Escape or choosing an item closes them
   const menus = [...document.querySelectorAll("details.menu")];
   for (const m of menus) {
@@ -1095,7 +1102,7 @@ function drawProgress() {
   // the summary's cards: what needs a look (anything that is not a clean verbatim match), and how far the review is
   const by = {}; let needs = 0;
   for (const e of S.ledger) { const s = st(e); if (s !== "verbatim" || flagsOf(e).length || verdictOf(e) === "?") { needs++; if (s !== "verbatim") by[s] = (by[s] || 0) + 1; } }
-  $("statNeeds").textContent = needs ? counted("stat.place", needs) : t("stat.needs.none");
+  $("statNeeds").textContent = needs ? counted("stat.place", needs) : t("stat.needs.none"); $("btnOpenNeeds").hidden = !needs;
   $("statNeedsSub").textContent = needs ? [...STATUS_ORDER.filter(s => by[s]).map(s => `${num(by[s])} ${t("short." + s)}`), flagged ? t("stat.flags", num(flagged)) : ""].filter(Boolean).join(sep()) : n ? t("stat.needs.sub.none") : "";
   $("statRv").textContent = t("stat.rv", num(done), num(n)); $("statRvBar").style.width = (n ? 100 * done / n : 0) + "%";
   $("btnStartReview").hidden = !n; $("btnStartReview").textContent = t(!done ? "stat.rv.go" : done < n ? "stat.rv.more" : "stat.rv.done");
@@ -1209,6 +1216,7 @@ function wordSpan(d, mark) {
   const said = d.spokenDisplay || d.spoken;      // the word as transcribed when the worker could tie it to the transcript
   const f = document.createDocumentFragment(), words = saidWords(said, d.spokenDisplay ? d.wordIdx : null);
   if (d.meta) { const m = el("span", "w-meta"); m.append(words); m.title = t("d.meta"); f.append(m, " "); return f; }      // a note on the source, not the wording of the text
+  if (d.moved && !mark) { const m = el("span", "w-moved"); m.append(words); m.title = t("d.moved", d.source); f.append(m, " "); return f; }      // the right word, in another place
   if (d.kind === "exact" && !mark) { f.append(words, " "); return f; }
   const cls = { asr: "w-asr", near: "w-near", diff: "w-diff", ins: "w-ins" }[d.kind] || "";
   const s = el("span", [cls, mark ? "ag ag-" + mark.c : ""].filter(Boolean).join(" ")); s.append(words);
@@ -1228,6 +1236,7 @@ function spokenBlock(e) {
 function sourceSpan(d, text, mark) {
   if (!text) return null;
   if (d.meta) { const m = el("span", "w-meta", text); m.title = t("d.meta"); const g = document.createDocumentFragment(); g.append(m, " "); return g; }
+  if (d.moved && !mark) { const m = el("span", "w-moved", text); m.title = t("d.moved", d.spoken); const g = document.createDocumentFragment(); g.append(m, " "); return g; }
   if (d.kind === "exact" || d.kind === "asr") return document.createTextNode(text + " ");
   const s = el("span", (d.kind === "del" ? "w-del" : d.kind === "diff" ? "w-diff" : "w-near") + (mark ? " ag ag-" + mark.c : ""), text);
   const tip = [d.spoken ? d.spokenDisplay || d.spoken : "", mark ? t("two.mark." + mark.c) : "", heardBy2(mark)].filter(Boolean);
@@ -1357,11 +1366,12 @@ function drawEntry(e) {
   if (e.pass === "t2") head.append(el("span", "hand", t("two.second")));
   const g2 = e.agreement2 || null, marks = marksOf(e);
   if (e.agreement != null && e.counts) {
-    const c = e.counts, n = c.exact + c.asr + c.near + c.diff + c.added + c.omitted;
+    const c = e.counts, mv = c.moved || 0, n = c.exact + c.asr + c.near + c.diff + c.added + c.omitted + 2 * mv;
     const bits = [], wd = c.diff + c.added + c.omitted, ad = c.asr + c.near;
     if (wd || ad || Math.round(e.agreement * 100) < 100) bits.push(t("e.agree", num(Math.round(e.agreement * 100)), counted("n.word", n)));      // a clean match needs no figure
     if (ad) bits.push(counted("n.adiff", ad));
     if (wd) bits.push(counted("n.wdiff", wd));
+    if (mv) bits.push(counted("n.moved", mv));
     if (bits.length) head.append(el("span", "agree", bits.join(sep())));
   }
   li.append(head);
@@ -1626,7 +1636,7 @@ async function drawDigest() {
   if (job !== digestJob) return;
   if (!cards || !cards.length) return none();
   const byId = new Map(S.ledger.map(e => [e.id, e]));
-  S.digestCards = cards;
+  S.digestCards = cards; drawChatSug();
   const nH = cards.filter(c => c.type === "h").length, nQ = cards.length - nH;
   $("digestGlance").textContent = [nH && counted("stat.h", nH), nQ && counted("stat.q", nQ)].filter(Boolean).join(sep());
   drawStatTexts(nH, nQ);
@@ -1860,7 +1870,7 @@ function resetChat() { S.chat = { prev: "", busy: false, n: (S.chat ? S.chat.n :
 function chatSuggestions() {
   if (!lectureOpen()) return ["chat.sug.s1", "chat.sug.s2", "chat.sug.s3"].map(k => t(k));
   const cards = S.digestCards || [], h = cards.find(c => c.type === "h"), q = cards.find(c => c.type === "q"), out = [t("chat.sug.sum"), t("chat.sug.l1")];
-  if (h) out.push(t("chat.sug.said", srcLabel(h.wordings[0].source)));
+  if (h) { const e = S.ledger.find(x => x.id === h.ids[0]); out.push(t("chat.sug.said", e ? cutTo(bare(e.spoken).split(" ").slice(e.cue ? 0 : 0, 9).slice(-5).join(" "), 40) : srcLabel(h.wordings[0].source))); }
   if (q) out.push(t("chat.sug.tafsir", srcLabel(q.wordings[0].source)));
   out.push(t("chat.sug.l4"), t("chat.sug.l2"), t("chat.sug.points"));
   const asked = new Set((S.chat && S.chat.asked) || []);

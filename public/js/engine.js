@@ -908,6 +908,12 @@ export function analyze(words, corpus, options = {}) {
       cue: cue ? cue.kind : null,
       attribution: null,
     };
+    // a collection the speaker names INSIDE the quotation, where the stored text has its own note («…وجفّت الصحف، أخرجه الترمذي
+    // وقال حديث حسن صحيح»), is said of this citation: it is checked like one named before or after it
+    if (d.type === "h" && !c.colAfter.length && !c.colBefore.length && shown.some(x => x.meta)) {
+      const metaAt = new Set(); b.ops.forEach((o, k) => { if (shown[k] && shown[k].meta && o.ti >= 0) metaAt.add(b.tOff + o.ti); });
+      for (const sp of colSpans) if (sp.cols && sp.pos >= c.ts && sp.end <= c.te && metaAt.has(sp.pos)) c.colAfter.push(...sp.cols);
+    }
     entry.attribution = checkAttribution(entry, uniq, c, corpus);
     // informational, like `excerpt`: what was said right after the matched words is not how the source goes on
     const run = tailRunsOn(c);
@@ -1305,15 +1311,27 @@ function renderDiff(m, tok, spokenMeta = null) {
     let a = i - 1, b = i + 1; while (a >= 0 && out[a].kind === "ins" && !out[a].meta) a--; while (b < out.length && out[b].kind === "ins" && !out[b].meta) b++;
     if (a >= 0 && b < out.length && out[a].meta && out[b].meta) out[i].meta = true;
   }
+  // Two words that changed places («ما أصابك لم يكن ليخطئك، وما أخطأك لم يكن ليصيبك» said the other way round) are one
+  // change of ORDER, not two changes of wording: each stands where the other should, a few words apart.
+  for (let i = 0; i < out.length; i++) {
+    const a = out[i]; if (a.kind !== "diff" || a.meta || a.moved) continue;
+    for (let j = i + 1; j < out.length && j <= i + 12; j++) {
+      const b = out[j]; if (b.kind !== "diff" || b.meta || b.moved) continue;
+      if (fold(a.spoken) === fold(b.source) && fold(b.spoken) === fold(a.source)) { a.moved = b.moved = true; break; }
+    }
+  }
   return out;
 }
 /** the counts and the agreement of a comparison, the notes on the source left out (they are not the wording of the text) */
 function countsOf(diff, sum) {
-  if (!diff.some(d => d.meta)) return { counts: { exact: sum.exact, asr: sum.asr + sum.join, near: sum.near, diff: sum.diff, added: sum.ins, omitted: sum.del }, agreement: +sum.q.toFixed(3) };
-  const c = { exact: 0, asr: 0, near: 0, diff: 0, added: 0, omitted: 0 };
-  for (const d of diff) if (!d.meta) c[d.kind === "ins" ? "added" : d.kind === "del" ? "omitted" : d.kind]++;
-  const cols = c.exact + c.asr + c.near + c.diff + c.added + c.omitted;
-  return { counts: c, agreement: cols ? +((c.exact + c.asr + 0.7 * c.near) / cols).toFixed(3) : +sum.q.toFixed(3) };
+  if (!diff.some(d => d.meta || d.moved)) return { counts: { exact: sum.exact, asr: sum.asr + sum.join, near: sum.near, diff: sum.diff, added: sum.ins, omitted: sum.del }, agreement: +sum.q.toFixed(3) };
+  const c = { exact: 0, asr: 0, near: 0, diff: 0, added: 0, omitted: 0, moved: 0 }; let movedWords = 0;
+  for (const d of diff) if (d.meta) continue; else if (d.moved) movedWords++; else c[d.kind === "ins" ? "added" : d.kind === "del" ? "omitted" : d.kind]++;
+  c.moved = movedWords / 2;                                 // places where two words changed places
+  if (!c.moved) delete c.moved;
+  const cols = c.exact + c.asr + c.near + c.diff + c.added + c.omitted + movedWords;
+  // (a word that only stands in another place is the right word: it weighs like a near match, not like a wrong one)
+  return { counts: c, agreement: cols ? +((c.exact + c.asr + 0.7 * c.near + 0.7 * movedWords) / cols).toFixed(3) : +sum.q.toFixed(3) };
 }
 
 /**
