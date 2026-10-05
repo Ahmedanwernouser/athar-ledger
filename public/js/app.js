@@ -1857,10 +1857,18 @@ function drawChatDoor() { $("btnAsk").hidden = !chatOn(); $("btnAsk").textConten
 /** the chat box lives in one place at a time: the fourth tab of the results, or its own screen */
 function placeChat(where) { const host = where === "results" ? $("tabChat") : $("chatHost"), box = $("chatBox"); if (box.parentNode !== host) host.append(box); $("chatTitle").textContent = t(where === "results" ? "chat.title.lecture" : "chat.title"); drawChatSug(); }
 function resetChat() { S.chat = { prev: "", busy: false, n: (S.chat ? S.chat.n : 0) + 1 }; $("chatLog").textContent = ""; $("chatGo").disabled = false; }
+function chatSuggestions() {
+  if (!lectureOpen()) return ["chat.sug.s1", "chat.sug.s2", "chat.sug.s3"].map(k => t(k));
+  const cards = S.digestCards || [], h = cards.find(c => c.type === "h"), q = cards.find(c => c.type === "q"), out = [t("chat.sug.sum"), t("chat.sug.l1")];
+  if (h) out.push(t("chat.sug.said", srcLabel(h.wordings[0].source)));
+  if (q) out.push(t("chat.sug.tafsir", srcLabel(q.wordings[0].source)));
+  out.push(t("chat.sug.l4"), t("chat.sug.l2"), t("chat.sug.points"));
+  const asked = new Set((S.chat && S.chat.asked) || []);
+  return out.filter(x => !asked.has(x)).slice(0, 4);
+}
 function drawChatSug() {
   const box = $("chatSug"); if (!box) return; box.textContent = "";
-  const qs = lectureOpen() ? ["chat.sug.l1", "chat.sug.l2", "chat.sug.l3", "chat.sug.l4"] : ["chat.sug.s1", "chat.sug.s2", "chat.sug.s3"];
-  for (const k of qs) { const b = el("button", "chipbtn", t(k)); b.type = "button"; b.onclick = () => { $("chatQ").value = t(k); $("chatForm").requestSubmit(); }; box.append(b); }
+  for (const text of chatSuggestions()) { const b = el("button", "chipbtn", text); b.type = "button"; mixed(b, text); b.onclick = () => { $("chatQ").value = text; $("chatForm").requestSubmit(); }; box.append(b); }
 }
 const cutTo = (x, n) => { x = String(x || "").replace(/\s+/g, " ").trim(); return x.length > n ? x.slice(0, n - 1).trimEnd() + "…" : x; };
 const bare = x => String(x || "").replace(/[\u064B-\u0652\u0670\u0640]/g, "");
@@ -1902,6 +1910,41 @@ function localAnswer(q) {
   if (n <= 5 && has1("كلب", "حمار", "غبي", "زفت", "وسخ", "تافه", "فاشل", "stupid", "idiot", "useless", "dumb") || / (مش|غير|مو) (مفيد|نافع|شغال|كويس) /.test(x)) return t("chat.sorry");
   return "";
 }
+/**
+ * The lecturer's own words for the chat: the transcript cut into stretches of about seventy words, each with the time it
+ * begins at. A short lecture goes whole. Of a long one, the stretches that share most words with the question; and for a
+ * question that names nothing ("sum up the lecture") stretches spread evenly over it, said to be a sample.
+ * -> { list: [{id: "T1", text, at, from, to}], sample: bool }
+ */
+const PASS = { WORDS: 70, TOTAL: 5000, MAX: 14 };
+const stemAr = w => bare(w).replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/[^\u0621-\u064Aa-zA-Z]/g, "").toLowerCase().replace(/^(وال|بال|فال|كال|لل|ال|و|ف|ب|ل)(?=.{3,})/, "");
+function lecturePassages(q) {
+  if (!lectureOpen()) return { list: [], sample: false };
+  const W = S.words, wins = [];
+  for (const p of transcriptParagraphs(W)) for (let a = p.from; a < p.to; a += PASS.WORDS) {
+    const b = Math.min(p.to, a + PASS.WORDS + (p.to - (a + PASS.WORDS) < 20 ? 20 : 0));      // no orphan of a few words
+    const text = W.slice(a, b).map(w => w.w).filter(Boolean).join(" "); if (text) wins.push({ from: a, to: b, at: S.hasTimes && Number.isFinite(W[a].start) ? W[a].start : null, text: bare(text) });
+    if (b >= p.to) break;
+  }
+  const qs = new Set(wordsFromText(q.replace(/[؟?!.،,:«»"“”]/g, " ")).map(w => stemAr(w.w)).filter(w => w.length >= 3 && !ASKING.test(w) && !/^(محاضر|محاضره|شيخ|درس|خطبه|قال|ذكر|تكلم|يقول|لخص|ملخص|اشرح|شرح|متي|امتي|فين|اين)$/.test(w)));
+  for (const x of wins) { const ws = new Set(x.text.split(" ").map(stemAr)); x.score = 0; for (const k of qs) if (ws.has(k)) x.score++; }
+  const all = wins.reduce((n, x) => n + x.text.length, 0);
+  let pick, sample = false;
+  if (all <= PASS.TOTAL && wins.length <= PASS.MAX) pick = wins;
+  else {
+    const hit = wins.filter(x => x.score > 0).sort((x, y) => y.score - x.score || x.from - y.from);
+    if (hit.length) {
+      // the best stretches, each with the one after it (an answer often runs on)
+      const keep = new Set(); let n = 0;
+      for (const x of hit) { for (const k of [wins.indexOf(x), wins.indexOf(x) + 1]) { if (k >= wins.length || keep.has(k)) continue; if (keep.size >= PASS.MAX || n + wins[k].text.length > PASS.TOTAL) break; keep.add(k); n += wins[k].text.length; } }
+      pick = [...keep].sort((a, b) => a - b).map(k => wins[k]); sample = true;
+    } else {
+      const k = Math.min(PASS.MAX, wins.length), per = Math.floor(PASS.TOTAL / k);
+      pick = Array.from({ length: k }, (_, i) => wins[Math.floor(i * wins.length / k)]).map(x => ({ ...x, text: cutTo(x.text, per) })); sample = true;
+    }
+  }
+  return { list: pick.map((x, i) => ({ id: "T" + (i + 1), at: x.at, from: x.from, to: x.to, text: (x.at != null ? t("chat.f.at", fmtTime(x.at)) : t("chat.f.atword", num(x.from + 1))) + " " + x.text, said: x.text, card: { kind: "passage" } })), sample };
+}
 /** the words of the question that may be a text to look for (the question words themselves are left out) */
 const ASKING = /^(ما|ماذا|هل|أين|اين|من|كم|متى|كيف|صحة|صحه|درجة|درجه|حكم|مصدر|مصادر|نص|حديث|الحديث|أحاديث|احاديث|آية|ايه|اية|الآية|الايه|سورة|قول|قال|ورد|وردت|جاء|ذكر|ذُكر|عن|في|هذا|هذه|هو|هي|لي|اكتب|أعطني|اعطني|لخص|لخّص|what|is|the|of|a|an|hadith|verse|where|does|did|how|authentic|grade|source)$/i;
 async function searchFacts(q) {
@@ -1932,6 +1975,20 @@ function chatCards(facts, ids) {
   for (const id of ids) {
     const f = facts.find(x => x.id === id); if (!f || seen.has(id) || f.card.kind === "none") continue; seen.add(id);
     let card = null, label = "";
+    if (f.card.kind === "passage") {
+      // the lecturer's words as transcribed, with the moment they begin: pressed, the recording opens there
+      card = el("article", "dg-card chat-pass"); const head = el("p", "src");
+      head.append(el("span", "dg-as", t("chat.pass")));
+      if (f.at != null) {
+        const when = fmtTime(f.at);
+        if (S.video) { const a = el("a", "ext", "▶ " + when); a.href = `https://youtu.be/${S.video}?t=${Math.max(0, Math.floor(f.at - 1))}`; a.target = "_blank"; a.rel = "noopener"; head.append(a); }
+        else if (!$("audio").hidden) { const b2 = el("button", "quiet-btn", "▶ " + when); b2.type = "button"; b2.onclick = () => { const au = $("audio"); au.currentTime = Math.max(0, f.at - 0.4); au.play().catch(() => {}); }; head.append(b2); }
+        else head.append(el("span", "agree", when));
+      }
+      const open = el("button", "quiet-btn", t("chat.pass.open")); open.type = "button"; open.onclick = () => { showTab("text"); const w = $("transcript").querySelector(`[data-i="${f.from}"]`); if (w) w.scrollIntoView({ block: "center" }); }; head.append(open);
+      card.append(head, mixed(el("p", "chat-pass-text", f.said), f.said));
+      box.append(card); continue;
+    }
     if (f.card.kind === "digest") { const c = (S.digestCards || []).find(x => x.ids.join() === f.card.ids.join()); if (c) { card = digestCardEl(c, byId); label = srcLabel(c.wordings[0].source); } }
     else if (f.card.kind === "entry") { const e = byId.get(f.card.id); if (e) { card = needCardEl(e); label = cutTo(bare(e.spoken), 70); } }
     else { card = el("article", "dg-card chat-found t-" + (f.card.c.source.type || "h")); const ul = el("ul", "lookup-list"); ul.append(lookupCandidate(f.card.c, false)); card.append(el("span", "dg-as", t("chat.found")), ul); label = srcLabel(f.card.c.source); }
@@ -1962,21 +2019,47 @@ async function askChat(q) {
       const pick = lf.filter(f => !want || typeOf(f) === want);
       if (pick.length) { const b = chatBubble("it tool", t("chat.by.tool")); b.append(el("p", null, t("chat.link"))); b.after(chatCards(pick, pick.map(f => f.id))); return; }
     }
+    // "explain this verse": the commentary of al-Jalalayn on the verses the lecture cited — the book's words in a card, no model
+    if (/(فسر|تفسير|معني الاي|معنى الآي|tafsir|commentary)/i.test(bare(q).replace(/[أإآ]/g, "ا")) && lectureOpen()) {
+      const nf = v => bare(v).replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"), qc = (S.digestCards || []).filter(c => c.type === "q"), x = nf(q);
+      const named = qc.filter(c => x.includes(nf(srcLabel(c.wordings[0].source)).split(" — ")[0].replace(/^سوره\s+/, "")));
+      const pick = (named.length ? named : qc).slice(0, 3);
+      if (pick.length && packs.has("tafsir")) {
+        const b = chatBubble("it tool", t("chat.by.tool")), line1 = b.appendChild(el("p", null, t("chat.tafsir.loading")));
+        const ok = await loadPack("tafsir"); let res = [];
+        if (ok) { try { res = await call("tafsir", { list: pick.map(c => { const sr = c.wordings[0].source; return { surah: sr.surah, ayah: sr.ayah, ayahEnd: sr.ayahEnd || sr.ayah }; }) }); } catch { res = []; } }
+        if (job !== S.chat.n) return;
+        if (!res.length) { line1.textContent = t("chat.tafsir.none"); return; }
+        line1.textContent = t("chat.tafsir.is");
+        const box = el("div", "chat-cards");
+        for (const r of res) { const card = el("article", "dg-card chat-found t-b"), head = el("p", "src"); head.append(el("span", "src-main", t("chat.tafsir.of", r.label)));
+          const a = el("a", "ext", "quran.com"); a.href = `https://quran.com/${r.surah}:${r.ayah}`; a.target = "_blank"; a.rel = "noopener"; head.append(a);
+          card.append(head, mixed(el("p", "chat-pass-text", r.text), r.text), el("p", "note", t("chat.tafsir.note"))); box.append(card); }
+        b.after(box); S.chat.asked = [...(S.chat.asked || []), q]; drawChatSug(); return;
+      }
+    }
     const facts = []; let total = 0;
     for (const f of [...lectureFacts(), ...(await searchFacts(q))]) { if (facts.length >= 30 || total + f.text.length > CHAT.TOTAL) break; total += f.text.length; facts.push(f); }
+    // the lecturer's own words: what the chat sums up, and what it answers "what did he say about …" from
+    const pass = lecturePassages(q);
+    if (pass.sample) { const m = facts.find(f => f.id === "M1"); if (m) m.text = cutTo(m.text + " — " + t("chat.f.sample"), CHAT.FACT + 80); }
+    facts.push(...pass.list);
     if (job !== S.chat.n) return;
     let a = null, err = null;
-    if (chatOn()) { try { a = await askPost(CFG, { mode: "chat", q, lang: getLang(), prev: S.chat.prev, facts: facts.map(f => ({ id: f.id, text: f.text })) }); } catch (e) { err = e; } }
+    if (chatOn()) { try { a = await askPost(CFG, { mode: "chat", q, lang: getLang(), prev: (S.chat.hist || []).join(" ‖ "), facts: facts.filter(f => f.id[0] !== "T").map(f => ({ id: f.id, text: f.text })), passages: pass.list.map(f => ({ id: f.id, text: f.text })) }); } catch (e) { err = e; } }
     if (job !== S.chat.n) return;
     const found = facts.filter(f => f.card.kind === "search" && f.card.c.status !== "meaning").map(f => f.id);
     if (a && typeof a.text === "string") {
-      const b = chatBubble("it " + (a.type === "answer" ? "" : a.type), a.type === "answer" ? t("chat.by") : t("chat.by." + a.type));
+      const fromTalk = a.type === "answer" && Array.isArray(a.ids) && a.ids.some(x => x[0] === "T");
+      const b = chatBubble("it " + (a.type === "answer" ? "" : a.type), a.type === "answer" ? t(fromTalk ? "chat.by.talk" : "chat.by") : t("chat.by." + a.type));
       mixed(b.appendChild(el("p", null, a.text)), a.text);
       // the cards: what the model pointed at; and, whatever it said, a fact that plainly holds the words of the question
       // (asked "is hadith X sound?" about a hadith the ledger has without a grading, a model may answer "not found" and name nothing)
-      const ids = [...new Set([...(a.type === "answer" && Array.isArray(a.ids) ? a.ids : []), ...(a.type === "refuse" ? [] : aboutFacts(q, facts))])];
+      const ids = [...new Set([...(a.type === "answer" && Array.isArray(a.ids) ? a.ids : []), ...(a.type === "refuse" ? [] : aboutFacts(q, facts.filter(f => f.id[0] !== "T")))])];
       if (ids.length) b.after(chatCards(facts, ids));
-      S.chat.prev = cutTo(q + " ← " + a.text, CHAT.PREV);
+      // the last three exchanges go with the next question, so that "compare them" and "and the second one?" have something to point at
+      S.chat.hist = [...(S.chat.hist || []), cutTo(q + " ← " + a.text, 340)].slice(-3); S.chat.prev = S.chat.hist.join(" ‖ ");
+      S.chat.asked = [...(S.chat.asked || []), q]; drawChatSug();
     } else {
       // no model answer: what the page itself found is still shown, and said to be that
       const b = chatBubble("it off", t("chat.by.off"));

@@ -7,7 +7,8 @@
 //         facts it was given (by their ids) and write a few connecting sentences; verses, hadith, numbers and gradings
 //         are shown to the reader from the sources' data, never from the model's words.
 
-export const ASK = { MAX_BODY: 14000, CHECK_ITEMS: 6, SAID: 420, SOURCE: 700, FACTS: 30, FACT: 420, FACTS_TOTAL: 6500, Q: 300, PREV: 500, TEXT: 900, IDS: 8 };
+export const ASK = { MAX_BODY: 40000, CHECK_ITEMS: 6, SAID: 420, SOURCE: 700, FACTS: 30, FACT: 420, FACTS_TOTAL: 6500, Q: 300, PREV: 1100, TEXT: 1100, IDS: 8,
+  PASSAGES: 16, PASSAGE: 900, PASSAGES_TOTAL: 5200 };      // passages: the lecturer's own words (the transcript), sent beside the facts
 
 const line = (v, max) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/<{2,}|>{2,}/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 const stripThink = (s) => String(s ?? "").replace(/<think>[\s\S]*?(<\/think>|$)/gi, " ");
@@ -60,7 +61,7 @@ function gradesOnItsOwn(sentence, hay) {
   }
   return false;
 }
-const ID = /^[LSM]\d{1,3}$/;
+const ID = /^[LSM]\d{1,3}$/, PID = /^T\d{1,3}$/;
 /** -> {q, facts: [{id, text}], prev, lang} cleaned, or null */
 export function chatInput(body) {
   const q = line(body && body.q, ASK.Q);
@@ -72,8 +73,17 @@ export function chatInput(body) {
     if (total + text.length > ASK.FACTS_TOTAL) break;
     total += text.length; facts.push({ id, text });
   }
+  // passages of the transcript (ids T…): the lecturer's own words, with the time they were said at. They are listed with
+  // the facts (a quotation from them is a quotation the reader can check) and have a budget of their own.
+  let ptotal = 0, pn = 0;
+  for (const f of Array.isArray(body && body.passages) ? body.passages.slice(0, ASK.PASSAGES) : []) {
+    const id = typeof (f && f.id) === "string" ? f.id : "", text = line(f && f.text, ASK.PASSAGE);
+    if (!PID.test(id) || !text || facts.some((x) => x.id === id)) continue;
+    if (ptotal + text.length > ASK.PASSAGES_TOTAL) break;
+    ptotal += text.length; pn++; facts.push({ id, text });
+  }
   const lang = body && body.lang === "en" ? "en" : "ar";
-  return { q, facts, prev: line(body && body.prev, ASK.PREV), lang };
+  return { q, facts, prev: line(body && body.prev, ASK.PREV), lang, passages: pn };
 }
 export const CHAT_SYSTEM = (lang) => [
   "أنت «أثَر»: مساعد يجيب عن أسئلة حول ما استُشهد به في محاضرة، وحول نتائج بحث في مصادر محددة (القرآن وكتب الحديث وكتب محمَّلة). تعمل من «الوقائع» المعطاة لك فقط.",
@@ -81,10 +91,11 @@ export const CHAT_SYSTEM = (lang) => [
   "١) لا تستعمل أي معلومة من خارج الوقائع: لا من حفظك ولا من علمك العام. ما ليس في الوقائع فأنت لا تعرفه.",
   "٢) لكل واقعة تبني عليها جوابك ضع رمزها في ids، وستُعرض بطاقتها للمستخدم بنصّها الكامل ومصدرها ودرجتها من المصادر نفسها. لذلك لا تكتب أنت نص آية أو حديث ليس في الوقائع، ولا تكتب الرموز (مثل L3) داخل text.",
   "٣) المصدر والدرجة: إن ذكرتهما فبألفاظ الواقعة نفسها بلا تغيير ولا تلخيص ولا ترجيح. «في صحيح البخاري» معناها أن الحديث في ذلك الكتاب، وليست حكمًا تصوغه بلفظ آخر. واقعة تقول «لا درجة مسجّلة» فقل ذلك كما هو، ولا تصف حديثًا بأنه صحيح أو ضعيف من عندك.",
-  "٤) لا تُفتِ ولا تستنبط حكمًا شرعيًّا ولا تفسّر آية أو حديثًا برأيك. سؤال عن حكم («ما حكم…»، «هل يجوز…»، «هل يجب…») أو طلب شرح معنى نص نوعه refuse دائمًا. الرفض لهذين فقط. السؤال عن صحة حديث أو درجته أو مصدره («هل حديث كذا صحيح؟»، «ما درجته؟»، «أين ورد؟») ليس طلب فتوى ولا يُرفض أبدًا: إن وُجدت واقعته فنوعه answer وتنقل ما تقوله عن درجته ومصدره كما هو (ولو كان «لا درجة مسجّلة» أو «ليس في كتب الحديث المحمَّلة»)، وإن لم توجد فنوعه notfound. وكذلك السؤال عن لفظ ما قيل — هل الآية أو الحديث كما قيل صحيح اللفظ، مطابق، محرَّف، ناقص؟ — فليس حكمًا شرعيًّا: هو سؤال عن «الحالة» في الواقعة («مطابق حرفيًا»، «مطابق مع فروق»، «قيل منه كذا من كذا كلمة»)، فنوعه answer وتنقل ما تقوله الواقعة.",
+  "٤) لا تُفتِ ولا تستنبط حكمًا شرعيًّا ولا تفسّر آية أو حديثًا برأيك. سؤال عن حكم («ما حكم…»، «هل يجوز…»، «هل يجب…») أو طلب شرح معنى نص حين لا يكون في المقاطع T شرح المحاضر له، نوعه refuse. الرفض لهذين فقط (ونقل شرح المحاضر نفسه من المقاطع T ليس شرحًا من عندك: انظر القاعدة ١٣). السؤال عن صحة حديث أو درجته أو مصدره («هل حديث كذا صحيح؟»، «ما درجته؟»، «أين ورد؟») ليس طلب فتوى ولا يُرفض أبدًا: إن وُجدت واقعته فنوعه answer وتنقل ما تقوله عن درجته ومصدره كما هو (ولو كان «لا درجة مسجّلة» أو «ليس في كتب الحديث المحمَّلة»)، وإن لم توجد فنوعه notfound. وكذلك السؤال عن لفظ ما قيل — هل الآية أو الحديث كما قيل صحيح اللفظ، مطابق، محرَّف، ناقص؟ — فليس حكمًا شرعيًّا: هو سؤال عن «الحالة» في الواقعة («مطابق حرفيًا»، «مطابق مع فروق»، «قيل منه كذا من كذا كلمة»)، فنوعه answer وتنقل ما تقوله الواقعة.",
   "٩) من سأل عن رابط أو مصدر نصٍّ فجوابه answer برمز واقعته: بطاقتها التي تُعرض تحمل رابط المصدر. لا تقل إنك لم تجد رابطًا لواقعة موجودة.",
   "١٠) العدّ والتكرار كما في الواقعة فقط: «ذُكر مرة واحدة» لا تُسمّى تكرارًا، ولا تقل عن نص إنه كُرِّر إلا إذا قالت واقعته «ذُكر مرتين» أو أكثر. من طلب «الآيات» أو «الأحاديث» فاذكرها كلها برموزها، لا واحدة منها.",
   "١١) المقارنة بين نصّين في الوقائع جائزة بما في الوقائع وحده: مصدر كلٍّ، ودرجته، وكم قيل منه، وحالته. ومن سأل عن درجة «كل» حديث فاذكر كل حديث في الوقائع بدرجته كما هي.",
+  "١٣) المقاطع التي رمزها T من كلام المحاضر نفسه كما فُرِّغ آليًّا (قد يخطئ التفريغ في كلمة)، ومع كل مقطع زمنه. بها تجيب عن: «لخّص المحاضرة»، «ماذا قال الشيخ عن كذا؟»، «متى تكلّم عن كذا؟»، و«اشرح لي هذا الحديث/الآية» — فتنقل ما قاله المحاضر هو في شرحه، منسوبًا إليه («ذكر المحاضر أن…»، «قال عند 2:10…»)، وتضع رموز المقاطع في ids. لا تزد على كلامه معنًى من عندك ولا ترجّح ولا تصحّح له. إن لم يكن في المقاطع شرح لما سُئلت عنه فقل إن المحاضر لم يشرحه في المقاطع المتاحة (notfound). التلخيص: أهم ما قاله بترتيبه، في خمس جمل على الأكثر. كلام المحاضر ليس مصدرًا لدرجة حديث: الدرجة من الوقائع L و S فقط.",
   "١٢) الواقعة التي رمزها M معلومات عن المحاضرة نفسها (عنوانها كما في يوتيوب، مدتها، من فرّغها). من سأل عن اسم الشيخ أو عنوان المحاضرة فمنها، وقل إنه من عنوان الفيديو.",
   "٥) إن لم يكن في الوقائع شيء عن المسؤول عنه فالنوع notfound، وتقول في text ما الذي لم تجده، في جملة واحدة. لا تخمّن ولا تكمل من عندك. أما إذا وُجدت الواقعة المسؤول عنها فالنوع answer ورمزها في ids، حتى لو كانت بلا درجة مسجّلة أو قيل فيها إنها لم يُعثر عليها: قل ما تقوله الواقعة عنها.",
   "٦) الوقائع التي رمزها L من سجل المحاضرة (ما قاله المتحدث). التي رمزها S نتائج بحث في المصادر عن نص السؤال: استعملها فقط إذا كانت هي المسؤول عنها، وقل إنها نتيجة بحث في المصادر لا شيء قيل في المحاضرة.",
@@ -93,8 +104,9 @@ export const CHAT_SYSTEM = (lang) => [
   "أجب بكائن JSON واحد فقط بهذا الشكل: {\"type\":\"answer\",\"ids\":[\"L1\"],\"text\":\"...\"} حيث type واحد من answer أو notfound أو refuse.",
 ].join("\n");
 export function chatUser(inp) {
-  const facts = inp.facts.length ? inp.facts.map((f) => `[${f.id}] ${f.text}`).join("\n") : "(لا وقائع)";
-  return `الوقائع:\n${facts}\n\n${inp.prev ? "السؤال السابق وجوابه: " + inp.prev + "\n\n" : ""}السؤال: ${inp.q}`;
+  const F = inp.facts.filter((f) => f.id[0] !== "T"), T = inp.facts.filter((f) => f.id[0] === "T");
+  const facts = (F.length ? F.map((f) => `[${f.id}] ${f.text}`).join("\n") : "(لا وقائع)") + (T.length ? "\n\nمقاطع من كلام المحاضر (تفريغ آلي):\n" + T.map((f) => `[${f.id}] ${f.text}`).join("\n") : "");
+  return `الوقائع:\n${facts}\n\n${inp.prev ? "ما سبق في هذه المحادثة (للسياق فقط): " + inp.prev + "\n\n" : ""}السؤال: ${inp.q}`;
 }
 /**
  * the model's answer -> {type, ids, text}, or null when it is not the object asked for.
@@ -111,7 +123,7 @@ export function parseChat(text, inp) {
   const known = new Set(inp.facts.map((f) => f.id));
   const ids = type === "answer" ? [...new Set((Array.isArray(j.ids) ? j.ids : []).filter((x) => typeof x === "string" && known.has(x)))].slice(0, ASK.IDS) : [];
   const hay = " " + fold(inp.facts.map((f) => f.text).join(" ") + " " + inp.q) + " ";
-  let out = line(String(typeof j.text === "string" ? j.text : "").replace(/[<>`*_#]/g, " ").replace(/\[?\b[LSM]\d{1,3}\b\]?/g, " "), ASK.TEXT);
+  let out = line(String(typeof j.text === "string" ? j.text : "").replace(/[<>`*_#]/g, " ").replace(/\[?\b[LSMT]\d{1,3}\b\]?/g, " "), ASK.TEXT);
   out = out.replace(/«([^«»]{12,})»|"([^"]{12,})"|“([^“”]{12,})”/g, (m, x, y, z) => (hay.includes(fold(x || y || z)) ? m : "«…»"));
   // a sentence that grades (صحيح، حسن، ضعيف، موضوع …) in words the facts do not carry is dropped: gradings come from the sources' data only
   out = out.split(/(?<=[.!؟?])\s+/).filter((sent) => !gradesOnItsOwn(sent, hay) && !repeatsOnItsOwn(sent, hay)).join(" ").trim();

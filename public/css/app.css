@@ -1571,3 +1571,8 @@ html[data-theme="dark"] .err .quiet-btn { background: var(--gold); color: #1B140
 
 /* the header's buttons keep to one line each (English labels used to break in two) */
 .navbtn, .brand-what { white-space: nowrap; }
+
+/* chat: a passage of the lecturer's own words */
+.chat-pass { border-inline-start: 3px solid var(--ks, #8a8fb5); }
+.chat-pass .src { display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center; }
+.chat-pass-text { margin: .5rem 0 0; line-height: 1.95; }

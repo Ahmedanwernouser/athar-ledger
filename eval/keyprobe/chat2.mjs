@@ -3,7 +3,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { CHAT_SYSTEM, chatUser, parseChat, chatInput } from "../../worker/ask.js";
 const key = process.env.GROQ_API_KEY || "", H = { Authorization: "Bearer " + key, "Content-Type": "application/json" };
-const MODELS = String(process.env.ASK_MODELS || "qwen/qwen3.8-27b,openai/gpt-oss-120b").split(",");
+const MODELS = String(process.env.ASK_MODELS || "qwen/qwen3.8-27b").split(",");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const params = model => ({ temperature: 0, max_completion_tokens: 700, ...(model.includes("gpt-oss") ? { reasoning_effort: "low", include_reasoning: false } : { reasoning_effort: "none", reasoning_format: "hidden" }), response_format: { type: "json_object" } });
 const FACTS = [
@@ -15,6 +15,10 @@ const FACTS = [
   { id: "L2", text: "في المحاضرة عند 1:31 — قول منسوب — لم يُعثر عليه في المصادر — قيل: «يقول الإمام ابن الجوزي تدبرت هذا الحديث فأدهشني وكاد عقلي أن يطير فواسفا على جهلنا بهذا»" },
   { id: "M1", text: "عن المحاضرة نفسها — عنوانها: «(احفظ الله يحفظك) ▪︎ الشيخ توفيق الصايغ» — فيديو من رابط · 4:26 · ٤٥٦ كلمة — المفرِّغ: Gemini (نموذج عام، من رابط يوتيوب) · gemini-3.5-flash-lite" },
 ];
+// the lecturer's own words, cut as the page cuts them (about seventy words a stretch; times as the page would give them)
+import { readFileSync } from "node:fs";
+const WORDS = readFileSync(new URL("../../tests/fixtures/sayegh.txt", import.meta.url), "utf8").split(/\s+/).filter(Boolean);
+const PASSAGES = []; for (let a = 0, i = 1; a < WORDS.length; a += 70, i++) { const sec = Math.round(a * 266 / WORDS.length); PASSAGES.push({ id: "T" + i, text: `عند ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}: ` + WORDS.slice(a, a + 70).join(" ") }); }
 // [question, what the previous turn was, what a good answer is]
 const QS = [
   ["ما الأحاديث والآيات التي ذُكرت؟", "", "answer: L1 L4 L5 L6 L7"],
@@ -30,10 +34,17 @@ const QS = [
   ["ما حكم من ترك الصلاة؟", "", "refuse"],
   ["هل ذكر الشيخ حديثا عن الصيام؟", "", "notfound"],
   ["هل كرر الشيخ حديثا؟", "", "answer: L1 was said twice"],
+  ["لخّص المحاضرة في خمس جمل", "", "answer from T passages: guarding God's commands, He guards one's religion, body, family; examples"],
+  ["ماذا قال المحاضر في شرح حديث احفظ الله يحفظك؟", "", "answer from T: do what He commands, avoid what He forbids; He guards you in religion, body, family, wealth"],
+  ["اشرحلي الحديث", "ما الأحاديث؟ ← ذُكر حديث الأربعين النووية رقم 19 وحديث جامع الترمذي رقم 2195.", "answer from T: the lecturer's own explanation, attributed to him — not the model's"],
+  ["متى تكلم عن ابن المسيب؟", "", "answer with the time of that passage"],
+  ["ماذا قال عن الزهايمر؟", "", "answer from T: those who memorise the Book hardly get it (his words)"],
+  ["ماذا قال عن الصيام؟", "", "notfound"],
+  ["ما حكم حفظ القرآن؟", "", "refuse"],
 ];
 const out = { at: new Date().toISOString(), models: MODELS, rows: [] };
 for (const model of MODELS) for (const [q, prev, want] of QS) {
-  const inp = chatInput({ q, prev, lang: "ar", facts: FACTS }), row = { model, q, want }, t0 = Date.now();
+  const inp = chatInput({ q, prev, lang: "ar", facts: FACTS, passages: PASSAGES }), row = { model, q, want }, t0 = Date.now();
   try {
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: H, signal: AbortSignal.timeout(60000), body: JSON.stringify({ model, ...params(model), messages: [{ role: "system", content: CHAT_SYSTEM("ar") }, { role: "user", content: chatUser(inp) }] }) });
     row.http = r.status; row.ms = Date.now() - t0;
@@ -41,7 +52,7 @@ for (const model of MODELS) for (const [q, prev, want] of QS) {
     if (r.ok && j) { const raw = String(j.choices?.[0]?.message?.content ?? ""); row.raw = raw.slice(0, 700); row.got = parseChat(raw, inp); row.tokens = j.usage?.total_tokens; }
     else if (j && j.error) row.error = String(j.error.message || j.error.code || "").replace(/org_\w+/g, "<org>").slice(0, 200);
   } catch (e) { row.http = 0; row.error = e.name; }
-  out.rows.push(row); await sleep(model.includes("qwen") ? 9000 : 5000);
+  out.rows.push(row); await sleep(model.includes("qwen") ? 32000 : 28000);      // (the passages make a request about 3,500 tokens; the free tier allows 7-8,000 a minute)
 }
 mkdirSync(new URL("./out/", import.meta.url), { recursive: true });
 writeFileSync(new URL("./out/chat2.json", import.meta.url), JSON.stringify(out, null, 1));

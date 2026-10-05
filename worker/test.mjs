@@ -903,7 +903,7 @@ sec("/ask: the checker and the chat (Groq)");
   r = await call(ask({ mode: "chat", q: "هل ذكر بر الوالدين؟", facts: FACTS }), baseEnv());
   ok(r.j.type === "notfound" && up.calls.length === 2 && !r.t.includes(KEY), "/ask chat: free text is not an answer; the next model is asked");
   up.impl = said("free text only"); r = await call(ask({ mode: "chat", q: "سؤال ما هنا", facts: FACTS }), baseEnv()); ok(r.status === 502 && r.j.error === "upstream" && !r.t.includes("free"), "/ask chat: nobody answers in the form asked for -> 502, no model words");
-  r = await call(ask({ mode: "chat", q: "x".repeat(20000), facts: FACTS }), baseEnv()); eq(r.status, 413, "/ask an oversized body");
+  r = await call(ask({ mode: "chat", q: "x".repeat(50000), facts: FACTS }), baseEnv()); eq(r.status, 413, "/ask an oversized body");
   { const env = baseEnv({ ASK_DAILY_CAP: "2", ASK_IP_DAILY_CAP: "2" }); up.impl = said("11"); await call(ask({ mode: "check", items: IT }), env); await call(ask({ mode: "check", items: IT }), env);
     r = await call(ask({ mode: "check", items: IT }), env); ok(r.status === 429 && r.j.error === "daily_cap", "/ask has its own daily limit"); }
 }

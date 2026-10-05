@@ -592,6 +592,14 @@ async function onMessage(ev) {
       const items = ev.data.items || [];
       await loadDisplayFor(items.filter(it => it.type === "h").map(it => ({ type: "h", ref: it.ref })));
       self.postMessage({ id, ok: true, result: buildDigest(items) });
+    } else if (type === "tafsir") {
+      // al-Jalalayn's commentary on some ayat (the tafsir pack must be loaded): the book's words, as stored for searching
+      const out = [];
+      for (const x of (ev.data.list || []).slice(0, 3)) for (let a = x.ayah; a <= Math.min(x.ayahEnd || x.ayah, x.ayah + 3); a++) {
+        const text = corpus.tafsirOf(x.surah, a); if (!text) continue;
+        const d = corpus.describe(corpus.tafsirPid.get(`${x.surah}:${a}`)); out.push({ surah: x.surah, ayah: a, label: d.label, text });
+      }
+      self.postMessage({ id, ok: true, result: out });
     } else if (type === "lookup") {
       // the corpus passages closest to one stretch of words (a selection in the transcript, or typed text)
       self.postMessage({ id, ok: true, result: await lookupWithDisplay(ev.data.words) });
