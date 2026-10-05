@@ -33,6 +33,7 @@ jobs:
           if [ "$PROBE" = "ytmodels" ]; then node eval/keyprobe/ytmodels.mjs > /dev/null; fi
           if [ "$PROBE" = "ytstream" ]; then node eval/keyprobe/ytstream.mjs > /dev/null; fi
           if [ "$PROBE" = "yt" ]; then node eval/keyprobe/yt.mjs > /dev/null; fi
+          if [ "$PROBE" = "ytlong" ]; then ONLY_LONGER=1 node eval/keyprobe/yt.mjs > /dev/null; fi
       - name: publish results
         if: always()
         run: |
