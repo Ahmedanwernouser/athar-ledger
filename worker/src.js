@@ -88,6 +88,7 @@ export default {
   async fetch(req, env, ctx) {
     let cors = {};
     try {
+      KV_GAP_MS = /^\d+$/.test(String(env.KV_GAP_MS ?? "")) ? Number(env.KV_GAP_MS) : KV_RETRY_MS;      // (tests set 0: their counter store takes writes at any pace)
       const allowed = String(env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()).filter((s) => s && s !== "*" && s !== "null");
       const origin = req.headers.get("Origin") || "";
       cors = corsHeaders(origin, allowed);
@@ -149,14 +150,39 @@ function clock() {
   return { day: iso.slice(0, 10), hour: iso.slice(0, 13), nextHour, nextDay };
 }
 
-/** write the instance's current number for this key; on failure wait 1.1 s, re-read, and try once more (then throw) */
+/**
+ * One writer per key in this instance. KV refuses two writes to a key within a second, so several visitors arriving
+ * together used to be refused ("busy") although nothing was wrong: measured, 3 of 5 simultaneous requests failed.
+ * Now the writes of one key are spaced by this instance itself, and a write that has not started yet carries the number
+ * of everybody who is waiting for it: N simultaneous visitors cost one or two writes and nobody is turned away.
+ * The promise fails when the write fails, so a counter store that is down is still seen by every request.
+ */
+const WRITERS = new WeakMap();
+let KV_GAP_MS = KV_RETRY_MS;
+function flush(kv, m, s) {
+  let ws = WRITERS.get(kv); if (!ws) { ws = new Map(); WRITERS.set(kv, ws); }
+  if (ws.size > 2000) ws.clear();
+  let w = ws.get(s.key); if (!w) { w = { last: 0, busy: null, next: null }; ws.set(s.key, w); }
+  if (w.next) return w.next;                    // scheduled and not started: it will write this request's number too
+  const prev = w.busy;
+  const p = (async () => {
+    if (prev) { try { await prev; } catch { /* that write's own waiters saw it */ } } else await null;
+    const gap = KV_GAP_MS - (Date.now() - w.last);
+    if (gap > 0) await sleep(gap);
+    w.next = null; w.last = Date.now();
+    await kv.put(s.key, String(m.get(s.key) || 0), { expirationTtl: s.ttl });
+  })();
+  w.next = p; w.busy = p;
+  p.catch(() => {}).then(() => { if (w.busy === p) w.busy = null; });
+  return p;
+}
+/** write the instance's current number for this key; on failure (another instance wrote it this second) wait, re-read, and try once more (then throw) */
 async function putCount(kv, m, s, add) {
-  const write = () => kv.put(s.key, String(m.get(s.key)), { expirationTtl: s.ttl });
-  try { await write(); return; } catch { /* most likely: same key written less than 1 s ago */ }
-  await sleep(KV_RETRY_MS);
+  try { await flush(kv, m, s); return; } catch { /* most likely: same key written less than 1 s ago elsewhere */ }
+  await sleep(KV_RETRY_MS + Math.floor(Math.random() * 300));
   const cur = count(await kv.get(s.key));
   m.set(s.key, Math.max(m.get(s.key) || 0, cur + add));
-  await write();
+  await flush(kv, m, s);
 }
 
 /**
@@ -203,8 +229,8 @@ async function charge(kv, specs, extra) {
 async function refund(kv, specs) {
   const m = memOf(kv);
   await Promise.all(specs.map(async (s) => {
-    const write = async () => { const cur = Math.max(count(await kv.get(s.key)), m.get(s.key) || 0); m.set(s.key, Math.max(cur - 1, 0)); await kv.put(s.key, String(m.get(s.key)), { expirationTtl: s.ttl }); };
-    try { await write(); } catch { try { await sleep(KV_RETRY_MS); m.set(s.key, (m.get(s.key) || 0) + 1); await write(); } catch { /* approximate by design */ } }
+    try { const cur = Math.max(count(await kv.get(s.key)), m.get(s.key) || 0); m.set(s.key, Math.max(cur - 1, 0)); } catch { m.set(s.key, Math.max((m.get(s.key) || 1) - 1, 0)); }
+    try { await flush(kv, m, s); } catch { try { await sleep(KV_RETRY_MS); await flush(kv, m, s); } catch { /* approximate by design */ } }
   }));
 }
 

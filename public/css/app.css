@@ -1517,3 +1517,6 @@ html[data-theme="dark"] .notices li .quiet-btn { background: var(--gold); color:
 #keyInput { font-family: ui-monospace, Menlo, Consolas, monospace; text-align: left; }
 .err .quiet-btn { margin-inline-start: 8px; background: var(--sheet); color: var(--ink); box-shadow: var(--shadow-s); }
 html[data-theme="dark"] .err .quiet-btn { background: var(--gold); color: #1B1403; box-shadow: none; font-weight: 600; }
+.navbtn.keytab { gap: 8px; }
+.navbtn.keytab i { inline-size: 8px; block-size: 8px; border-radius: 50%; border: 1.5px solid var(--on-dark-3); box-sizing: border-box; }
+.navbtn.keytab.on i { background: #46C7A1; border-color: #46C7A1; }

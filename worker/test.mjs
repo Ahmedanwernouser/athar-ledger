@@ -39,7 +39,7 @@ function kv(o = {}) {
       if (o.delay) await new Promise((r) => setTimeout(r, o.delay));
       writes++; m.set(k, v); } };
 }
-const baseEnv = (o = {}) => ({ GROQ_API_KEY: KEY, ALLOWED_ORIGINS: OK, CAP: kv(), ...o });
+const baseEnv = (o = {}) => ({ GROQ_API_KEY: KEY, ALLOWED_ORIGINS: OK, CAP: kv(), KV_GAP_MS: "0", ...o });      // (the stub takes writes at any pace unless a test says otherwise)
 const L = (o = {}) => baseEnv({ LLM_PROVIDER: "groq", ...o });
 
 // ---- request builders ----
@@ -221,6 +221,24 @@ sec("KV failures");
   const a = await call(llm({ spoken: SP, kind: "hadith", candidates: ["أ", "ب"] }), env); up.impl = chat("ليس الشديد بالصرعة");
   const b = await call(llm({ spoken: SP, kind: "hadith" }), env);
   ok(a.status === 200 && b.status === 200 && b.j.text === "ليس الشديد بالصرعة" && env.CAP.m.get("l:2026-10-02") === "2", "/llm step A then step B back to back (same KV key) -> both 200"); up.impl = asrOK; }
+
+sec("several visitors at the same instant (a counter store that takes one write a second per key, like KV)");
+{ up.impl = asrOK;
+  // ten visitors together: nobody is turned away, everybody is counted, and the store is written a few times, not ten
+  let env = baseEnv({ CAP: kv({ oneWritePerSec: true }), KV_GAP_MS: undefined });
+  let rs = await Promise.all(Array.from({ length: 10 }, async () => (await call(await asr(), env)).status));
+  ok(rs.every((x) => x === 200), "10 simultaneous uploads: all are served  (got " + JSON.stringify(rs) + ")");
+  eq(env.CAP.m.get([...env.CAP.m.keys()].find((k) => k.startsWith("d:"))), "10", "... and all ten are counted");
+  ok(env.CAP.writes <= 9, "... with a handful of writes (" + env.CAP.writes + "), none refused");
+  // the limit still holds when they come together: 20 at once against an hourly limit of 12
+  env = baseEnv({ CAP: kv({ oneWritePerSec: true }), KV_GAP_MS: undefined, IP_DAILY_CAP: "48" });
+  up.calls = []; rs = await Promise.all(Array.from({ length: 20 }, async () => (await call(await asr(), env)).status));
+  ok(rs.filter((x) => x === 200).length === 12 && rs.filter((x) => x === 429).length === 8 && up.calls.length === 12, "20 simultaneous uploads against an hourly limit of 12: exactly 12 reach the transcriber");
+  // a store that is down is still seen by every one of them
+  env = baseEnv({ CAP: kv({ putThrows: true }), KV_GAP_MS: undefined }); up.calls = [];
+  rs = await Promise.all(Array.from({ length: 5 }, async () => (await call(await asr(), env)).status));
+  ok(rs.every((x) => x === 503) && up.calls.length === 0, "5 simultaneous uploads while the counter store is down: all refused, none reaches the transcriber");
+}
 
 sec("optional per-IP burst limiter (RL binding)");
 { const keys = []; const RL = { limit: async ({ key }) => { keys.push(key); return { success: false }; } }; up.calls = [];

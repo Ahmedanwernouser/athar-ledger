@@ -128,6 +128,7 @@ function drawSamples() {
 function drawAsk() {
   const yt = canYt(), up = !!CFG.asrUrl;
   $("btnKey").hidden = !up; $("btnKey").textContent = t(CFG.userKey ? "key.on" : "key.open");
+  $("btnKeyTop").hidden = !up; $("keyTopLabel").textContent = t("key.open"); $("btnKeyTop").classList.toggle("on", !!CFG.userKey); $("btnKeyTop").title = t(CFG.userKey ? "key.state.on" : "key.state.off");
   $("paste").placeholder = t(yt ? "ask.ph.yt" : "ask.ph"); $("paste").setAttribute("aria-label", t(yt ? "ask.ph.yt" : "ask.ph"));
   $("dropMain").textContent = t("ask.file");
   $("askHint").textContent = [t("ask.keys"), up ? t("ask.drop") : ""].filter(Boolean).join(" · ");
@@ -196,7 +197,7 @@ function boot() {
   $("btnTheme").onclick = () => setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
   $("btnOptions").onclick = () => openOptions($("options").hidden);
   { const k = store.get("athar:gemkey", ""); if (typeof k === "string" && OWN_KEY.test(k)) CFG.userKey = k; }
-  $("btnKey").onclick = openKey;
+  $("btnKey").onclick = openKey; $("btnKeyTop").onclick = openKey;
   $("keyForm").onsubmit = ev => { ev.preventDefault(); if ($("keyInput").value.trim()) saveKey($("keyInput").value); };
   $("keyForget").onclick = () => saveKey("");
   // the one box: Enter analyses, Shift+Enter is a new line; it grows with what is pasted into it
