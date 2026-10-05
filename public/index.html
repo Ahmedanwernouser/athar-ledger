@@ -6,6 +6,7 @@
 <title>أثَر — سجل الاستشهادات المنطوقة</title>
 <meta name="description" content="ارفع تسجيل محاضرة أو الصق نصّها: يستخرج أثَر الآيات والأحاديث المنطوقة، يحدّد موضعها في التسجيل، ويقارن لفظها بالمصدر كلمةً كلمة.">
 <link rel="preload" href="fonts/amiri-arabic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("athar:theme")==="\"light\""?"light":"dark"}catch(e){document.documentElement.dataset.theme="dark"}</script>
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
@@ -21,6 +22,7 @@
       <button type="button" class="navbtn" id="btnNew" hidden>تحليل جديد</button>
       <button type="button" class="navbtn" id="btnSearch">ابحث في المصادر</button>
       <button type="button" class="navbtn" id="btnLimits">كيف يعمل وما حدوده</button>
+      <button type="button" class="navbtn theme" id="btnTheme"><i aria-hidden="true"></i><span id="themeLabel">فاتح</span></button>
       <button type="button" class="navbtn lang" id="btnLang" lang="en">English</button>
     </nav>
   </div>
@@ -31,84 +33,85 @@
   <section id="start" class="start">
     <div class="hero">
       <div class="hero-in">
-        <h1 id="startTitle" tabindex="-1">ما الذي استشهد به المتحدث، وأين، وبأي لفظ؟</h1>
-        <p class="lede">ارفع محاضرة أو الصق نصّها: يجد أثَر كل آية وحديث قيل فيها، ويقارن لفظه بالمصدر كلمةً كلمة. لا يحكم على صحة حديث؛ يُريك الدليل.</p>
-        <p class="hero-cta"><button type="button" class="btn gold" id="btnTry">شاهد مثالًا جاهزًا</button> <a class="hero-alt" href="#wayText" id="heroAlt">أو ابدأ بنصّك</a></p>
+        <h1 id="startTitle" tabindex="-1">ما الذي استشهد به المتحدث، وبأي لفظ؟</h1>
+        <p class="lede">يجد كل آية وحديث قيل في المحاضرة، ويقارن لفظه بالمصدر كلمةً كلمة.</p>
+
+        <!-- one way in: a link, a text, or a recording dropped on it -->
+        <div class="ask" id="drop">
+          <div class="ask-in">
+            <textarea id="paste" rows="1" dir="auto" placeholder="الصق رابط يوتيوب، أو نص المحاضرة…" aria-label="رابط يوتيوب أو نص المحاضرة" aria-describedby="askHint"></textarea>
+            <label class="ask-file" id="askFile"><input type="file" id="file" class="vh" accept="audio/*,video/*,.mp3,.m4a,.wav,.ogg,.mp4,.webm" aria-describedby="audioHint">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4"/></svg>
+              <span id="dropMain">ارفع تسجيلًا</span></label>
+            <button type="button" class="ask-go" id="btnAnalyzeText" disabled>حلِّل</button>
+          </div>
+        </div>
+        <p class="ask-hint" id="askHint"></p>
+        <p class="err" id="startErr" role="alert" hidden></p>
+
+        <div class="ask-chips">
+          <div id="samples" class="samples"></div>
+          <button type="button" class="chipbtn line" id="btnOptions" aria-expanded="false" aria-controls="options">خيارات: اللغة والكتب الإضافية</button>
+        </div>
+        <p class="err" id="samplesErr" role="alert" hidden></p>
+
         <div class="corpus-state" id="corpusState" role="status">
           <div class="bar"><i id="corpusBar"></i></div>
           <span id="corpusMsg">تُحمَّل المصادر…</span>
           <button type="button" class="navbtn retry" id="corpusRetry" hidden>أعد المحاولة</button>
         </div>
-      </div>
-    </div>
 
-    <div class="wrap desk">
-      <div class="ways">
-        <div class="way way-audio" id="wayAudio">
-          <h2>تسجيل صوتي أو مرئي</h2>
-          <label class="drop" id="drop">
-            <input type="file" id="file" class="vh" accept="audio/*,video/*,.mp3,.m4a,.wav,.ogg,.mp4,.webm" aria-describedby="dropSub audioHint">
-            <svg class="wave" viewBox="0 0 120 32" aria-hidden="true"><g fill="currentColor"><rect x="2" y="13" width="3" height="6" rx="1.5"/><rect x="10" y="9" width="3" height="14" rx="1.5"/><rect x="18" y="4" width="3" height="24" rx="1.5"/><rect x="26" y="10" width="3" height="12" rx="1.5"/><rect x="34" y="7" width="3" height="18" rx="1.5"/><rect x="42" y="12" width="3" height="8" rx="1.5"/><rect x="50" y="2" width="3" height="28" rx="1.5"/><rect x="58" y="8" width="3" height="16" rx="1.5"/><rect x="66" y="11" width="3" height="10" rx="1.5"/><rect x="74" y="5" width="3" height="22" rx="1.5"/><rect x="82" y="10" width="3" height="12" rx="1.5"/><rect x="90" y="13" width="3" height="6" rx="1.5"/><rect x="98" y="8" width="3" height="16" rx="1.5"/><rect x="106" y="11" width="3" height="10" rx="1.5"/><rect x="114" y="14" width="3" height="4" rx="1.5"/></g></svg>
-            <span class="drop-main" id="dropMain">اختر ملفًّا أو اسحبه إلى هنا</span>
-            <span class="drop-fmt" id="audioHint">mp3 أو m4a أو wav أو mp4</span>
-          </label>
-          <label class="reclang"><span id="recLangLabel">لغة التسجيل</span>
-            <select id="recLang"><option value="ar">عربي</option><option value="en">إنجليزي</option><option value="en+ar">إنجليزي مع تلاوة عربية (تفريغ مرّتين)</option></select>
-          </label>
-          <label class="reclang" id="asrProvWrap" hidden><span id="asrProvLabel">المفرِّغ</span>
-            <select id="asrProv"></select>
-          </label>
-          <form class="ytform" id="ytForm" hidden>
-            <label for="ytUrl" id="ytLabel">أو رابط يوتيوب فقط</label>
-            <div class="ytrow">
-              <input type="text" id="ytUrl" dir="ltr" inputmode="url" placeholder="https://youtu.be/…" autocomplete="off" aria-describedby="ytNote">
-              <button type="submit" class="btn" id="btnYt">حلِّل من الرابط</button>
-            </div>
-          </form>
-          <details class="tips">
-            <summary id="audioTipsTitle">الخصوصية ودقة التفريغ</summary>
-            <p class="hint" id="dropSub">يُرسَل الصوت إلى خدمة التفريغ ولا يُحفَظ عندنا. يُحتفَظ بعدّاد مجهول قصير الأجل فقط لتطبيق الحد اليومي المجاني.</p>
-            <p class="hint" id="ytNote">للفيديوهات العامة. يفرّغه نموذج Gemini العام من الرابط مباشرة بلا تحميل؛ الأزمنة تقريبية، وقد يختلف لفظ كلمة عمّا قيل. للتدقيق ارفع الملف.</p>
-          </details>
-        </div>
-
-        <div class="way way-text" id="wayText">
-          <h2 id="wayTextTitle">نص مفرَّغ جاهز</h2>
-          <textarea id="paste" rows="6" dir="auto" placeholder="الصق نص المحاضرة هنا…" aria-labelledby="wayTextTitle" aria-describedby="wayTextHint"></textarea>
-          <label class="videourl"><span id="videoLabel">رابط الفيديو (اختياري)</span>
-            <input type="url" id="videoUrl" dir="ltr" inputmode="url" placeholder="https://youtu.be/…" autocomplete="off"></label>
-          <div class="row">
-            <button type="button" class="btn" id="btnAnalyzeText" disabled>حلِّل النص</button>
-            <label class="quiet-btn filelink"><input type="file" id="transcriptFile" class="vh" accept=".json,.srt,.vtt,.txt" multiple aria-describedby="twoFilesHint"><span id="transcriptFileLabel">أو اختر ملف تفريغ أو جلسة محفوظة</span></label>
+        <div class="options" id="options" hidden>
+          <div class="opt-grid">
+            <label class="reclang" id="recLangWrap"><span id="recLangLabel">لغة التسجيل</span>
+              <select id="recLang"><option value="ar">عربي</option><option value="en">إنجليزي</option><option value="en+ar">إنجليزي مع تلاوة عربية (تفريغ مرّتين)</option></select>
+            </label>
+            <label class="reclang" id="asrProvWrap" hidden><span id="asrProvLabel">المفرِّغ</span>
+              <select id="asrProv"></select>
+            </label>
+            <label class="videourl"><span id="videoLabel">رابط الفيديو للنص الملصوق (اختياري)</span>
+              <input type="url" id="videoUrl" dir="ltr" inputmode="url" placeholder="https://youtu.be/…" autocomplete="off"></label>
+            <label class="chipbtn filelink"><input type="file" id="transcriptFile" class="vh" accept=".json,.srt,.vtt,.txt" multiple aria-describedby="twoFilesHint"><span id="transcriptFileLabel">افتح ملف تفريغ أو جلسة محفوظة</span></label>
           </div>
+          <fieldset class="packs" id="packs" hidden>
+            <legend>كتب إضافية يُبحث فيها (تُحمَّل عند الاختيار)</legend>
+            <p class="pack-ask" id="packAsk" hidden><span id="packAskMsg"></span> <button type="button" class="btn small" id="packAskYes"></button> <button type="button" class="link" id="packAskNo"></button></p>
+            <div id="packList" class="pack-list"></div>
+            <p class="pack-note" id="packNote" role="status" hidden></p>
+          </fieldset>
+          <label class="semopt" id="semWrap" hidden><input type="checkbox" id="semOn" checked>
+            <span id="semLabel">اقتراحات «بالمعنى» بنموذج جُمل: تُرسَل الكلمات التي تلي عبارة الاستشهاد فقط (لا النص كله) إلى نموذج على Cloudflare ليرتّب أقرب النصوص. أزِل العلامة ليبقى كل شيء في متصفحك.</span></label>
           <details class="tips">
-            <summary id="textTipsTitle">ما الذي يصلح هنا؟</summary>
+            <summary id="textTipsTitle">ما الذي يصلح هنا، وأين يذهب الصوت؟</summary>
             <p class="hint" id="wayTextHint">الصق نص المحاضرة بالعربية أو الإنجليزية، أو ملف تفريغ (JSON من Whisper أو SRT/VTT) لتبقى الأزمنة.</p>
             <p class="hint" id="ytHint">من يوتيوب: افتح «عرض النص المكتوب» تحت الفيديو، انسخه كله بأزمنته والصقه هنا، وضع رابط الفيديو ليُفتح عند لحظة كل استشهاد.</p>
             <p class="hint" id="twoFilesHint">لمقارنة تفريغين للتسجيل نفسه: اختر ملفَّي تفريغ بأزمنة معًا؛ الأول في القائمة هو النص المعتمد والثاني للمقارنة.</p>
+            <p class="hint" id="audioHint">التسجيل: mp3 أو m4a أو wav أو mp4.</p>
+            <p class="hint" id="dropSub">يُرسَل الصوت إلى خدمة التفريغ ولا يُحفَظ عندنا. يُحتفَظ بعدّاد مجهول قصير الأجل فقط لتطبيق الحد اليومي المجاني.</p>
+            <p class="hint" id="ytNote">رابط يوتيوب: للفيديوهات العامة. يفرّغه نموذج Gemini العام من الرابط مباشرة بلا تحميل؛ الأزمنة تقريبية، وقد يختلف لفظ كلمة عمّا قيل. للتدقيق ارفع الملف.</p>
           </details>
         </div>
-      </div>
-      <p class="err" id="startErr" role="alert" hidden></p>
 
-      <div class="way-sample" id="waySample">
-        <div class="sec-head">
-          <h2>جرّب على مثال</h2>
-          <p>نصوص تجريبية بلا صوت، لترى شكل السجل قبل أن ترفع شيئًا.</p>
-        </div>
-        <div id="samples" class="samples"></div>
-        <p class="err" id="samplesErr" role="alert" hidden></p>
-      </div>
-
-      <div class="options" id="options">
-        <fieldset class="packs" id="packs" hidden>
-          <legend>كتب إضافية يُبحث فيها (تُحمَّل عند الاختيار)</legend>
-          <p class="pack-ask" id="packAsk" hidden><span id="packAskMsg"></span> <button type="button" class="btn small" id="packAskYes"></button> <button type="button" class="link" id="packAskNo"></button></p>
-          <div id="packList" class="pack-list"></div>
-          <p class="pack-note" id="packNote" role="status" hidden></p>
-        </fieldset>
-        <label class="semopt" id="semWrap" hidden><input type="checkbox" id="semOn" checked>
-          <span id="semLabel">اقتراحات «بالمعنى» بنموذج جُمل: تُرسَل الكلمات التي تلي عبارة الاستشهاد فقط (لا النص كله) إلى نموذج على Cloudflare ليرتّب أقرب النصوص. أزِل العلامة ليبقى كل شيء في متصفحك.</span></label>
+        <!-- what the tool does, shown rather than told: one line of the sample ledger, compared word by word -->
+        <figure class="demo" id="demo" role="img" aria-label="مثال: حديث قيل بلفظ يختلف عن المصدر في كلمتين">
+          <div class="demo-head" aria-hidden="true">
+            <span class="demo-wave"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="demo-time">0:46</span>
+            <span class="demo-what" id="demoWhat">هكذا يعمل — مثال</span>
+            <span class="demo-status d-late" id="demoStatus">مطابق مع فروق · فرقان في اللفظ</span>
+          </div>
+          <div class="demo-pair" aria-hidden="true">
+            <span class="demo-label" id="demoSaid">ما قيل</span>
+            <p class="demo-q" dir="rtl" lang="ar"><span class="d-w">من</span> <span class="d-w">كان</span> <span class="d-w">يؤمن</span> <span class="d-w">بالله</span> <span class="d-w">واليوم</span> <span class="d-w">الآخر</span> <span class="d-w">فليقل</span> <span class="d-w"><b class="d-m">كلامًا</b></span> <span class="d-w"><b class="d-m">طيبًا</b></span> <span class="d-w">أو</span> <span class="d-w"><b class="d-m">ليسكت</b></span></p>
+            <span class="demo-label d-late" id="demoSrc">في المصدر</span>
+            <p class="demo-q from d-late" dir="rtl" lang="ar">مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيَقُلْ <em>خَيْرًا</em> أَوْ <em>لِيَصْمُتْ</em></p>
+          </div>
+          <div class="demo-src d-later" aria-hidden="true">
+            <span class="demo-ref" dir="rtl" lang="ar">صحيح مسلم — رقم 47</span>
+            <span class="tag ok" id="demoGrade">في صحيح مسلم</span>
+          </div>
+        </figure>
+        <p class="hero-note" id="heroNote">لا يحكم أثَر على صحة حديث؛ يُريك الدليل. والسجل مسوّدة لمراجعة بشرية.</p>
       </div>
     </div>
   </section>

@@ -112,11 +112,24 @@ function drawSamples() {
   const box = $("samples"); box.textContent = "";
   for (const s of S.samples || []) {
     const ar = getLang() === "ar", title = (ar ? s.title_ar : s.title_en) || s.title, note = (ar ? s.note_ar : s.note_en) || s.note;
-    const b = el("button", "sample"); b.type = "button"; b.dir = dirOf(title); b.lang = scriptOf(title);
-    b.append(el("b", null, title), el("small", null, note));
+    const b = el("button", "chipbtn sample", t("ask.try", title)); b.type = "button"; b.title = note;
     b.onclick = () => runSample(s);
     box.append(b);
   }
+}
+
+// ---------------- the start screen's one box, its options, and the colours of the page ----------------
+function drawAsk() {
+  const yt = !!(S.asr && S.asr.youtube), up = !!CFG.asrUrl;
+  $("paste").placeholder = t(yt ? "ask.ph.yt" : "ask.ph"); $("paste").setAttribute("aria-label", t(yt ? "ask.ph.yt" : "ask.ph"));
+  $("dropMain").textContent = t("ask.file");
+  $("askHint").textContent = [t("ask.keys"), up ? t("ask.drop") : ""].filter(Boolean).join(" · ");
+}
+function openOptions(on) { $("options").hidden = !on; $("btnOptions").setAttribute("aria-expanded", String(on)); }
+function setTheme(th) { document.documentElement.dataset.theme = th === "light" ? "light" : "dark"; store.set("athar:theme", document.documentElement.dataset.theme); drawTheme(); }
+function drawTheme() {
+  const dark = document.documentElement.dataset.theme !== "light";
+  $("themeLabel").textContent = t(dark ? "theme.light" : "theme.dark"); $("btnTheme").title = t(dark ? "theme.to.light" : "theme.to.dark");
 }
 
 // ---------------- language ----------------
@@ -125,7 +138,7 @@ function applyLang(l) {
   const other = getLang() === "ar" ? "en" : "ar", b = $("btnLang");
   b.textContent = other === "en" ? "English" : "العربية"; b.lang = other;
   drawCorpusState();
-  $("dropMain").textContent = t(CFG.asrUrl ? "drop.on" : "drop.off"); $("audioHint").textContent = t(CFG.asrUrl ? "drop.fmt" : "drop.off2"); $("dropSub").textContent = t("drop.on2"); $("audioTipsTitle").closest("details").hidden = !CFG.asrUrl;
+  drawAsk(); drawTheme();
   $("corpusRetry").textContent = t("corpus.retry");
   $("samplesErr").hidden = !S.samplesFailed; $("samplesErr").textContent = S.samplesFailed ? t("err.samples") : "";
   drawPackLabels(); drawProviders(); drawSamples();
@@ -157,9 +170,14 @@ function boot() {
   $("corpusRetry").onclick = loadCorpus;
   loadCorpus();
 
-  if (!CFG.asrUrl) { $("drop").classList.add("off"); $("file").disabled = true; }
-  else asrProviders(CFG).then(a => { S.asr = a; drawProviders(); $("ytForm").hidden = !(a && a.youtube); drawSem(); });       // asked once, never waited for
-  $("ytForm").onsubmit = ev => { ev.preventDefault(); const id = youtubeId($("ytUrl").value.trim()); if (!id) return showError(msg("err.yt.link")); runYoutube(id); };
+  if (!CFG.asrUrl) { $("file").disabled = true; for (const id of ["askFile", "audioHint", "dropSub", "ytNote", "recLangWrap"]) $(id).hidden = true; }
+  else asrProviders(CFG).then(a => { S.asr = a; drawProviders(); drawAsk(); drawSem(); });       // asked once, never waited for
+  $("btnTheme").onclick = () => setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+  $("btnOptions").onclick = () => openOptions($("options").hidden);
+  // the one box: Enter analyses, Shift+Enter is a new line; it grows with what is pasted into it
+  const box = $("paste"), grow = () => { box.style.height = "auto"; box.style.height = Math.min(box.scrollHeight, 280) + "px"; };
+  box.addEventListener("input", grow);
+  box.addEventListener("keydown", ev => { if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); if (!$("btnAnalyzeText").disabled) $("btnAnalyzeText").click(); } });
   $("asrProv").onchange = () => store.set("athar:asrprov", $("asrProv").value);
   fetch(new URL("../samples/manifest.json", import.meta.url)).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then(list => {
     S.samples = list; drawSamples();
@@ -173,7 +191,14 @@ function boot() {
   drop.ondragleave = () => drop.classList.remove("over");
   drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); if (CFG.asrUrl && e.dataTransfer.files[0]) runAudio(e.dataTransfer.files[0]); };
   $("btnAnalyzeText").onclick = () => {
-    const x = $("paste").value.trim(); if (x.length < 20) return showError(msg("err.short"));
+    const x = $("paste").value.trim();
+    // a link alone is a video to transcribe; anything else is the text of the lecture
+    if (/^\S+$/.test(x) && /^(https?:\/\/)?([a-z]+\.)?(youtube\.com|youtu\.be)\//i.test(x)) {
+      const id = youtubeId(x); if (!id) return showError(msg("err.yt.link"));
+      if (!(S.asr && S.asr.youtube)) return showError(msg("err.yt.off"));
+      return runYoutube(id);
+    }
+    if (x.length < 20) return showError(msg("err.short"));
     const link = $("videoUrl").value.trim(), video = link ? youtubeId(link) : null;
     if (link && !video) return showError(msg("err.video"));
     const run = beginRun(); busy(0.3, msg("busy.search"));
@@ -225,8 +250,6 @@ function boot() {
   wireSelection(); wireLedger();
   $("btnMeaning").onclick = runMeaning;
   $("chipAll").onclick = showAll; $("chipFlag").onclick = toggleFlag; $("btnNext").onclick = nextOpen;
-  $("btnTry").onclick = () => { const b = $("samples").querySelector(".sample"); if (b) b.click(); else $("waySample").scrollIntoView({ behavior: "smooth" }); };
-  $("heroAlt").onclick = ev => { ev.preventDefault(); $("wayText").scrollIntoView({ behavior: "smooth", block: "center" }); $("paste").focus({ preventScroll: true }); };
   wireTabs();
   $("btnStartReview").onclick = () => { showTab("ledger"); if (S.ledger.some(e => !reviewed(e))) nextOpen(); else if (S.ledger[0]) selectAndFocus(S.ledger[0]); };
   $("btnAroundAll").onclick = () => showTab("text", { reveal: true });
@@ -363,6 +386,7 @@ function drawPacks(list) {
   }
   // packs chosen on an earlier visit are large: they are offered, not downloaded silently
   $("packAsk").hidden = !packsWanted().length;
+  if (!$("packAsk").hidden) openOptions(true);
   drawPackLabels();
 }
 function drawPackLabels() {
@@ -861,6 +885,9 @@ const byTwo = e => !!(e.statusCombined && e.statusCombined !== e.status);
 const pos = e => (S.hasTimes ? e.start ?? 0 : e.wordStart);
 const posEnd = e => (S.hasTimes ? e.end ?? e.start ?? 0 : e.wordEnd + 1);
 const kindOf = e => (e.source && e.source.type === "b" && !e.weakOnly ? t("kind.book", getLang() === "ar" ? e.source.domainAr : e.source.domain) : tOpt("kind." + (e.type || "h")));
+/** what kind of text an entry is about: "q" Qur'an, "h" hadith, "b" a book, "s" a saying — each has its colour */
+const typeOf = e => (e.source && e.source.type === "b" && !e.weakOnly ? "b" : e.type || "h");
+const kindPill = e => el("span", "kind kindpill k-" + typeOf(e), kindOf(e));
 const titleNow = () => (S.titleKey ? t(S.titleKey) : S.title);
 const sep = () => (getLang() === "ar" ? "، " : ", ");
 const markTitle = e => `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} — ${t("status." + st(e))}${byTwo(e) ? " (" + t("two.tag") + ")" : ""}${e.source ? " — " + srcLabel(e.source, true) : ""}${e.manual ? " — " + t("e.manual") : ""}${e.pass === "t2" ? " — " + t("two.second") : ""}`;
@@ -1068,7 +1095,12 @@ function sourceSpan(d, text, mark) {
   if (tip.length) s.title = tip.join(" — ");
   const f = document.createDocumentFragment(); f.append(s, " "); return f;
 }
-function sourceLine(s, main, { chip = null, whole = null } = {}) {
+/** the first words of a hadith as a search in al-Durar al-Saniyya (dorar.net), where the scholars' gradings are listed */
+function dorarUrl(text) {
+  const ws = String(text || "").replace(/[\u064B-\u0652\u0670\u0640]/g, "").replace(/[^\u0621-\u064A\s]/g, " ").split(/\s+/).filter(Boolean).slice(0, 10);
+  return ws.length >= 3 ? "https://dorar.net/hadith/search?q=" + encodeURIComponent(ws.join(" ")) : null;
+}
+function sourceLine(s, main, { chip = null, whole = null, dorar = "" } = {}) {
   const p = el("p", "src"), label = srcLabel(s);
   p.append(mixed(el("span", main ? "src-main" : "src-name", label), label));
   if (s.heading) { const h = s.heading.length > 70 ? s.heading.slice(0, 70) + "…" : s.heading; p.append(mixed(el("span", "agree", h), h)); }
@@ -1085,6 +1117,8 @@ function sourceLine(s, main, { chip = null, whole = null } = {}) {
     if (level !== "hadith") { a.removeAttribute("lang"); a.removeAttribute("dir"); }
     a.href = s.url; a.target = "_blank"; a.rel = "noopener"; acts.append(a);
   }
+  const du = s.type === "h" && s.via !== "en" ? dorarUrl(dorar) : null;
+  if (du) { const a = el("a", "quiet-btn ext", t("e.ext.dorar")); a.title = t("e.open.dorar"); a.href = du; a.target = "_blank"; a.rel = "noopener"; acts.append(a); }
   if (acts.childNodes.length) p.append(acts);
   return p;
 }
@@ -1114,7 +1148,18 @@ function quranBlock(s, cls = "", limitWords = 0) {
  * "Show the whole hadith": the text is in the library, so nobody has to leave the page to read it. `s.arabic` is the whole
  * text (in the original wording when the worker attached it); nothing is offered when what is shown is already all of it.
  */
-function wholeButton(s, shown, key = null) {
+/** a source text whole, in pieces: the pieces that were said (or searched for) are marked */
+function segsBlock(w, type, cls) {
+  const p = el("p", cls + " rtl" + (w.original ? " orig" : "")); p.dir = "rtl"; p.lang = "ar";
+  w.segs.forEach((g, i) => { if (i) p.append(" "); const x = type === "q" ? ayahDigits(g.t) : g.t; p.append(w.said && g.said ? el("mark", "hit", x) : x); });
+  return p;
+}
+/** the same, asked of the worker for one entry: null when the entry's words were not placed in its source */
+async function markedWhole(e) {
+  const item = digestItem(e); if (!item || !item.keyed || !item.said.length) return null;
+  try { const cards = await call("digest", { items: [item] }), c = cards && cards[0], w = c && c.wordings[0]; return w && w.said ? { w, type: c.type } : null; } catch { return null; }
+}
+function wholeButton(s, shown, key = null, entry = null) {
   const full = s && (s.displayFull || s.arabic);
   if (!s || s.type !== "h" || s.via === "en" || !full) return null;
   const strip = x => String(x || "").replace(/…/g, "").replace(/\s+/g, " ").trim();
@@ -1122,7 +1167,10 @@ function wholeButton(s, shown, key = null) {
   const b = el("button", "quiet-btn whole-btn", t("e.whole")); b.type = "button"; b.setAttribute("aria-expanded", "false");
   let box = null;
   const set = open => {
-    if (!box) { box = s.displayFull || s.original ? origBlock(full, "whole-text") : textBlock(full, "whole-text"); (b.closest(".src") || b).after(box); }
+    if (!box) {
+      box = s.displayFull || s.original ? origBlock(full, "whole-text") : textBlock(full, "whole-text"); (b.closest(".src") || b).after(box);
+      if (entry) markedWhole(entry).then(m => { if (m && box.isConnected) { const marked = segsBlock(m.w, m.type, "whole-text"); marked.hidden = box.hidden; box.replaceWith(marked); box = marked; } });
+    }
     box.hidden = !open; b.textContent = t(open ? "e.whole.hide" : "e.whole"); b.setAttribute("aria-expanded", String(open));
     if (key) S.openState.set(key, open);
   };
@@ -1133,7 +1181,7 @@ function wholeButton(s, shown, key = null) {
 const ayahDigits = text => text.replace(/﴿(\d+)﴾/g, (_, k) => `﴿${Number(k).toLocaleString("ar-EG", { useGrouping: false })}﴾`);
 const isQuran = s => !!(s && s.type === "q" && s.display);
 function candBlock(k) {
-  const c = el("div", "cand"); c.append(sourceLine(k, false, { whole: wholeButton(k, k.excerptDisplay || k.excerpt) }));
+  const c = el("div", "cand t-" + (k.type || "h")); c.append(sourceLine(k, false, { whole: wholeButton(k, k.excerptDisplay || k.excerpt), dorar: k.excerptDisplay || k.excerpt }));
   c.append(isQuran(k) ? quranBlock(k) : excerptBlock(k));        // a verse is always shown as it is written, never as search words
   if (k.translation && getLang() === "en" && (isQuran(k) || dirOf(k.excerpt) === "rtl")) c.append(textBlock(k.translation.text));
   return c;
@@ -1158,12 +1206,12 @@ function twoLine(g) {
   return parts.join(" ");
 }
 function drawEntry(e) {
-  const li = el("li", "entry s-" + st(e) + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); li.id = "e" + e.id; li.dataset.id = e.id; li.hidden = isOff(e); li.tabIndex = -1;
+  const li = el("li", "entry s-" + st(e) + " t-" + typeOf(e) + (e.manual ? " by-hand" : "") + (e.id === S.sel ? " on" : "")); li.id = "e" + e.id; li.dataset.id = e.id; li.hidden = isOff(e); li.tabIndex = -1;
   const head = el("div", "entry-head");
   const tb = el("button", "time" + (S.hasTimes ? "" : " none"), S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))); tb.type = "button";
   tb.onclick = () => focusEntry(e, false, true);
   const flags = flagsOf(e); if (flags.length) li.classList.add("flag"); if (e.weakOnly) li.classList.add("weak-only");
-  head.append(tb, el("span", "ord", t("e.n", num(e.id), num(S.ledger.length))), el("span", "kind", kindOf(e)), el("span", "status", t("status." + st(e))));
+  head.append(tb, el("span", "ord", t("e.n", num(e.id), num(S.ledger.length))), kindPill(e), el("span", "status", t("status." + st(e))));
   for (const f of flags) head.append(el("span", "flagtag", t("flag." + f)));
   if (byTwo(e)) { const tag = el("span", "two-tag", t("two.tag")); tag.title = t("two.tag.title", t("status." + e.status)); head.append(tag); }
   if (e.manual) head.append(el("span", "hand", t("e.manual")));
@@ -1210,7 +1258,8 @@ function drawEntry(e) {
     if (parts.length) tag(`${t("tag.excerpt")}: ${parts.join(sep())}`);
   }
   const gc = e.status !== "notfound" && !e.weakOnly ? gradeChip(e.source, e.parallels) : null;
-  const mainLine = () => sourceLine(src, true, { chip: gc, whole: viaEn ? null : wholeButton(src, "", e.key + "/whole") });
+  const srcWords = (e.diff || []).filter(d => d.source).map(d => d.sourceDisplay || d.source).join(" ") || (src && (src.excerptDisplay || src.excerpt)) || "";
+  const mainLine = () => sourceLine(src, true, { chip: gc, whole: viaEn ? null : wholeButton(src, "", e.key + "/whole", e), dorar: e.status === "notfound" ? "" : srcWords });
   if (e.tailUnmatched) li.append(el("p", "note", t("note.tail_unmatched", e.tailUnmatchedSpoken || "")));
   // what a second transcription of the same recording says about these words
   if (g2) {
@@ -1396,11 +1445,11 @@ async function drawDigest() {
     c.wordings.forEach((w, wi) => {
       const sec = el("div", "dg-wording" + (wi ? " also" : "")), mine = w.ids.map(id => byId.get(id)).filter(Boolean);
       const gc = c.type === "h" ? gradeChip(w.source, mine.flatMap(e => e.parallels || [])) : null;
-      const line = sourceLine(w.source, true, { chip: gc });
+      const line = sourceLine(w.source, true, { chip: gc, dorar: w.segs.filter(g => g.said).map(g => g.t).join(" ") });
       line.prepend(wi ? el("span", "dg-as", t("dg.also")) : el("span", "kindpill k-" + c.type, t("dg.kind." + c.type)));
       sec.append(line);
       const p = el("p", "dg-text rtl" + (w.original ? " orig" : "") + (c.type === "q" ? " quran" : "")); p.dir = "rtl"; p.lang = "ar";
-      w.segs.forEach((g, i) => { if (i) p.append(" "); p.append(el("span", w.said && !g.said ? "unsaid" : "said", g.t)); });
+      w.segs.forEach((g, i) => { if (i) p.append(" "); p.append(el("span", w.said && !g.said ? "unsaid" : "said", c.type === "q" ? ayahDigits(g.t) : g.t)); });
       const words = w.segs.reduce((n, g) => n + g.t.split(" ").length, 0);
       if (words > 90) {
         p.classList.add("folded");
@@ -1429,8 +1478,9 @@ function drawNeeds() {
   box.hidden = !items.length;
   const MAX = 12, cut = x => { const ws = String(x || "").split(" "); return ws.length > 45 ? ws.slice(0, 45).join(" ") + " …" : ws.join(" "); };
   for (const e of items.slice(0, MAX)) {
-    const card = el("article", "dg-card need s-" + st(e)), head = el("div", "need-head");
-    head.append(el("span", "status", t("status." + st(e))), el("span", "need-time", S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))), el("span", "kind", kindOf(e)));
+    const card = el("article", "dg-card need s-" + st(e) + " t-" + typeOf(e)), head = el("div", "need-head");
+    head.append(el("span", "status", t("status." + st(e))), el("span", "need-time", S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))), kindPill(e));
+    head.prepend(head.lastChild);
     for (const f of flagsOf(e)) head.append(el("span", "flagtag", t("flag." + f)));
     card.append(head, textBlock(cut(e.spoken), "dg-text need-text"));
     const near = e.status === "notfound" ? (e.suggestions || [])[0] : (e.candidates || [])[0] || e.source;
@@ -1611,12 +1661,14 @@ function onTime() {
 }
 
 // ---------------- print: the whole report, with everything a reader may have left folded ----------------
-let printing = false;
+let printing = false, printTheme = null;
 function beforePrint() {
   printing = true; flushLedger();
+  printTheme = document.documentElement.dataset.theme; document.documentElement.dataset.theme = "light";
   for (const d of document.querySelectorAll("#ledger details:not([open]), #committee:not([open]), #legendWrap:not([open])")) { d.dataset.p = "1"; d.open = true; }
 }
 function afterPrint() {
+  if (printTheme) { document.documentElement.dataset.theme = printTheme; printTheme = null; }
   for (const d of document.querySelectorAll("#ledger details[data-p], #committee[data-p], #legendWrap[data-p]")) d.open = false;
   // "toggle" events arrive later: the marks are cleared after them so that this opening and closing is not remembered as the reader's
   setTimeout(() => { for (const d of document.querySelectorAll("#ledger details[data-p], #committee[data-p], #legendWrap[data-p]")) delete d.dataset.p; printing = false; }, 300);
@@ -1787,8 +1839,8 @@ function adjustLookup(edge, d) {
   runLookup();
 }
 function lookupCandidate(c, canAdd) {
-  const li = el("li", "lk s-" + c.status), s = c.source;
-  const line = sourceLine(s, true); li.append(el("span", "status", t("lk.st." + c.status)), line);
+  const li = el("li", "lk s-" + c.status + " t-" + (c.source.type || "h")), s = c.source;
+  const line = sourceLine(s, true, { dorar: c.entry && c.entry.diff ? c.entry.diff.filter(d => d.source).map(d => d.sourceDisplay || d.source).join(" ") : s.excerptDisplay || s.excerpt || "" }); li.append(el("span", "status", t("lk.st." + c.status)), line);
   const matched = c.entry && c.entry.diff ? c.entry.diff.filter(d => d.source).map(d => d.source).join(" ") : "";
   const cut = x => { const ws = String(x || "").split(" "); return ws.length > 70 ? ws.slice(0, 70).join(" ") + " …" : ws.join(" "); };
   // a hadith is shown in its original wording when the worker attached it: the matched words, else the excerpt, else the text
@@ -1796,7 +1848,13 @@ function lookupCandidate(c, canAdd) {
   const text = cut(orig || matched || s.excerpt || s.arabic || "");
   if (isQuran(s)) li.append(quranBlock(s, "cand-text", 70)); else if (text) li.append(orig ? origBlock(text, "cand-text") : textBlock(text, "cand-text"));
   if (s.translation && getLang() === "en") li.append(textBlock(cut(s.translation.text), "cand-text"));
-  { const w = wholeButton(s, text); if (w) { let acts = line.querySelector(".src-acts"); if (!acts) { acts = el("span", "src-acts"); line.append(acts); } acts.prepend(w); } }
+  const wb = wholeButton(s, text);
+  if (wb) { let acts = line.querySelector(".src-acts"); if (!acts) { acts = el("span", "src-acts"); line.append(acts); } acts.prepend(wb); }
+  if (c.entry && (c.status === "verbatim" || c.status === "partial")) markedWhole({ ...c.entry, id: 1, source: s, status: c.status }).then(m => {
+    const shown = li.querySelector(":scope > .cand-text"); if (!m || !shown || !li.isConnected) return;
+    for (const x of li.querySelectorAll(":scope > .basmala")) x.remove();
+    shown.replaceWith(segsBlock(m.w, m.type, "cand-text")); if (wb) wb.remove();
+  });
   if (canAdd) { const b = el("button", "btn small", t("lk.add")); b.type = "button"; b.onclick = () => addManual(c); li.append(b); }
   return li;
 }
