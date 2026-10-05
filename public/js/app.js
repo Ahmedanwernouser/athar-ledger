@@ -1871,7 +1871,7 @@ function lectureFacts() {
     const all = d.ids.map(id => byId.get(id)).filter(Boolean), first = all[0]; if (!first) continue;
     const sts = [...new Set(all.map(e => t("status." + st(e))))].join(sep()), fl = [...new Set(all.flatMap(e => flagsOf(e).map(f => t("flag." + f))))];
     const text = [t("chat.f.lecture"), d.label, d.type === "h" ? t("chat.f.grade", d.grade || t("g.none")) : "", (d.grade ? d.value.replace(d.grade + " · ", "") : d.value), t("chat.f.status", sts), fl.length ? t("chat.f.flags", fl.join(sep())) : "",
-      t("chat.f.said", cutTo(bare(first.spoken), 130))].filter(Boolean).join(" — ");
+      t("chat.f.said", cutTo(bare(first.spoken), 130)), t("chat.f.link")].filter(Boolean).join(" — ");
     out.push({ id: "L" + first.id, text: cutTo(text, CHAT.FACT), card: { kind: "digest", ids: d.ids } });
   }
   for (const e of needsOf()) {
@@ -1881,7 +1881,25 @@ function lectureFacts() {
       t("chat.f.said", cutTo(bare(e.spoken), 150))].filter(Boolean).join(" — ");
     out.push({ id: "L" + e.id, text: cutTo(text, CHAT.FACT), card: { kind: "entry", id: e.id } });
   }
+  // about the lecture itself: its title as the page has it (for a link, YouTube's own title and channel), its length, who transcribed it
+  { const title = $("summaryLine").textContent.trim(), meta = $("resMeta").textContent.trim(), who = (S.transcribers || []).map(x => transcriberLabel(x)).join(sep());
+    const text = [t("chat.f.meta"), title ? t("chat.f.title", cutTo(title, 160)) : "", meta, who ? t("chat.f.who", who) : ""].filter(Boolean).join(" — ");
+    if (title || meta) out.push({ id: "M1", text: cutTo(text, CHAT.FACT), card: { kind: "none" } }); }
   return out;
+}
+/**
+ * What needs no model and no search: who the tool is, a greeting, thanks, an insult. Answered by the page in fixed words.
+ * (Measured on a real session: asked "what is your name" the model said "I did not find my name in the facts", and it
+ * answered an insult with "ask the people of knowledge".)
+ */
+function localAnswer(q) {
+  const x = " " + bare(q).replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/[^\u0621-\u064Aa-zA-Z\s]/g, " ").replace(/\s+/g, " ").trim().toLowerCase() + " ", n = x.trim().split(" ").length;
+  const has1 = (...ws) => ws.some(w => x.includes(" " + w + " "));
+  if (/ (اسمك|مين انت|انت مين|من انت|انت ايه|ما انت|ماذا تفعل|بتعمل ايه|تقدر تعمل ايه) /.test(x) || /\b(who are you|your name|what are you|what can you do)\b/.test(x)) return t("chat.me");
+  if (n <= 5 && has1("شكرا", "متشكر", "تسلم", "جزاك", "thanks", "thank")) return t("chat.thanks");
+  if (n <= 4 && (x.startsWith(" السلام عليكم") || has1("مرحبا", "اهلا", "هاي", "هلا", "hi", "hello", "hey"))) return t("chat.hello");
+  if (n <= 5 && has1("كلب", "حمار", "غبي", "زفت", "وسخ", "تافه", "فاشل", "stupid", "idiot", "useless", "dumb") || / (مش|غير|مو) (مفيد|نافع|شغال|كويس) /.test(x)) return t("chat.sorry");
+  return "";
 }
 /** the words of the question that may be a text to look for (the question words themselves are left out) */
 const ASKING = /^(ما|ماذا|هل|أين|اين|من|كم|متى|كيف|صحة|صحه|درجة|درجه|حكم|مصدر|مصادر|نص|حديث|الحديث|أحاديث|احاديث|آية|ايه|اية|الآية|الايه|سورة|قول|قال|ورد|وردت|جاء|ذكر|ذُكر|عن|في|هذا|هذه|هو|هي|لي|اكتب|أعطني|اعطني|لخص|لخّص|what|is|the|of|a|an|hadith|verse|where|does|did|how|authentic|grade|source)$/i;
@@ -1909,11 +1927,18 @@ function aboutFacts(q, facts) {
 function chatBubble(cls, label) { const b = el("div", "bubble " + cls); if (label) b.append(el("span", "bubble-by", label)); $("chatLog").append(b); return b; }
 function chatCards(facts, ids) {
   const box = el("div", "chat-cards"), byId = new Map(S.ledger.map(e => [e.id, e])), seen = new Set();
+  const shown = S.chat.shown || (S.chat.shown = new Set());
   for (const id of ids) {
-    const f = facts.find(x => x.id === id); if (!f || seen.has(id)) continue; seen.add(id);
-    if (f.card.kind === "digest") { const c = (S.digestCards || []).find(x => x.ids.join() === f.card.ids.join()); if (c) box.append(digestCardEl(c, byId)); }
-    else if (f.card.kind === "entry") { const e = byId.get(f.card.id); if (e) box.append(needCardEl(e)); }
-    else { const card = el("article", "dg-card chat-found t-" + (f.card.c.source.type || "h")), ul = el("ul", "lookup-list"); ul.append(lookupCandidate(f.card.c, false)); card.append(el("span", "dg-as", t("chat.found")), ul); box.append(card); }
+    const f = facts.find(x => x.id === id); if (!f || seen.has(id) || f.card.kind === "none") continue; seen.add(id);
+    let card = null, label = "";
+    if (f.card.kind === "digest") { const c = (S.digestCards || []).find(x => x.ids.join() === f.card.ids.join()); if (c) { card = digestCardEl(c, byId); label = srcLabel(c.wordings[0].source); } }
+    else if (f.card.kind === "entry") { const e = byId.get(f.card.id); if (e) { card = needCardEl(e); label = cutTo(bare(e.spoken), 70); } }
+    else { card = el("article", "dg-card chat-found t-" + (f.card.c.source.type || "h")); const ul = el("ul", "lookup-list"); ul.append(lookupCandidate(f.card.c, false)); card.append(el("span", "dg-as", t("chat.found")), ul); label = srcLabel(f.card.c.source); }
+    if (!card) continue;
+    // a card this conversation has already shown in full comes folded: its name, and the whole of it one press away
+    const key = f.card.kind + ":" + (f.card.kind === "digest" ? f.card.ids.join() : f.card.kind === "entry" ? f.card.id : f.card.c.source.ref);
+    if (shown.has(key)) { const d = el("details", "chat-again"), sm = el("summary", null, label); mixed(sm, label); d.append(sm, card); box.append(d); }
+    else { shown.add(key); box.append(card); }
   }
   return box;
 }
@@ -1924,6 +1949,8 @@ async function askChat(q) {
   const wait = chatBubble("it", t("chat.thinking")); wait.classList.add("wait");
   const done = () => { S.chat.busy = false; $("chatGo").disabled = false; wait.remove(); $("chatLog").lastElementChild?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" }); };
   try {
+    const own = localAnswer(q);
+    if (own) { const b = chatBubble("it tool", t("chat.by.tool")); mixed(b.appendChild(el("p", null, own)), own); return; }
     if (S.corpus !== "ready") await corpusReady;
     const facts = []; let total = 0;
     for (const f of [...lectureFacts(), ...(await searchFacts(q))]) { if (facts.length >= 30 || total + f.text.length > CHAT.TOTAL) break; total += f.text.length; facts.push(f); }

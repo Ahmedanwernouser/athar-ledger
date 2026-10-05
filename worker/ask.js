@@ -42,6 +42,11 @@ export function parseCheck(text, n) {
 }
 
 // ---------------------------------------------------------------- chat
+/** a sentence that says something was repeated / said more than once, when no fact says so («ذُكر مرتين», «٣ مرات») */
+const REPEATS = /(كرر|تكرر|مكرر|مرتين|مرات|اكثر من مره|twice|repeated|more than once|times)/;
+function repeatsOnItsOwn(sentence, hay) { return REPEATS.test(fold(sentence)) && !/(مرتين|مرات|twice|times)/.test(hay); }
+/** what a refusal says is fixed here: the model decides only THAT it refuses (measured: it wrote "هذا خارج عملك" to the reader) */
+const REFUSAL = { ar: "هذا خارج عملي: لا أُفتي ولا أشرح من عندي، ويُسأل عنه أهل العلم. أستطيع أن أعرض لك ما استُشهد به، ومصدره، ودرجته المنقولة، وهل طابق لفظُه المصدر.", en: "That is outside what I do: I give no rulings and no explanations of my own; ask the people of knowledge. I can show what was cited, its source, its recorded grading, and whether its wording matched the source." };
 const GRADE = /^(ال)?(صحيح|صحيحه|صحاح|حسن|حسنه|ضعيف|ضعيفه|موضوع|موضوعه|مكذوب|باطل|منكر|واه|ثابت|ثابته|sahih|hasan|daif|weak|authentic|fabricated|sound)$/i;
 /** does this sentence use a grading word that does not stand in the facts with the same word after it (or before it)? */
 function gradesOnItsOwn(sentence, hay) {
@@ -49,11 +54,13 @@ function gradesOnItsOwn(sentence, hay) {
   for (let i = 0; i < ws.length; i++) {
     if (!GRADE.test(ws[i])) continue;
     const next = ws[i + 1] ? ws[i] + " " + ws[i + 1] : null, prev = i ? ws[i - 1] + " " + ws[i] : null;
-    if (!((next && hay.includes(next)) || (prev && hay.includes(prev)))) return true;
+    // … or as the grading itself of some fact («الدرجة: صحيح — …»): "حديث الترمذي 2195 صحيح" says what that fact says
+    const asGrade = hay.includes(" الدرجه " + ws[i].replace(/^ال/, "") + " ") || hay.includes(" grading " + ws[i] + " ");
+    if (!(asGrade || (next && hay.includes(next)) || (prev && hay.includes(prev)))) return true;
   }
   return false;
 }
-const ID = /^[LS]\d{1,3}$/;
+const ID = /^[LSM]\d{1,3}$/;
 /** -> {q, facts: [{id, text}], prev, lang} cleaned, or null */
 export function chatInput(body) {
   const q = line(body && body.q, ASK.Q);
@@ -74,7 +81,11 @@ export const CHAT_SYSTEM = (lang) => [
   "١) لا تستعمل أي معلومة من خارج الوقائع: لا من حفظك ولا من علمك العام. ما ليس في الوقائع فأنت لا تعرفه.",
   "٢) لكل واقعة تبني عليها جوابك ضع رمزها في ids، وستُعرض بطاقتها للمستخدم بنصّها الكامل ومصدرها ودرجتها من المصادر نفسها. لذلك لا تكتب أنت نص آية أو حديث ليس في الوقائع، ولا تكتب الرموز (مثل L3) داخل text.",
   "٣) المصدر والدرجة: إن ذكرتهما فبألفاظ الواقعة نفسها بلا تغيير ولا تلخيص ولا ترجيح. «في صحيح البخاري» معناها أن الحديث في ذلك الكتاب، وليست حكمًا تصوغه بلفظ آخر. واقعة تقول «لا درجة مسجّلة» فقل ذلك كما هو، ولا تصف حديثًا بأنه صحيح أو ضعيف من عندك.",
-  "٤) لا تُفتِ ولا تستنبط حكمًا شرعيًّا ولا تفسّر آية أو حديثًا برأيك. سؤال عن حكم («ما حكم…»، «هل يجوز…»، «هل يجب…») نوعه refuse دائمًا، وتقول في text إن هذا خارج عملك وإنه يُسأل عنه أهل العلم.",
+  "٤) لا تُفتِ ولا تستنبط حكمًا شرعيًّا ولا تفسّر آية أو حديثًا برأيك. سؤال عن حكم («ما حكم…»، «هل يجوز…»، «هل يجب…») أو طلب شرح معنى نص نوعه refuse دائمًا. أما السؤال عن لفظ ما قيل — هل الآية أو الحديث كما قيل صحيح اللفظ، مطابق، محرَّف، ناقص؟ — فليس حكمًا شرعيًّا: هو سؤال عن «الحالة» في الواقعة («مطابق حرفيًا»، «مطابق مع فروق»، «قيل منه كذا من كذا كلمة»)، فنوعه answer وتنقل ما تقوله الواقعة.",
+  "٩) من سأل عن رابط أو مصدر نصٍّ فجوابه answer برمز واقعته: بطاقتها التي تُعرض تحمل رابط المصدر. لا تقل إنك لم تجد رابطًا لواقعة موجودة.",
+  "١٠) العدّ والتكرار كما في الواقعة فقط: «ذُكر مرة واحدة» لا تُسمّى تكرارًا، ولا تقل عن نص إنه كُرِّر إلا إذا قالت واقعته «ذُكر مرتين» أو أكثر. من طلب «الآيات» أو «الأحاديث» فاذكرها كلها برموزها، لا واحدة منها.",
+  "١١) المقارنة بين نصّين في الوقائع جائزة بما في الوقائع وحده: مصدر كلٍّ، ودرجته، وكم قيل منه، وحالته. ومن سأل عن درجة «كل» حديث فاذكر كل حديث في الوقائع بدرجته كما هي.",
+  "١٢) الواقعة التي رمزها M معلومات عن المحاضرة نفسها (عنوانها كما في يوتيوب، مدتها، من فرّغها). من سأل عن اسم الشيخ أو عنوان المحاضرة فمنها، وقل إنه من عنوان الفيديو.",
   "٥) إن لم يكن في الوقائع شيء عن المسؤول عنه فالنوع notfound، وتقول في text ما الذي لم تجده، في جملة واحدة. لا تخمّن ولا تكمل من عندك. أما إذا وُجدت الواقعة المسؤول عنها فالنوع answer ورمزها في ids، حتى لو كانت بلا درجة مسجّلة أو قيل فيها إنها لم يُعثر عليها: قل ما تقوله الواقعة عنها.",
   "٦) الوقائع التي رمزها L من سجل المحاضرة (ما قاله المتحدث). التي رمزها S نتائج بحث في المصادر عن نص السؤال: استعملها فقط إذا كانت هي المسؤول عنها، وقل إنها نتيجة بحث في المصادر لا شيء قيل في المحاضرة.",
   "٧) الأزمنة والأرقام تُنقل كما هي في الواقعة (مثل 1:42 أو رقم 55a) ولا تُكتب بالحروف ولا تُحوَّل.",
@@ -100,10 +111,11 @@ export function parseChat(text, inp) {
   const known = new Set(inp.facts.map((f) => f.id));
   const ids = type === "answer" ? [...new Set((Array.isArray(j.ids) ? j.ids : []).filter((x) => typeof x === "string" && known.has(x)))].slice(0, ASK.IDS) : [];
   const hay = " " + fold(inp.facts.map((f) => f.text).join(" ") + " " + inp.q) + " ";
-  let out = line(String(typeof j.text === "string" ? j.text : "").replace(/[<>`*_#]/g, " ").replace(/\[?\b[LS]\d{1,3}\b\]?/g, " "), ASK.TEXT);
+  let out = line(String(typeof j.text === "string" ? j.text : "").replace(/[<>`*_#]/g, " ").replace(/\[?\b[LSM]\d{1,3}\b\]?/g, " "), ASK.TEXT);
   out = out.replace(/«([^«»]{12,})»|"([^"]{12,})"|“([^“”]{12,})”/g, (m, x, y, z) => (hay.includes(fold(x || y || z)) ? m : "«…»"));
   // a sentence that grades (صحيح، حسن، ضعيف، موضوع …) in words the facts do not carry is dropped: gradings come from the sources' data only
-  out = out.split(/(?<=[.!؟?])\s+/).filter((sent) => !gradesOnItsOwn(sent, hay)).join(" ").trim();
+  out = out.split(/(?<=[.!؟?])\s+/).filter((sent) => !gradesOnItsOwn(sent, hay) && !repeatsOnItsOwn(sent, hay)).join(" ").trim();
+  if (type === "refuse") return { type, ids, text: REFUSAL[inp.lang === "en" ? "en" : "ar"] };
   if (!out) out = type === "answer" ? (inp.lang === "en" ? "See the cards below." : "انظر البطاقات أدناه.") : "";
   if (!out) return null;
   return { type, ids, text: out };

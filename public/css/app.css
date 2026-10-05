@@ -1562,3 +1562,9 @@ html[data-theme="dark"] .err .quiet-btn { background: var(--gold); color: #1B140
 
 /* a note on the source inside a compared text ("رواه الترمذي وقال حديث حسن صحيح"): shown, not counted, not coloured */
 .w-meta { opacity: .55; font-size: .92em; }
+
+/* chat: a card already shown in this conversation comes folded */
+.chat-again { border: 1px solid var(--line, rgba(127,127,127,.25)); border-radius: 12px; padding: .5rem .9rem; }
+.chat-again > summary { cursor: pointer; font-weight: 600; }
+.chat-again[open] > summary { margin-bottom: .6rem; }
+.bubble.tool { border-inline-start: 3px solid var(--gold); }
