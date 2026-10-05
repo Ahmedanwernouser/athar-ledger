@@ -10,7 +10,7 @@ const res = { at: new Date().toISOString(), video: VIDEO, window: [FROM, TO], ro
 let at = 3;
 for (const model of MODELS) {
   const row = { model, tries: [] };
-  for (let n = 0; n < 6 && !row.ok; n++) {
+  for (let n = 0; n < 4 && !row.ok; n++) {
     const ki = at++ % keys.length, t0 = Date.now(), tr = { key: ki + 1 };
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: "POST", headers: { "x-goog-api-key": keys[ki], "Content-Type": "application/json" },
