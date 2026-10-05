@@ -25,7 +25,7 @@ export class AsrError extends Error {
   constructor(code, detail = "", scope = "", retryAfter = null) { super(code); this.name = "AsrError"; this.code = code; this.detail = detail; this.scope = scope; this.retryAfter = retryAfter; }
 }
 
-const SERVER_CODES = new Set(["user_key_invalid", "bad_file", "bad_form", "length_required", "origin", "too_large", "daily_cap", "rate_limited", "upstream_busy", "upstream", "busy",
+const SERVER_CODES = new Set(["key_needed", "bad_model", "user_key_invalid", "bad_file", "bad_form", "length_required", "origin", "too_large", "daily_cap", "rate_limited", "upstream_busy", "upstream", "busy",
   "server_not_configured", "internal", "llm_disabled", "bad_json", "too_short", "provider_unavailable", "bad_video", "bad_window", "yt_unavailable", "too_long"]);
 function codeOf(status, body) {
   const e = body && typeof body.error === "string" ? body.error : "";
@@ -86,7 +86,7 @@ export async function asrProviders(cfg, timeout = 4000) {
     const n = x => (Number.isInteger(x) && x >= 0 ? x : null), y = j.yt && typeof j.yt === "object" ? j.yt : null;
     // how many keys the site transcribes links with, and how many of them still have some of today's allowance
     const yt = y && n(y.keys) != null && n(y.free) != null ? { keys: y.keys, free: y.free, models: n(y.models) || 0, backIn: n(y.back_in) } : null;
-    return { default: available.includes(a.default) ? a.default : available[0], available, youtube: j.youtube === true, yt, ask: j.ask === true, embed: Array.isArray(j.embed) ? j.embed.filter(x => typeof x === "string") : [] };
+    return { default: available.includes(a.default) ? a.default : available[0], available, youtube: j.youtube === true, yt, ask: j.ask === true, ask_via: Array.isArray(j.ask_via) ? j.ask_via.filter(x => typeof x === "string") : [], embed: Array.isArray(j.embed) ? j.embed.filter(x => typeof x === "string") : [] };
   } catch { return null; }
   finally { clearTimeout(timer); }
 }
@@ -388,11 +388,24 @@ export async function transcribeYoutube(video, language, cfg, onProgress = () =>
  * One question to the Worker's /ask: {mode: "check", items} -> {verdicts} ; {mode: "chat", q, facts, prev, lang} -> {type, ids, text}.
  * A busy counter store is waited for once. Failures are AsrError (the same codes as the other routes).
  */
-export async function askPost(cfg, body, signal = null) {
+/** does the service named `via` (groq | gemini | openrouter) accept the reader's own key? -> "ok" | "bad" | "unknown" */
+export async function checkAskKey(cfg, via, key, timeout = 20000) {
+  if (!cfg.asrUrl || !key) return "unknown";
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), timeout);
+  try {
+    const r = await fetch(endpoint(cfg, "/ask"), { method: "POST", headers: { "Content-Type": "application/json", "X-Athar-Key": key }, body: JSON.stringify({ probe: true, via }), signal: ctl.signal });
+    let j = null; try { j = await r.json(); } catch { /* not json */ }
+    if (r.ok && j && j.ok === true) return "ok";
+    return r.status === 400 && j && j.error === "user_key_invalid" ? "bad" : "unknown";
+  } catch { return "unknown"; }
+  finally { clearTimeout(timer); }
+}
+/** `key`: the reader's own key for the service the body names in `via` (sent in a header, for this request only) */
+export async function askPost(cfg, body, signal = null, key = "") {
   if (!cfg.asrUrl) throw new AsrError("disabled");
   const post = async () => {
     let r;
-    try { r = await fetch(endpoint(cfg, "/ask"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal }); }
+    try { r = await fetch(endpoint(cfg, "/ask"), { method: "POST", headers: { "Content-Type": "application/json", ...(key ? { "X-Athar-Key": key } : {}) }, body: JSON.stringify(body), signal }); }
     catch { throw new AsrError(signal && signal.aborted ? "aborted" : "network"); }
     let j = null; try { j = await r.json(); } catch { /* not json */ }
     return { r, j };

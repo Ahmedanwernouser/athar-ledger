@@ -63,6 +63,33 @@ function gradesOnItsOwn(sentence, hay) {
   }
   return false;
 }
+/** a reference written out in words («رقم ألف وثلاثمائة…», «الآية سبعة وعشرون»): numbers are copied as digits or not at all
+ *  (measured 5 Oct on Gemini: «رقم ألف وثلاثمائة وتسعة» for 1369) */
+const NUM_WORD = /(^| )(رقم|برقم|الايه|ايه|الحديث) (ال)?(واحد|اثنان|اثنين|ثلاث[ء-ي]*|اربع[ء-ي]*|خمس[ء-ي]*|ست[هة]?|ستون|ستين|ستمائه|سبع[ء-ي]*|ثمان[ء-ي]*|تسع[ء-ي]*|عشر[ء-ي]*|احد عشر|مائ[ء-ي]*|مئ[ء-ي]*|الف|الفين|الفان|الاف)( |$)/;
+const spellsNumber = (sentence) => NUM_WORD.test(fold(sentence));
+const lev = (a, b, max) => {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) { const cur = [i]; let low = i; for (let j = 1; j <= b.length; j++) { cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); if (cur[j] < low) low = cur[j]; } if (low > max) return max + 1; prev = cur; }
+  return prev[b.length];
+};
+/**
+ * A word of a quoted text that the model miscopied is put back as the text has it. The words that stand between «» in
+ * the facts are the sources' own (an ayah, a hadith, what was said). A long word of the answer that stands NOWHERE in
+ * the facts or the question, and is one or two letters away from exactly one such word, was meant to be that word
+ * (measured 5 Oct on Gemini: «واستانينوا بالصبر» for «واستعينوا»). Nothing else is touched.
+ */
+function restoreQuoted(out, inp, hay) {
+  const quoted = new Map();
+  for (const f of inp.facts) for (const m of String(f.text).matchAll(/«([^«»]+)»/g)) for (const w of m[1].split(/\s+/)) { const k = fold(w); if (k.length >= 5 && !k.includes(" ")) quoted.set(k, w.replace(/[.,،؛:!؟?"“”…]+$/g, "").replace(/^["“”]+/, "")); }
+  if (!quoted.size) return out;
+  return out.replace(/[ء-يً-ْٰ]{5,}/g, (w) => {
+    const k = fold(w); if (k.length < 5 || hay.includes(" " + k + " ")) return w;
+    const max = k.length >= 7 ? 2 : 1; let hit = null, n = 0;
+    for (const [q, orig] of quoted) if (q[0] === k[0] && lev(k, q, max) <= max) { if (hit !== orig) n++; hit = orig; }
+    return n === 1 ? hit : w;
+  });
+}
 const ID = /^[LSM]\d{1,3}$/, PID = /^T\d{1,3}$/;
 /** -> {q, facts: [{id, text}], prev, lang} cleaned, or null */
 export function chatInput(body) {
@@ -129,7 +156,8 @@ export function parseChat(text, inp) {
   let out = line(String(typeof j.text === "string" ? j.text : "").replace(/[<>`*_#]/g, " ").replace(/\[?\b[LSMT]\d{1,3}\b\]?/g, " "), ASK.TEXT);
   out = out.replace(/«([^«»]{12,})»|"([^"]{12,})"|“([^“”]{12,})”/g, (m, x, y, z) => (hay.includes(fold(x || y || z)) ? m : "«…»"));
   // a sentence that grades (صحيح، حسن، ضعيف، موضوع …) in words the facts do not carry is dropped: gradings come from the sources' data only
-  out = out.split(/(?<=[.!؟?])\s+/).filter((sent) => !gradesOnItsOwn(sent, hay) && !repeatsOnItsOwn(sent, hay)).join(" ").trim();
+  out = restoreQuoted(out, inp, hay);
+  out = out.split(/(?<=[.!؟?])\s+/).filter((sent) => !gradesOnItsOwn(sent, hay) && !repeatsOnItsOwn(sent, hay) && !spellsNumber(sent)).join(" ").trim();
   if (type === "refuse") return { type, ids, text: REFUSAL[inp.lang === "en" ? "en" : "ar"] };
   if (!out) out = type === "answer" ? (inp.lang === "en" ? "See the cards below." : "انظر البطاقات أدناه.") : "";
   if (!out) return null;

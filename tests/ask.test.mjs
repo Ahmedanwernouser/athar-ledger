@@ -82,3 +82,20 @@ test("chat reducer: «هذا الموضوع» is the topic, not the grading «م
   const bad2 = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "الحديث الموضوع لا يُعمل به." }), inp);
   assert.equal(bad2.text, "انظر البطاقات أدناه.");
 });
+
+test("chat reducer, from a live trial on Gemini: a miscopied word of a quoted text is put back; a reference spelt out in words is not passed on", () => {
+  const facts = [{ id: "S1", text: "نص قريب من موضوع السؤال — آية قرآنية — سورة البقرة — الآية 45 — يبدأ: «واستعينوا بالصبر والصلاة ۚ وإنها لكبيرة إلا على الخاشعين ﴿45﴾»" },
+    { id: "S2", text: "نتيجة بحث — حديث — صحيح البخاري — رقم 1369 — الدرجة: في صحيح البخاري — اللفظ المطابق: «يثبت الله الذين آمنوا بالقول الثابت»" }];
+  const inp = chatInput({ q: "آيات عن الصبر", lang: "ar", facts });
+  const a = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "من النصوص القريبة من هذا الموضوع سورة البقرة الآية 45 وتبدأ: واستانينوا بالصبر والصلاة وإنها لكبيرة إلا على الخاشعين." }), inp);
+  assert.match(a.text, /واستعينوا بالصبر/); assert.doesNotMatch(a.text, /واستانينوا/);
+  // a word that is simply the model's own, far from every quoted word, is left alone; so is a word the facts hold
+  const b = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "هذه اقتراحات بالبحث وليست حصرًا للنصوص، ومنها آية الخاشعين." }), inp);
+  assert.match(b.text, /اقتراحات بالبحث وليست حصرًا للنصوص/);
+  const c = parseChat(JSON.stringify({ type: "answer", ids: ["S2"], text: "بينهما اشتراك في اللفظ. وهو في صحيح البخاري رقم ألف وثلاثمائة وتسعة." }), inp);
+  assert.equal(c.text, "بينهما اشتراك في اللفظ.");
+  const d = parseChat(JSON.stringify({ type: "answer", ids: ["S2"], text: "وهو في صحيح البخاري رقم 1369." }), inp);
+  assert.match(d.text, /رقم 1369/);
+  const e = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "وردت في الآية سبعة وعشرون من السورة." }), inp);
+  assert.equal(e.text, "انظر البطاقات أدناه.");
+});

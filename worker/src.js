@@ -21,6 +21,7 @@
 
 import { ASK, checkItems, CHECK_SYSTEM, checkUser, parseCheck, chatInput, CHAT_SYSTEM, chatUser, parseChat } from "./ask.js";
 import { YT_DEF_MODELS, ytUrl, ytBody } from "./yt.js";
+import { VIA_DEF_MODELS, VIA_KEY, VIA_MODEL, viaRequest, viaText, viaKeyCheck } from "./via.js";
 const GROQ_ASR = "https://api.groq.com/openai/v1/audio/transcriptions";
 const GROQ_CHAT = "https://api.groq.com/openai/v1/chat/completions";
 const GEMINI = (m) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
@@ -104,7 +105,7 @@ export default {
         const asr = asrProviders(env);          // looks at the secrets' presence only; never touches the caps
         if (!asr.available.includes(asr.default)) missing.push(ASR_KEY_NAME[asr.default]);
         if (!allowed.length) missing.push("ALLOWED_ORIGINS");
-        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!(env.GEMINI_API_KEY || env.GEMINI_API_KEYS), yt: await ytState(env).catch(() => null), ask: askOn(env), embed: embedModels(env) }, 200, cors);
+        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!(env.GEMINI_API_KEY || env.GEMINI_API_KEYS), yt: await ytState(env).catch(() => null), ask: askOn(env), ask_via: String(env.ASK || "").toLowerCase() === "off" ? [] : ASK_VIA, embed: embedModels(env) }, 200, cors);
       }
       const route = req.method === "POST" && (path === "/asr" || path === "/llm" || path === "/yt" || path === "/embed" || path === "/ask") ? path : null;
       if (!route) return json({ error: "not_found" }, 404, cors);
@@ -997,25 +998,59 @@ function askParams(model, mode) {
   if (mode === "chat") p.response_format = { type: "json_object" };
   return p;
 }
-/** one question to one model -> {text} | {status, retry} (never the upstream body) */
-async function askOne(env, model, mode, system, user) {
+/**
+ * one question to one model -> {text} | {status, retry} (never the upstream body).
+ * via "groq" with the site's key is the service's own way; the chat may also be put, with the READER'S OWN key, to Groq,
+ * Gemini or OpenRouter (worker/via.js) — the same question, the same reducer, another envelope.
+ */
+async function askOne(env, model, mode, system, user, via = "groq", key = env.GROQ_API_KEY) {
   try {
-    const r = await fetch(GROQ_CHAT, { method: "POST", signal: AbortSignal.timeout(ASK_TIMEOUT_MS), headers: { Authorization: "Bearer " + env.GROQ_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ model, ...askParams(model, mode), messages: [{ role: "system", content: system }, { role: "user", content: user }] }) });
-    if (!r.ok) { const out = { status: r.status, retry: r.status === 429 ? retryAfter(r) : null }; try { await r.body?.cancel(); } catch { /* ignore */ } return out; }
-    const j = await r.json(), got = j?.choices?.[0]?.message?.content;
-    return { text: typeof got === "string" ? got : "" };
+    const rq = via === "groq" ? { url: GROQ_CHAT, init: { method: "POST", headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, ...askParams(model, mode), messages: [{ role: "system", content: system }, { role: "user", content: user }] }) } } : viaRequest(via, key, model, system, user);
+    const r = await fetch(rq.url, { ...rq.init, signal: AbortSignal.timeout(ASK_TIMEOUT_MS) });
+    if (!r.ok) {
+      // (Google answers 400 for a key it does not know; the body is read only for that word, and never leaves)
+      let badKey = r.status === 401 || r.status === 403;
+      if (via === "gemini" && r.status === 400) { try { badKey = /API_KEY_INVALID|API key not valid/i.test(await r.text()); } catch { /* ignore */ } } else { try { await r.body?.cancel(); } catch { /* ignore */ } }
+      return { status: r.status, retry: r.status === 429 ? retryAfter(r) : null, badKey };
+    }
+    const j = await r.json();
+    return { text: via === "groq" ? (typeof j?.choices?.[0]?.message?.content === "string" ? j.choices[0].message.content : "") : viaText(via, j) };
   } catch { return { status: 0, retry: null }; }
 }
+const ASK_VIA = ["groq", "gemini", "openrouter"];
+const viaModels = (env, via, asked) => {
+  if (via === "groq") return askModels(env, false);
+  if (via === "openrouter" && typeof asked === "string" && VIA_MODEL.test(asked.trim())) return [asked.trim()];
+  const m = String((via === "gemini" ? env.ASK_GEMINI_MODELS : env.ASK_OPENROUTER_MODELS) || VIA_DEF_MODELS[via]).split(",").map((x) => x.trim()).filter((x) => VIA_MODEL.test(x));
+  return (m.length ? m : VIA_DEF_MODELS[via].split(",")).slice(0, 3);
+};
 async function askRoute(req, env, cors) {
-  if (!askOn(env)) return json({ error: "llm_disabled" }, 501, cors);
+  // the reader's own key (header X-Athar-Key): used for this one request, never stored, never logged, never mixed with the site's
+  const own = (req.headers.get("X-Athar-Key") || "").trim().replace(/^["']+|["']+$/g, "");
+  if (own && !VIA_KEY.test(own)) return json({ error: "user_key_invalid" }, 400, cors);
+  if (String(env.ASK || "").toLowerCase() === "off" || (!askOn(env) && !own)) return json({ error: "llm_disabled" }, 501, cors);
   const raw = await readLimited(req, ASK.MAX_BODY);
   if (raw === null) return json({ error: "too_large", max_bytes: ASK.MAX_BODY }, 413, cors);
   let body;
   try { body = JSON.parse(raw); } catch { return json({ error: "bad_json" }, 400, cors); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "bad_json" }, 400, cors);
+  const via = ASK_VIA.includes(body.via) ? body.via : "groq";
+  // {probe: true, via} with the reader's own key: does that service accept the key? Asked when the key is saved. Costs nothing.
+  if (body.probe === true) {
+    if (!own) return json({ error: "bad_json" }, 400, cors);
+    if (await burstLimited(env.RL_LLM || env.RL, "/ask:" + (await ipTag(req, clock().day)).ip)) return json({ error: "rate_limited", scope: "burst" }, 429, { ...cors, "Retry-After": "60" });
+    try {
+      const c = viaKeyCheck(via, own), r = await fetch(c.url, { ...c.init, signal: AbortSignal.timeout(15000) });
+      try { await r.body?.cancel(); } catch { /* ignore */ }
+      return r.ok ? json({ ok: true }, 200, cors) : r.status === 400 || r.status === 401 || r.status === 403 ? json({ error: "user_key_invalid" }, 400, cors) : json({ ok: null }, 200, cors);
+    } catch { return json({ ok: null }, 200, cors); }
+  }
   const mode = body.mode === "check" ? "check" : body.mode === "chat" ? "chat" : null;
   if (!mode) return json({ error: "bad_mode" }, 400, cors);
+  // the checker is the service's own (two models that were measured together); a key of the reader's is for the chat
+  if (mode === "check" && !askOn(env)) return json({ error: "llm_disabled" }, 501, cors);
+  if (mode === "chat" && via !== "groq" && !own) return json({ error: "key_needed", via }, 400, cors);
   const items = mode === "check" ? checkItems(body) : null, inp = mode === "chat" ? chatInput(body) : null;
   if (!items && !inp) return json({ error: mode === "check" ? "bad_items" : "too_short" }, 400, cors);
 
@@ -1025,7 +1060,9 @@ async function askRoute(req, env, cors) {
   const cap = posInt(env.ASK_DAILY_CAP, DEF_ASK_DAILY_CAP), ipCap = posInt(env.ASK_IP_DAILY_CAP, DEF_ASK_IP_DAILY_CAP);
   const specs = [{ key: "k:" + t.day, cap, ttl: 172800, code: "daily_cap", scope: "day", retry: t.nextDay }];
   if (ipCap < cap) specs.push({ key: "m:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay });
-  const g = await guard(env.CAP, specs, "hold");      // written only when a model answered: a failure costs no write
+  // a question asked with the reader's own key spends his allowance, not the site's: it is not counted against the day's cap
+  const mine = mode === "chat" && !!own;
+  const g = mine ? { over: false } : await guard(env.CAP, specs, "hold");      // written only when a model answered: a failure costs no write
   if (g.over) return capResponse(g, cors);
 
   const models = askModels(env, !!items); let last = 0, retry = null;
@@ -1052,15 +1089,19 @@ async function askRoute(req, env, cors) {
     await settle(env.CAP, specs);
     return json({ verdicts: out.join("") }, 200, cors);
   }
-  for (const model of models) {
-    const x = await askOne(env, model, "chat", CHAT_SYSTEM(inp.lang), chatUser(inp));
-    if (x.text == null) { note(x); continue; }                // busy, or this model is not there: the next one
-    const a = parseChat(x.text, inp); if (a) { await settle(env.CAP, specs); return json(a, 200, cors); }
+  let badKey = false;
+  for (const model of mine ? viaModels(env, via, body.model) : models) {
+    const x = mine ? await askOne(env, model, "chat", CHAT_SYSTEM(inp.lang), chatUser(inp), via, own) : await askOne(env, model, "chat", CHAT_SYSTEM(inp.lang), chatUser(inp));
+    if (x.text == null) { note(x); if (x.badKey) { badKey = true; break; } continue; }                // busy, or this model is not there: the next one
+    // whoever answered, the answer is reduced the same way; `via` and `model` say who worded it
+    const a = parseChat(x.text, inp); if (a) { if (!mine) await settle(env.CAP, specs); return json({ ...a, via, model }, 200, cors); }
     last = 0;                                                 // not the object asked for: the next model
   }
   // nobody answered in the form asked for: the unit goes back, and nothing of the model's words leaves
-  release(env.CAP, specs);
-  if (last === 429) return json({ error: "upstream_busy" }, 429, retry ? { ...cors, "Retry-After": retry } : cors);
+  if (!mine) release(env.CAP, specs);
+  if (mine && badKey) return json({ error: "user_key_invalid", via }, 400, cors);
+  if (mine && last === 404) return json({ error: "bad_model", via }, 400, cors);
+  if (last === 429) return json({ error: "upstream_busy", ...(mine ? { scope: "own" } : {}) }, 429, retry ? { ...cors, "Retry-After": retry } : cors);
   return json({ error: "upstream", ...(last ? { upstream_status: last } : {}) }, 502, cors);
 }
 

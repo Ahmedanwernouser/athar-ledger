@@ -906,6 +906,49 @@ sec("/ask: the checker and the chat (Groq)");
   r = await call(ask({ mode: "chat", q: "x".repeat(50000), facts: FACTS }), baseEnv()); eq(r.status, 413, "/ask an oversized body");
   { const env = baseEnv({ ASK_DAILY_CAP: "2", ASK_IP_DAILY_CAP: "2" }); up.impl = said("11"); await call(ask({ mode: "check", items: IT }), env); await call(ask({ mode: "check", items: IT }), env);
     r = await call(ask({ mode: "check", items: IT }), env); ok(r.status === 429 && r.j.error === "daily_cap", "/ask has its own daily limit"); }
+  // ---- the chat with the reader's OWN key, on a service he chooses (worker/via.js)
+  { const MINE = "my-own-key-for-a-test-0001", H = { headers: { "X-Athar-Key": MINE } }, gem = (m) => () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: m }] } }] }), { status: 200 });
+    const GOOD = '{"type":"answer","ids":["L1"],"text":"الحديث في صحيح البخاري. وهو حديث ضعيف جدًّا."}';
+    eq(JSON.stringify((await call(new Request("https://w.dev/health"), baseEnv())).j.ask_via), '["groq","gemini","openrouter"]', "/health names the services the chat may be put to");
+    eq((await call(new Request("https://w.dev/health"), baseEnv({ ASK: "off" }))).j.ask_via.length, 0, "/health: none when the chat is switched off");
+    r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "gemini" }), baseEnv()); ok(r.status === 400 && r.j.error === "key_needed", "/ask via Gemini without a key of one's own: key_needed (the site's Gemini keys are for the videos)");
+    r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "openrouter" }, { headers: { "X-Athar-Key": "short" } }), baseEnv()); ok(r.status === 400 && r.j.error === "user_key_invalid", "/ask a key that cannot be a key is refused before anything is asked");
+    { const env = baseEnv(); up.calls = []; up.impl = gem(GOOD); r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "gemini" }, H), env);
+      const c = up.calls[0], b = JSON.parse(c.init.body);
+      ok(r.status === 200 && r.j.type === "answer" && r.j.via === "gemini" && r.j.model === "gemini-3.5-flash-lite", "/ask via Gemini with one's own key: answered, and the answer says who worded it");
+      ok(c.url.includes("generativelanguage.googleapis.com") && c.url.includes("gemini-3.5-flash-lite:generateContent") && c.init.headers["x-goog-api-key"] === MINE && !JSON.stringify(c.init).includes(KEY) && !JSON.stringify(c.init).includes(GKEY), "/ask via Gemini: asked with the reader's key alone — not the site's Groq key, not its Gemini keys");
+      ok(b.systemInstruction.parts[0].text.includes("لا تُفتِ") && b.contents[0].parts[0].text.includes("[L1]") && b.generationConfig.responseMimeType === "application/json", "/ask via Gemini: the same fixed prompt and the same facts");
+      ok(!r.j.text.includes("ضعيف") && r.j.text.includes("صحيح البخاري"), "/ask via Gemini: the same reducer — a grading the facts do not carry is taken out");
+      ok(env.CAP.writes === 0 && !r.t.includes(MINE), "/ask with one's own key is not counted against the site's day, and the key is not in the answer"); }
+    { const env = baseEnv({ ASK_DAILY_CAP: "1", ASK_IP_DAILY_CAP: "1" }); up.impl = said("11"); await call(ask({ mode: "check", items: IT }), env);
+      up.impl = gem(GOOD); r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "gemini" }, H), env); eq(r.status, 200, "/ask with one's own key works when the site's day is used up"); }
+    up.calls = []; up.impl = (url) => (url.includes("flash-lite:") && url.includes("3.5") ? new Response("busy", { status: 503 }) : gem(GOOD)());
+    r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "gemini" }, H), baseEnv()); ok(r.status === 200 && r.j.model === "gemini-3.1-flash-lite" && up.calls.length === 2, "/ask via Gemini: a model that is down gives way to the next");
+    up.calls = []; up.impl = said(GOOD); r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "openrouter", model: "vendor/some-model:free" }, H), baseEnv());
+    ok(r.status === 200 && r.j.via === "openrouter" && r.j.model === "vendor/some-model:free" && up.calls[0].url.includes("openrouter.ai/api/v1/chat/completions") && up.calls[0].init.headers.Authorization === "Bearer " + MINE && JSON.parse(up.calls[0].init.body).model === "vendor/some-model:free", "/ask via OpenRouter: the model the reader named, with his key");
+    up.calls = []; r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "openrouter", model: "bad model <script>" }, H), baseEnv()); eq(JSON.parse(up.calls[0].init.body).model, "openrouter/free", "/ask via OpenRouter: a name that cannot be a model's is not sent; the default is");
+    up.calls = []; up.impl = said(GOOD); r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "groq" }, H), baseEnv());
+    ok(r.status === 200 && r.j.via === "groq" && up.calls[0].url.includes("api.groq.com") && up.calls[0].init.headers.Authorization === "Bearer " + MINE, "/ask via Groq with one's own key: that key, not the site's");
+    up.calls = []; r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS }), baseEnv()); ok(up.calls[0].init.headers.Authorization === "Bearer " + KEY && r.j.via === "groq", "/ask without a key of one's own: the site's Groq key, as before");
+    up.impl = gem(GOOD);
+    r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "gemini" }, H), baseEnv({ GROQ_API_KEY: undefined })); eq(r.status, 200, "/ask with one's own key works on a site that has no key of its own");
+    r = await call(ask({ mode: "check", items: IT }, H), baseEnv({ GROQ_API_KEY: undefined })); eq(r.status, 501, "/ask check is the service's own: a reader's key does not turn it on");
+    r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "gemini" }, H), baseEnv({ ASK: "off" })); eq(r.status, 501, "/ask switched off is off for everyone");
+    up.calls = []; up.impl = () => new Response("no such key " + MINE, { status: 401 }); r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "openrouter" }, H), baseEnv());
+    ok(r.status === 400 && r.j.error === "user_key_invalid" && up.calls.length === 1 && !r.t.includes(MINE), "/ask a key the service refuses: said so at once, no other model tried, nothing of the upstream answer leaves");
+    up.impl = () => new Response(JSON.stringify({ error: { status: "INVALID_ARGUMENT", message: "API key not valid. Please pass a valid API key.", details: [{ reason: "API_KEY_INVALID" }] } }), { status: 400 });
+    r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "gemini" }, H), baseEnv()); ok(r.status === 400 && r.j.error === "user_key_invalid" && !r.t.includes("API key"), "/ask Google's 400 for an unknown key is a refused key");
+    up.impl = () => new Response("{}", { status: 404 }); r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "openrouter", model: "vendor/gone:free" }, H), baseEnv()); ok(r.status === 400 && r.j.error === "bad_model", "/ask via OpenRouter: a model that is not there");
+    up.impl = () => new Response("slow down", { status: 429, headers: { "Retry-After": "7" } }); r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS, via: "gemini" }, H), baseEnv());
+    ok(r.status === 429 && r.j.error === "upstream_busy" && r.j.scope === "own" && r.h.get("Retry-After") === "7", "/ask one's own allowance used up: said to be one's own");
+    // the key is checked when it is saved
+    up.calls = []; up.impl = () => new Response('{"data":{}}', { status: 200 }); r = await call(ask({ probe: true, via: "openrouter" }, H), baseEnv());
+    ok(r.status === 200 && r.j.ok === true && up.calls[0].url.endsWith("/api/v1/key") && up.calls[0].init.headers.Authorization === "Bearer " + MINE, "/ask probe: OpenRouter accepts the key");
+    up.calls = []; up.impl = () => new Response("{}", { status: 200 }); r = await call(ask({ probe: true, via: "groq" }, H), baseEnv()); ok(r.j.ok === true && up.calls[0].url.includes("api.groq.com/openai/v1/models"), "/ask probe: Groq");
+    up.calls = []; r = await call(ask({ probe: true, via: "gemini" }, H), baseEnv()); ok(r.j.ok === true && up.calls[0].url.includes("generativelanguage") && up.calls[0].init.headers["x-goog-api-key"] === MINE, "/ask probe: Gemini");
+    up.impl = () => new Response("bad " + MINE, { status: 401 }); r = await call(ask({ probe: true, via: "groq" }, H), baseEnv()); ok(r.status === 400 && r.j.error === "user_key_invalid" && !r.t.includes(MINE), "/ask probe: a refused key");
+    up.impl = () => new Response("down", { status: 503 }); r = await call(ask({ probe: true, via: "groq" }, H), baseEnv()); ok(r.status === 200 && r.j.ok === null, "/ask probe: a service that is down says nothing about the key");
+    r = await call(ask({ probe: true, via: "groq" }), baseEnv()); eq(r.status, 400, "/ask probe without a key"); }
 }
 
 sec("/embed: sentence embeddings (Workers AI binding)");

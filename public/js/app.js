@@ -1,6 +1,6 @@
 // app.js — the page. All matching runs in js/worker.js; this file only draws and listens.
 import { fmtTime, fnv1a, wordsFromText } from "./text.js";
-import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, transcribeYoutube, checkOwnKey, AsrError, llmStops, askPost } from "./asr.js";
+import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, transcribeYoutube, checkOwnKey, AsrError, llmStops, askPost, checkAskKey } from "./asr.js";
 import { compareLedgers, applyAgreement, marksOf, statusOf, timeTolerance } from "./agree.js";
 import { flagsOf } from "./flags.js";
 import { gradeSummary } from "./grade.js";
@@ -1863,7 +1863,56 @@ function afterPrint() {
 const CHAT = { FACT: 420, TOTAL: 6200, SEARCH: 7, PREV: 480 };
 const chatOn = () => !!(CFG.asrUrl && S.asr && S.asr.ask);
 const lectureOpen = () => !$("results").hidden && S.words.length > 0;
-function drawChatDoor() { $("btnAsk").hidden = !chatOn(); $("btnAsk").textContent = t("chat.door"); $("tabBtnChat").hidden = !chatOn(); }
+function drawChatDoor() { $("btnAsk").hidden = !chatOn(); $("btnAsk").textContent = t("chat.door"); $("tabBtnChat").hidden = !chatOn(); drawVia(); }
+// ---------------- who words the chat's answer: the site's model (Groq), or the reader's OWN key on Groq, Gemini or OpenRouter ----------------
+// Whoever it is, the question, the fixed rules and the reducer are the Worker's; only the wording model changes. A key is
+// kept in this browser alone and sent with the question (a header) for that one request. The Gemini key is the same one
+// the reader may have saved for YouTube links.
+const VIA = { groq: { name: "Groq", url: "https://console.groq.com/keys", ph: "gsk_…" }, gemini: { name: "Gemini", url: "https://aistudio.google.com/apikey", ph: "AQ.…" }, openrouter: { name: "OpenRouter", url: "https://openrouter.ai/keys", ph: "sk-or-…" } };
+const viaOffered = () => ((S.asr && S.asr.ask_via) || []).filter(v => VIA[v]);
+const viaKey = v => { if (v === "gemini") return CFG.userKey || ""; const k = store.get("athar:askkey:" + v, ""); return typeof k === "string" && OWN_KEY.test(k) ? k : ""; };
+const viaNow = () => { const v = store.get("athar:ask-via", "site"); return viaOffered().includes(v) ? v : "site"; };
+const OR_MODEL = /^[@a-z0-9][a-z0-9._:/-]{2,79}$/i;
+function drawVia() {
+  const offered = viaOffered(), row = $("chatVia"); row.hidden = !offered.length; if (!offered.length) return;
+  const sel = $("chatViaSel"), now = viaNow(); sel.textContent = ""; $("chatViaLbl").textContent = t("via.label");
+  const opt = (v, text) => { const o = el("option", null, text); o.value = v; sel.append(o); };
+  opt("site", t("via.site"));
+  for (const v of offered) opt(v, t("via.own", VIA[v].name) + (viaKey(v) ? " ✓" : ""));
+  sel.value = now;
+  $("chatKeyBtn").hidden = now === "site"; $("chatKeyBtn").textContent = now === "site" ? "" : t(viaKey(now) ? "via.key.change" : "via.key.add");
+  $("chatOrModel").hidden = now !== "openrouter"; { const m = store.get("athar:or-model", ""); $("chatOrModel").value = typeof m === "string" ? m : ""; } $("chatOrModel").setAttribute("aria-label", t("via.model"));
+  $("chatViaNote").textContent = now === "site" ? "" : t(viaKey(now) ? (now === "openrouter" ? "via.note.on.or" : "via.note.on") : "via.note.off", VIA[now].name);
+}
+let viaFor = "", viaCheck = 0;
+function openViaKey(v) {
+  if (!VIA[v]) return; viaFor = v; const has0 = !!viaKey(v);
+  $("viaTitle").textContent = t("via.dlg.title", VIA[v].name); $("viaWhy").textContent = t(v === "gemini" ? "via.dlg.why.gemini" : "via.dlg.why", VIA[v].name);
+  $("viaLink").href = VIA[v].url; $("viaLink").textContent = VIA[v].url.replace(/^https:\/\//, ""); $("viaInput").value = ""; $("viaInput").placeholder = VIA[v].ph;
+  $("viaSave").textContent = t("via.save"); $("viaForget").textContent = t("via.forget"); $("viaForget").hidden = !has0; $("viaMsg").textContent = t(has0 ? "via.state.on" : "via.state.off"); $("viaPrivacy").textContent = t("via.privacy", VIA[v].name);
+  const d = $("viaDlg"); if (!d.open) d.showModal(); $("viaInput").focus();
+}
+async function saveViaKey(value) {
+  const v = viaFor; if (!VIA[v]) return;
+  value = String(value || "").replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, "").trim().replace(/^["'`«»]+|["'`«»]+$/g, "").trim();
+  const mine = ++viaCheck, keep = k => { if (v === "gemini") { if (k) { CFG.userKey = k; store.set("athar:gemkey", k); } else { delete CFG.userKey; try { localStorage.removeItem("athar:gemkey"); } catch { /* nothing kept */ } } drawAsk(); } else if (k) store.set("athar:askkey:" + v, k); else { try { localStorage.removeItem("athar:askkey:" + v); } catch { /* nothing kept */ } store.set("athar:askkey:" + v, ""); } };
+  if (!value) { keep(""); $("viaMsg").textContent = t("key.forgotten"); $("viaForget").hidden = true; drawVia(); return; }
+  if (!OWN_KEY.test(value)) { $("viaMsg").textContent = t(/\s/.test(value) ? "key.bad.space" : "key.bad"); return; }
+  // the service is asked whether it accepts the key BEFORE it is kept
+  $("viaMsg").textContent = t("via.checking", VIA[v].name); $("viaSave").disabled = true;
+  const res = await checkAskKey(CFG, v, value);
+  if (mine !== viaCheck) return;
+  $("viaSave").disabled = false;
+  if (res === "bad") { $("viaMsg").textContent = t("via.refused", VIA[v].name); return; }
+  keep(value); $("viaInput").value = ""; $("viaForget").hidden = false; $("viaMsg").textContent = t(res === "ok" ? "via.saved" : "via.saved.unchecked", VIA[v].name); drawVia();
+}
+function wireVia() {
+  $("chatViaSel").onchange = () => { const v = $("chatViaSel").value; store.set("athar:ask-via", v); drawVia(); if (v !== "site" && !viaKey(v)) openViaKey(v); };
+  $("chatKeyBtn").onclick = () => openViaKey(viaNow());
+  $("chatOrModel").onchange = () => { const m = $("chatOrModel").value.trim(); store.set("athar:or-model", OR_MODEL.test(m) ? m : ""); if (m && !OR_MODEL.test(m)) $("chatOrModel").value = ""; };
+  $("viaForm").onsubmit = ev => { ev.preventDefault(); if ($("viaInput").value.trim()) saveViaKey($("viaInput").value); };
+  $("viaForget").onclick = () => saveViaKey("");
+}
 /** the chat box lives in one place at a time: the fourth tab of the results, or its own screen */
 function placeChat(where) { const host = where === "results" ? $("tabChat") : $("chatHost"), box = $("chatBox"); if (box.parentNode !== host) host.append(box); $("chatTitle").textContent = t(where === "results" ? "chat.title.lecture" : "chat.title"); drawChatSug(); }
 function resetChat() { S.chat = { prev: "", busy: false, n: (S.chat ? S.chat.n : 0) + 1 }; $("chatLog").textContent = ""; $("chatGo").disabled = false; }
@@ -2180,12 +2229,16 @@ async function askChat(q) {
     facts.push(...pass.list);
     if (job !== S.chat.n) return;
     let a = null, err = null;
-    if (chatOn()) { try { a = await askPost(CFG, { mode: "chat", q, lang: getLang(), prev: (S.chat.hist || []).join(" ‖ "), facts: facts.filter(f => f.id[0] !== "T").map(f => ({ id: f.id, text: f.text })), passages: pass.list.map(f => ({ id: f.id, text: f.text })) }); } catch (e) { err = e; } }
+    // who words it: the site's model, or the reader's own key on the service he chose (no key yet: he is asked for it, nothing is sent)
+    const via = viaNow(), vkey = via === "site" ? "" : viaKey(via), orModel = via === "openrouter" ? store.get("athar:or-model", "") : "";
+    if (via !== "site" && !vkey) { err = new AsrError("key_needed"); openViaKey(via); }
+    else if (chatOn()) { try { a = await askPost(CFG, { mode: "chat", q, lang: getLang(), prev: (S.chat.hist || []).join(" ‖ "), facts: facts.filter(f => f.id[0] !== "T").map(f => ({ id: f.id, text: f.text })), passages: pass.list.map(f => ({ id: f.id, text: f.text })),
+      ...(via !== "site" ? { via, ...(typeof orModel === "string" && OR_MODEL.test(orModel) ? { model: orModel } : {}) } : {}) }, null, vkey); } catch (e) { err = e; } }
     if (job !== S.chat.n) return;
     const found = facts.filter(f => f.card.kind === "search" && f.card.c.status !== "meaning").map(f => f.id);
     if (a && typeof a.text === "string") {
       const fromTalk = a.type === "answer" && Array.isArray(a.ids) && a.ids.some(x => x[0] === "T");
-      const b = chatBubble("it " + (a.type === "answer" ? "" : a.type), a.type === "answer" ? t(fromTalk ? "chat.by.talk" : "chat.by") : t("chat.by." + a.type));
+      const b = chatBubble("it " + (a.type === "answer" ? "" : a.type), (a.type === "answer" ? t(fromTalk ? "chat.by.talk" : "chat.by") : t("chat.by." + a.type)) + (typeof a.model === "string" && a.model ? " · " + a.model : ""));
       mixed(b.appendChild(el("p", null, a.text)), a.text);
       // the cards: what the model pointed at; and, whatever it said, a fact that plainly holds the words of the question
       // (asked "is hadith X sound?" about a hadith the ledger has without a grading, a model may answer "not found" and name nothing)
@@ -2197,14 +2250,15 @@ async function askChat(q) {
     } else {
       // no model answer: what the page itself found is still shown, and said to be that
       const b = chatBubble("it off", t("chat.by.off"));
-      const why = err instanceof AsrError && has("chat.err." + err.code) ? t("chat.err." + err.code) + " " : "";
+      const ownBusy = err instanceof AsrError && err.code === "upstream_busy" && err.scope === "own";
+      const why = ownBusy ? t("chat.err.own_busy") + " " : err instanceof AsrError && has("chat.err." + err.code) ? t("chat.err." + err.code) + " " : "";
       b.append(el("p", null, why + t(found.length ? "chat.off.found" : "chat.off.none")));
       if (found.length) b.after(chatCards(facts, found));
     }
   } finally { if (job === S.chat.n) done(); }
 }
 function wireChat() {
-  resetChat();
+  resetChat(); wireVia();
   const box = $("chatQ"), grow = () => { box.style.height = "auto"; box.style.height = Math.min(box.scrollHeight, 160) + "px"; };
   box.addEventListener("input", grow);
   box.addEventListener("keydown", ev => { if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); $("chatForm").requestSubmit(); } });

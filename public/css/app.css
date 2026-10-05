@@ -1553,6 +1553,10 @@ html[data-theme="dark"] .err .quiet-btn { background: var(--gold); color: #1B140
 .chat-found > * { margin: 0; }
 .chat-sug { display: flex; flex-wrap: wrap; gap: 8px; }
 .chat-form { margin: 0; }
+.chat-via { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 12px; font-family: var(--ui); font-size: var(--fs-ui); color: var(--ink-2, inherit); }
+.chat-via select, .chat-via input { min-height: 38px; padding: 5px 12px; border: 1px solid var(--edge); border-radius: var(--r-s); background: var(--sheet); color: var(--ink); max-width: 100%; }
+.chat-via input { width: 15em; }
+.chat-via .note { margin: 0; flex-basis: 100%; }
 .chat-ask { max-width: none; margin: 0; }
 .chat-screen .panel { padding-top: 36px; }
 @media (max-width: 960px) { .bubble { max-width: 100%; } .chat-cards .dg-card { padding: 16px; } }
