@@ -1860,7 +1860,7 @@ function afterPrint() {
 // Retrieval is the page's own (the ledger of the lecture, and the same search of the sources as "Search the corpus"); a
 // language model only chooses among those facts and writes a few connecting sentences (Worker /ask, mode "chat"). Every
 // verse, hadith, source and grading the reader sees is drawn here from the sources' data, in the cards under the answer.
-const CHAT = { FACT: 400, TOTAL: 6000, SEARCH: 4, PREV: 480 };
+const CHAT = { FACT: 420, TOTAL: 6200, SEARCH: 7, PREV: 480 };
 const chatOn = () => !!(CFG.asrUrl && S.asr && S.asr.ask);
 const lectureOpen = () => !$("results").hidden && S.words.length > 0;
 function drawChatDoor() { $("btnAsk").hidden = !chatOn(); $("btnAsk").textContent = t("chat.door"); $("tabBtnChat").hidden = !chatOn(); }
@@ -1868,7 +1868,7 @@ function drawChatDoor() { $("btnAsk").hidden = !chatOn(); $("btnAsk").textConten
 function placeChat(where) { const host = where === "results" ? $("tabChat") : $("chatHost"), box = $("chatBox"); if (box.parentNode !== host) host.append(box); $("chatTitle").textContent = t(where === "results" ? "chat.title.lecture" : "chat.title"); drawChatSug(); }
 function resetChat() { S.chat = { prev: "", busy: false, n: (S.chat ? S.chat.n : 0) + 1 }; $("chatLog").textContent = ""; $("chatGo").disabled = false; }
 function chatSuggestions() {
-  if (!lectureOpen()) return ["chat.sug.s1", "chat.sug.s2", "chat.sug.s3"].map(k => t(k));
+  if (!lectureOpen()) { const asked0 = new Set((S.chat && S.chat.asked) || []); return ["chat.sug.s1", "chat.sug.s4", "chat.sug.s5", "chat.sug.s6", "chat.sug.s7", "chat.sug.s8", "chat.sug.s9"].map(k => t(k)).filter(x => !asked0.has(x)).slice(0, 6); }
   const cards = S.digestCards || [], h = cards.find(c => c.type === "h"), q = cards.find(c => c.type === "q"), out = [t("chat.sug.sum"), t("chat.sug.l1")];
   if (h) { const e = S.ledger.find(x => x.id === h.ids[0]); out.push(t("chat.sug.said", e ? cutTo(bare(e.spoken).split(" ").slice(e.cue ? 0 : 0, 9).slice(-5).join(" "), 40) : srcLabel(h.wordings[0].source))); }
   if (q) out.push(t("chat.sug.tafsir", srcLabel(q.wordings[0].source)));
@@ -1957,19 +1957,87 @@ function lecturePassages(q) {
 }
 /** the words of the question that may be a text to look for (the question words themselves are left out) */
 const ASKING = /^(ما|ماذا|هل|أين|اين|من|كم|متى|كيف|صحة|صحه|درجة|درجه|حكم|مصدر|مصادر|نص|حديث|الحديث|أحاديث|احاديث|آية|ايه|اية|الآية|الايه|سورة|قول|قال|ورد|وردت|جاء|ذكر|ذُكر|عن|في|هذا|هذه|هو|هي|لي|اكتب|أعطني|اعطني|لخص|لخّص|what|is|the|of|a|an|hadith|verse|where|does|did|how|authentic|grade|source)$/i;
+/** one found text as a fact for the model: what it is, where, its grading, where else it stands, how it begins */
+function factOf(c, lead, extra = "") {
+  const s = c.source, e = c.entry || null, par = (e && e.parallels) || [];
+  const g = s.type === "h" && !s.weak ? gradeLine(s, par) : null;
+  const matched = e && e.diff ? e.diff.filter(d => d.source && !d.meta).map(d => d.sourceDisplay || d.source).join(" ") : "";
+  const begins = cutTo(bare(matched || (s.type === "q" ? s.display : s.excerptDisplay || s.excerpt || s.arabic || "")), 130);
+  // takhrij: the other collections that hold the hadith, each with its own grading; for an ayah, the hadith that quote it
+  const others = par.filter(p => p.type === "h" && !p.weak).slice(0, 5).map(p => { const pg = gradeLine(p, []); return srcLabel(p, true) + (pg && pg.cls !== "quiet" ? ` (${pg.text})` : ""); });
+  const weak = s.weak ? t("chat.f.weakonly", srcLabel(s)) + (s.bookWords ? " — " + t("chat.f.bookwords", cutTo(s.bookWords, 110)) : "")
+    : e && e.weakBooks && e.weakBooks.length ? t("chat.f.alsoweak", e.weakBooks.map(w => w.book + (w.bookWords ? ` «${cutTo(w.bookWords, 90)}»` : "")).slice(0, 2).join(sep())) : "";
+  return [lead, tOpt("kind." + (s.type || "h")) || "", has("lk.st." + c.status) ? t("lk.st." + c.status) : "", s.weak ? "" : srcLabel(s), s.type === "h" && !s.weak ? t("chat.f.grade", g ? g.text : t("g.none")) : "",
+    others.length ? t(s.type === "q" ? "chat.f.inhadith" : "chat.f.also", others.join(sep())) : "", weak, extra, begins ? t(matched ? "chat.f.matched" : "chat.f.begins", begins) : "", s.url ? t("chat.f.link") : ""].filter(Boolean).join(" — ");
+}
+const TOPICAL = /(?:^|\s)(حديث|احاديث|الاحاديث|ايه|ايات|الايات|نصوص|ادله|دليل|ما ورد|ماذا ورد|ما جاء|hadith|hadiths|verse|verses|ayah|ayat)\s+(?:(?:نبوي[هة]?|شريف[هة]?|قراني[هة]?|كريم[هة]?|صحيح[هة]?|وردت?|جاءت?|تتحدث|تتكلم|من القران|من السنه)\s+){0,2}(عن|حول|في فضل|في|about|on)\s+(.{3,})$/i;
+/** a question about ONE text ("is this a hadith", "who narrated", "where does it stand", "is it sound") */
+const TEXTQ = /(هل (هذا |هو |هذه |هي )?(حديث|ايه|من القران|من الحديث)|صحه (حديث|هذا)|درجه (حديث|هذا)|ما (صحه|درجه|مصدر|تخريج)|من (اخرج|اخرجه|خرج|روي|رواه)|مصدر (حديث|هذا)|اين (ورد|وردت|جاء|اجد)|تخريج|is (this|it) a hadith|source of|who narrated|is (this|it) authentic)/i;
+const ASK_TAIL = /^(صحيح|صحيحه|ضعيف|موضوع|ثابت|مكذوب|القران|قران|جزء|ام|لا|authentic|sound|weak)$/i, ASK_HEAD = /^(اخرج|اخرجه|خرج|خرجه|روي|رواه|بلفظ|لفظ|نصه|تخريج|narrated)$/i;
+const askForm = v => bare(v).replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه");
+/** the text a question is about: what it quotes, else what follows its colon, else its words without the asking words at both ends */
+function askedText(q) {
+  const quoted = q.match(/[«"“]([^«»"“”]{4,400})[»"”]/), colon = q.match(/[:：]\s*([^:：]{4,})$/);
+  const raw = quoted ? quoted[1] : colon && !/\d\s*[:：]\s*\d/.test(q) ? colon[1] : q;
+  const ws = wordsFromText(raw.replace(/[؟?!.،,:«»"“”]/g, " "));
+  if (quoted || raw !== q) return ws;
+  let a = 0, b = ws.length;
+  while (a < b && (ASKING.test(bare(ws[a].w)) || ASK_HEAD.test(askForm(ws[a].w)))) a++;
+  while (b > a && (ASKING.test(bare(ws[b - 1].w)) || ASK_TAIL.test(askForm(ws[b - 1].w)))) b--;
+  return ws.slice(a, b);
+}
+/**
+ * What the page finds for a question in the SOURCES, each as a fact with its card:
+ *   a text named by its reference; texts whose words stand in the question (with where else they are — takhrij — and what
+ *   the books of weak hadith say); a short saying word for word in the books of fabricated and famous hadith; on request,
+ *   the ayat a found hadith shares words with; and, for a question about a topic, texts near that topic (marked as near).
+ * The list carries two flags: `only` = "inbook" when the text stands in those books alone, "miss" when a question about
+ * one text found it nowhere — both are answered by the page itself, no model.
+ */
 async function searchFacts(q) {
-  const ws = wordsFromText(q.replace(/[؟?!.،,:«»"“”]/g, " ")).filter(w => !ASKING.test(bare(w.w)));
-  if (ws.length < 2 || S.corpus !== "ready") return [];
-  let r; try { r = await call("lookup", { words: ws }); } catch { return []; }
-  // what matched in wording; a merely similar text is offered only when no lecture is open (beside a ledger it is noise)
-  const textualFirst = [...r.candidates.filter(c => c.status !== "meaning"), ...(lectureOpen() ? [] : r.candidates.filter(c => c.status === "meaning").slice(0, 2))].slice(0, CHAT.SEARCH);
-  return textualFirst.map((c, i) => {
-    const s = c.source, g = s.type === "h" ? gradeLine(s, (c.entry && c.entry.parallels) || []) : null;
-    const matched = c.entry && c.entry.diff ? c.entry.diff.filter(d => d.source).map(d => d.sourceDisplay || d.source).join(" ") : "";
-    const begins = cutTo(bare(matched || (s.type === "q" ? s.display : s.excerptDisplay || s.excerpt || s.arabic || "")), 150);
-    const text = [t("chat.f.search"), tOpt("kind." + (s.type || "h")) || "", t("lk.st." + c.status), srcLabel(s), s.type === "h" ? t("chat.f.grade", g ? g.text : t("g.none")) : "", begins ? t(matched ? "chat.f.matched" : "chat.f.begins", begins) : ""].filter(Boolean).join(" — ");
-    return { id: "S" + (i + 1), text: cutTo(text, CHAT.FACT), card: { kind: "search", c } };
-  });
+  const out = []; out.only = "";
+  if (S.corpus !== "ready") return out;
+  const seen = new Set(), nq = askForm(q);
+  const add = (c, text) => { const k = c.source.ref || srcLabel(c.source); if (seen.has(k) || out.length >= CHAT.SEARCH) return; seen.add(k); out.push({ id: "S" + (out.length + 1), text: cutTo(text, CHAT.FACT), card: { kind: "search", c } }); };
+  const look = async words => { try { return (await call("lookup", { words })).candidates || []; } catch { return []; } };
+  // 1) a text named by its reference; a hadith so named is looked up by its own words too, for where else it stands
+  let refs = []; try { refs = await call("refs", { q }); } catch { refs = []; }
+  for (const c of refs) {
+    let full = c;
+    if (c.source.type === "h" && c.source.arabic) { const hit = (await look(wordsFromText(c.source.arabic).slice(-45))).find(x => x.status !== "meaning" && x.source.ref === c.source.ref); if (hit) full = { ...hit, status: "ref" }; }
+    add(full, factOf(full, t("chat.f.ref")));
+  }
+  const tm = !refs.length && nq.match(TOPICAL), aboutText = !refs.length && !tm && (TEXTQ.test(nq) || /[«"“][^«»"“”]{4,}[»"”]/.test(q));
+  // 2) texts whose words stand in the question
+  const ws = askedText(q), cands = ws.length >= 2 && !refs.length && !tm ? await look(ws) : [], textual = cands.filter(c => c.status !== "meaning");
+  for (const c of textual.slice(0, 3)) add(c, factOf(c, t("chat.f.search")));
+  // 2b) nothing in the hadith collections: the same words, word for word, in the books of fabricated and famous hadith
+  if (!refs.length && !tm && !textual.some(c => !c.source.weak) && ws.length >= 2 && ws.length <= 14) {
+    let inb = []; try { inb = await call("inbooks", { text: ws.map(w => w.w).join(" ") }); } catch { inb = []; }
+    for (const c of inb) if (!out.some(f => f.card.c.source.collection === c.source.collection)) add(c, factOf(c, t("chat.f.search")));
+    if (out.length) out.only = "inbook"; else if (aboutText) out.only = "miss";
+  }
+  // 3) "is part of this hadith in the Qur'an?": the ayat that share words with the hadith found
+  if (/(قران|القران|مصحف|ايه|ايات|quran|verse)/i.test(nq)) for (const h of [...refs, ...textual].filter(c => c.source.type === "h" && !c.source.weak).slice(0, 1)) {
+    const words = h.entry && h.entry.diff ? h.entry.diff.filter(d => d.source && !d.meta).map(d => ({ w: d.source })) : wordsFromText(h.source.arabic || "").slice(-60);
+    for (const c of (await look(words)).filter(x => x.status !== "meaning" && x.source.type === "q").slice(0, 2)) add(c, factOf(c, t("chat.f.cross", srcLabel(h.source))));
+  }
+  // 4) a question about a topic: texts near it. Asked for outright («أحاديث عن …»), or — no lecture open — a question
+  // that names no text and found none
+  if (tm || (!out.length && !out.only && !refs.length && !lectureOpen() && ws.length >= 1 && ws.length <= 8)) {
+    const kind = /(حديث|احاديث|hadith)/i.test(nq) ? "h" : /(ايه|ايات|قران|verse|ayah|ayat|quran)/i.test(nq) ? "q" : "";
+    let r = null; try { r = await call("topic", { q: tm ? tm[3] : ws.map(w => w.w).join(" "), kind, k: 5, sem: semCfg() }); } catch { r = null; }
+    for (const c of (r && r.candidates) || []) add(c, factOf(c, t("chat.f.topic")));
+  }
+  return out;
+}
+/** the one word a question asks to have counted in the Qur'an, or "" */
+function countWord(q) {
+  const x = bare(q).replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه");
+  if (!/(كم مره|كام مره|كم مرات|عدد مرات|كم ورد|كم ذكر|كام مره|how many times)/i.test(x)) return "";
+  const quoted = q.match(/[«"“]([^«»"“”]{2,25})[»"”]/); if (quoted) return quoted[1].trim().split(/\s+/)[0];
+  const drop = new Set(["كلمه", "لفظ", "لفظه", "وردت", "ورد", "ذكرت", "ذكر", "كم", "كام", "مره", "مرات", "عدد", "في", "القران", "الكريم", "المصحف", "هي", "هو", "تكررت", "تكرر", "جاءت", "جاء", "اسم", "how", "many", "times", "the", "word", "in", "quran", "does", "is", "appear"]);
+  return (x.replace(/[^ء-يa-zA-Z\s]/g, " ").split(/\s+/).filter(w => w.length >= 2 && !drop.has(w.toLowerCase()))[0]) || "";
 }
 /** the facts that hold (nearly) all the content words of the question: found by counting words, not by a model */
 function aboutFacts(q, facts) {
@@ -2001,7 +2069,10 @@ function chatCards(facts, ids) {
     }
     if (f.card.kind === "digest") { const c = (S.digestCards || []).find(x => x.ids.join() === f.card.ids.join()); if (c) { card = digestCardEl(c, byId); label = srcLabel(c.wordings[0].source); } }
     else if (f.card.kind === "entry") { const e = byId.get(f.card.id); if (e) { card = needCardEl(e); label = cutTo(bare(e.spoken), 70); } }
-    else { card = el("article", "dg-card chat-found t-" + (f.card.c.source.type || "h")); const ul = el("ul", "lookup-list"); ul.append(lookupCandidate(f.card.c, false)); card.append(el("span", "dg-as", t("chat.found")), ul); label = srcLabel(f.card.c.source); }
+    else { card = el("article", "dg-card chat-found t-" + (f.card.c.source.type || "h")); const ul = el("ul", "lookup-list"); const li = lookupCandidate(f.card.c, false), cs = f.card.c.source, gc = cs.type === "h" && !cs.weak ? gradeChip(cs, (f.card.c.entry && f.card.c.entry.parallels) || []) : null;
+      if (gc) { const ln = li.querySelector(".src"); if (ln) ln.append(gc); }
+      if (cs.weak && cs.bookWords) li.append(el("span", "wb-label", t("e.weak.words")), mixed(el("p", "wb-words", `«${cs.bookWords}»`), cs.bookWords));
+      ul.append(li); card.append(el("span", "dg-as", t(f.card.c.status === "topic" ? "chat.found.topic" : f.card.c.status === "ref" ? "chat.found.ref" : f.card.c.status === "inbook" ? "chat.found.inbook" : "chat.found")), ul); label = srcLabel(cs); }
     if (!card) continue;
     // a card this conversation has already shown in full comes folded: its name, and the whole of it one press away
     const key = f.card.kind + ":" + (f.card.kind === "digest" ? f.card.ids.join() : f.card.kind === "entry" ? f.card.id : f.card.c.source.ref);
@@ -2029,18 +2100,30 @@ async function askChat(q) {
       const pick = lf.filter(f => !want || typeOf(f) === want);
       if (pick.length) { const b = chatBubble("it tool", t("chat.by.tool")); b.append(el("p", null, t("chat.link"))); b.after(chatCards(pick, pick.map(f => f.id))); return; }
     }
-    // "explain this verse": the commentary of al-Jalalayn on the verses the lecture cited — the book's words in a card, no model
-    if (/(فسر|تفسير|معني الاي|معنى الآي|tafsir|commentary)/i.test(bare(q).replace(/[أإآ]/g, "ا")) && lectureOpen()) {
-      const nf = v => bare(v).replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"), qc = (S.digestCards || []).filter(c => c.type === "q"), x = nf(q);
-      const named = qc.filter(c => x.includes(nf(srcLabel(c.wordings[0].source)).split(" — ")[0].replace(/^سوره\s+/, "")));
-      const pick = (named.length ? named : qc).slice(0, 3);
-      if (pick.length && packs.has("tafsir")) {
-        const b = chatBubble("it tool", t("chat.by.tool")), line1 = b.appendChild(el("p", null, t("chat.tafsir.loading")));
+    // "how many times does the word … stand in the Qur'an": counted from the text itself, no model
+    { const w = countWord(q);
+      if (w) { let r = null; try { r = await call("count", { word: w }); } catch { r = null; }
+        if (job !== S.chat.n) return;
+        if (r) { const b = chatBubble("it tool", t("chat.by.tool")); const line1 = r.withAffix.times ? t("chat.count", r.shown, num(r.exact.times), num(r.exact.ayat), r.shownBare, num(r.withAffix.times), num(r.withAffix.ayat)) : t("chat.count.none", r.shown);
+          mixed(b.appendChild(el("p", null, line1)), line1); b.append(el("p", "note", t("chat.count.note")));
+          const fs = r.sources.map((c, i) => ({ id: "S" + (i + 1), text: "", card: { kind: "search", c } })); if (fs.length) b.after(chatCards(fs, fs.map(f => f.id)));
+          S.chat.asked = [...(S.chat.asked || []), q]; drawChatSug(); return; } } }
+    // "explain this verse": al-Jalalayn's commentary — on the ayah the question names, else on the verses the lecture cited.
+    // The book's own words in a card; no model.
+    if (/(فسر|تفسير|معني الاي|معنى الآي|معنى اي|معني اي|tafsir|commentary)/i.test(bare(q).replace(/[أإآ]/g, "ا")) && packs.has("tafsir")) {
+      const nf = v => bare(v).replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"), x = nf(q);
+      let list = []; try { list = (await call("refs", { q })).filter(c => c.source.type === "q").map(c => c.source); } catch { list = []; }
+      if (!list.length) { const ws = wordsFromText(q.replace(/[؟?!.،,:«»"“”]/g, " ")).filter(w => !ASKING.test(bare(w.w)) && !/^(فسر|فسّر|تفسير|معنى|معني)$/.test(bare(w.w)));
+        if (ws.length >= 3) { try { list = (await call("lookup", { words: ws })).candidates.filter(c => c.status !== "meaning" && c.source.type === "q").slice(0, 1).map(c => c.source); } catch { list = []; } } }
+      let fromLecture = false;
+      if (!list.length && lectureOpen()) { fromLecture = true; const qc = (S.digestCards || []).filter(c => c.type === "q"), named = qc.filter(c => x.includes(nf(srcLabel(c.wordings[0].source)).split(" — ")[0].replace(/^سوره\s+/, ""))); list = (named.length ? named : qc).slice(0, 3).map(c => c.wordings[0].source); }
+      if (list.length) {
+        const asked = !fromLecture, b = chatBubble("it tool", t("chat.by.tool")), line1 = b.appendChild(el("p", null, t("chat.tafsir.loading")));
         const ok = await loadPack("tafsir"); let res = [];
-        if (ok) { try { res = await call("tafsir", { list: pick.map(c => { const sr = c.wordings[0].source; return { surah: sr.surah, ayah: sr.ayah, ayahEnd: sr.ayahEnd || sr.ayah }; }) }); } catch { res = []; } }
+        if (ok) { try { res = await call("tafsir", { list: list.map(sr => ({ surah: sr.surah, ayah: sr.ayah, ayahEnd: sr.ayahEnd || sr.ayah })) }); } catch { res = []; } }
         if (job !== S.chat.n) return;
         if (!res.length) { line1.textContent = t("chat.tafsir.none"); return; }
-        line1.textContent = t("chat.tafsir.is");
+        line1.textContent = t(asked ? "chat.tafsir.asked" : "chat.tafsir.is");
         const box = el("div", "chat-cards");
         for (const r of res) { const card = el("article", "dg-card chat-found t-b"), head = el("p", "src"); head.append(el("span", "src-main", t("chat.tafsir.of", r.label)));
           const a = el("a", "ext", "quran.com"); a.href = `https://quran.com/${r.surah}:${r.ayah}`; a.target = "_blank"; a.rel = "noopener"; head.append(a);
@@ -2048,8 +2131,19 @@ async function askChat(q) {
         b.after(box); S.chat.asked = [...(S.chat.asked || []), q]; drawChatSug(); return;
       }
     }
-    const facts = []; let total = 0;
-    for (const f of [...lectureFacts(), ...(await searchFacts(q))]) { if (facts.length >= 30 || total + f.text.length > CHAT.TOTAL) break; total += f.text.length; facts.push(f); }
+    const facts = []; let total = 0; const lf0 = lectureFacts(), sf = await searchFacts(q);
+    if (job !== S.chat.n) return;
+    // a question about ONE text that the lecture's ledger does not hold: found only in the books of fabricated and famous
+    // hadith, or found nowhere. The page says so itself — a model has nothing to choose here, and must not guess.
+    if (sf.only && !aboutFacts(q, lf0).length && (sf.only === "inbook" || !lectureOpen())) {
+      const b = chatBubble("it tool", t("chat.by.tool")), line = t(sf.only === "inbook" ? "chat.inbook" : "chat.miss");
+      mixed(b.appendChild(el("p", null, line)), line); b.append(el("p", "note", t(sf.only === "inbook" ? "chat.inbook.note" : "chat.miss.note")));
+      const du = dorarUrl(askedText(q).map(w => w.w).join(" "));
+      if (du) { const a = el("a", "quiet-btn ext", t("e.ext.dorar")); a.href = du; a.target = "_blank"; a.rel = "noopener"; a.title = t("e.open.dorar"); b.append(a); }
+      if (sf.length) b.after(chatCards(sf, sf.map(f => f.id)));
+      S.chat.asked = [...(S.chat.asked || []), q]; drawChatSug(); return;
+    }
+    for (const f of [...lf0, ...sf]) { if (facts.length >= 30 || total + f.text.length > CHAT.TOTAL) break; total += f.text.length; facts.push(f); }
     // the lecturer's own words: what the chat sums up, and what it answers "what did he say about …" from
     const pass = lecturePassages(q);
     if (pass.sample) { const m = facts.find(f => f.id === "M1"); if (m) m.text = cutTo(m.text + " — " + t("chat.f.sample"), CHAT.FACT + 80); }
@@ -2065,7 +2159,7 @@ async function askChat(q) {
       mixed(b.appendChild(el("p", null, a.text)), a.text);
       // the cards: what the model pointed at; and, whatever it said, a fact that plainly holds the words of the question
       // (asked "is hadith X sound?" about a hadith the ledger has without a grading, a model may answer "not found" and name nothing)
-      const ids = [...new Set([...(a.type === "answer" && Array.isArray(a.ids) ? a.ids : []), ...(a.type === "refuse" ? [] : aboutFacts(q, facts.filter(f => f.id[0] !== "T")))])];
+      const ids = [...new Set([...(a.type === "answer" && Array.isArray(a.ids) ? a.ids : []), ...(a.type === "refuse" ? [] : aboutFacts(q, facts.filter(f => f.id[0] !== "T"))), ...(a.type === "refuse" ? [] : facts.filter(f => f.card.kind === "search" && f.card.c.status === "ref").map(f => f.id))])];
       if (ids.length) b.after(chatCards(facts, ids));
       // the last three exchanges go with the next question, so that "compare them" and "and the second one?" have something to point at
       S.chat.hist = [...(S.chat.hist || []), cutTo(q + " ← " + a.text, 340)].slice(-3); S.chat.prev = S.chat.hist.join(" ‖ ");

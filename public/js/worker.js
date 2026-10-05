@@ -7,6 +7,7 @@ import { norm, takhrijMask } from "./text.js";
 import { lookup, describeRef } from "./lookup.js";
 import { HadithDisplay, wordsOf } from "./display.js";
 import { SemIndex, fetchVectors } from "./sem.js";
+import { parseRefs, topicSearch, countInQuran, phraseInWeakBooks } from "./tools.js";
 
 let corpus = null;
 let display = null;          // HadithDisplay: the original (diacritised) text of the core hadith, when data/display/ exists
@@ -592,6 +593,34 @@ async function onMessage(ev) {
       const items = ev.data.items || [];
       await loadDisplayFor(items.filter(it => it.type === "h").map(it => ({ type: "h", ref: it.ref })));
       self.postMessage({ id, ok: true, result: buildDigest(items) });
+    } else if (type === "refs") {
+      // the texts a question names by their reference («البقرة 255», «آية الكرسي», «البخاري 6018»)
+      const srcs = parseRefs(String(ev.data.q || ""), corpus).map(r => describeRef(r, corpus)).filter(Boolean).map(x => ({ ...x }));
+      await loadDisplayFor(srcs);
+      self.postMessage({ id, ok: true, result: srcs.map(x => ({ status: "ref", source: decorateSource(x) })) });
+    } else if (type === "topic") {
+      // passages near a topic, by its words and — when the sentence vectors can be had — by its sense: suggestions, never matches
+      const q = String(ev.data.q || ""), cfg = ev.data.sem || null; let sem = null;
+      if (cfg && semMeta) try {
+        if (!semIndex && !semTried) { semTried = true; semIndex = await SemIndex.load(semLoader, corpus); }
+        if (semIndex && semIndex.model === cfg.model && semIndex.dim === cfg.dim) {
+          const text = q.slice(0, 300); if (!semVectors.has(text)) for (const [t, v] of await fetchVectors([text], cfg)) semVectors.set(t, v);
+          if (semVectors.has(text)) sem = { index: semIndex, vec: semVectors.get(text) };
+        }
+      } catch { sem = null; }
+      const hits = topicSearch(q, corpus, { kind: ev.data.kind || "", k: ev.data.k || 6, sem });
+      const srcs = hits.map(h => ({ ...corpus.describe(h.pid) }));
+      await loadDisplayFor(srcs);
+      self.postMessage({ id, ok: true, result: { bySense: !!sem, candidates: srcs.map((x, i) => ({ status: "topic", via: hits[i].via, source: decorateSource(x) })) } });
+    } else if (type === "inbooks") {
+      // a short text word for word in the loaded books of fabricated and famous hadith: the passage, and the book's own words about it
+      const hits = phraseInWeakBooks(String(ev.data.text || ""), corpus);
+      self.postMessage({ id, ok: true, result: hits.map(h => { const tk = corpus.P[h.pid].n.split(" "), a = Math.max(0, h.ps - 4), b = Math.min(tk.length, h.pe + 45);
+        return { status: "inbook", source: { ...corpus.describe(h.pid), bookWords: h.about, excerpt: (a > 0 ? "… " : "") + tk.slice(a, b).join(" ") + (b < tk.length ? " …" : "") } }; }) });
+    } else if (type === "count") {
+      const c = countInQuran(String(ev.data.word || ""), corpus);
+      const srcs = c ? c.first.map(r => describeRef(r, corpus)).filter(Boolean).map(x => ({ ...x })) : [];
+      self.postMessage({ id, ok: true, result: c ? { ...c, sources: srcs.map(x => ({ status: "ref", source: decorateSource(x) })) } : null });
     } else if (type === "tafsir") {
       // al-Jalalayn's commentary on some ayat (the tafsir pack must be loaded): the book's words, as stored for searching
       const out = [];
