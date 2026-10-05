@@ -48,6 +48,15 @@ if (long.j && long.j.seconds) {
   const a = await step("the long lecture: its first ten minutes", yt({ video: LONG, from: 0, to: Math.min(600, long.j.seconds), language: "ar" }));
   if (long.j.seconds > 600) { await sleep(1200); await step("the long lecture: its second ten minutes (told which models were busy)", yt({ video: LONG, from: 592, to: Math.min(1200, long.j.seconds), language: "ar", ...(a.busy ? { after: a.busy } : {}) })); }
 }
+// a lecture longer than ten minutes: two windows one after the other, the second told which models were busy in the first
+for (const v of (process.env.PROBE_LONGER || "ikgqwDVXs8E,1foxMsRygJg").split(",")) {
+  const h = await step("length of " + v, yt({ video: v }));
+  if (!(h.j && h.j.seconds > 700)) continue;
+  const a = await step(v + ": minutes 0-10", yt({ video: v, from: 0, to: 600, language: "ar" }));
+  await sleep(1200);
+  await step(v + ": minutes 10-20 (told which models were busy: " + JSON.stringify(a.busy || []) + ")", yt({ video: v, from: 592, to: Math.min(1200, h.j.seconds), language: "ar", ...(a.busy ? { after: a.busy } : {}) }));
+  break;
+}
 out.healthAfter = await health();
 mkdirSync(new URL("./out/", import.meta.url), { recursive: true });
 writeFileSync(new URL("./out/yt.json", import.meta.url), JSON.stringify(out, null, 1));
