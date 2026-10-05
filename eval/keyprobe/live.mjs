@@ -15,5 +15,10 @@ const FACTS = [
   { id: "L7", text: "في المحاضرة عند 1:42 — حديث — مطابق حرفيًا — ليس في كتب الحديث المحمَّلة؛ مذكور في: كشف الخفاء ومزيل الإلباس، العجلوني — تنبيه: ليس في كتب الحديث المحمَّلة — قيل: «اطلبوا العلم ولو في الصين»" },
   { id: "L6", text: "في المحاضرة عند 1:23 — حديث — لم يُعثر عليه في المصادر — أقرب نص في المصادر: صحيح البخاري — رقم 6114 — قيل: «بين النبي أن القوي الحقيقي ليس من يغلب الناس في المصارعة»" }];
 for (const q of ["هل حديث اطلبوا العلم ولو في الصين صحيح؟", "ما حكم من لم يطلب العلم؟", "هل ذكر الشيخ حديثًا عن الصيام؟"]) { out.steps.push({ what: "chat: " + q, ...(await post({ mode: "chat", q, lang: "ar", facts: FACTS })) }); await sleep(3000); }
+// the lecturer's own words sent beside the facts: summed up and attributed to him, the passage named
+await sleep(20000);
+out.steps.push({ what: "chat with passages: ماذا قال عن الزهايمر؟", ...(await post({ mode: "chat", q: "ماذا قال عن الزهايمر؟", lang: "ar", facts: FACTS, passages: [
+  { id: "T1", text: "عند 0:04: يقول الحبر ابن عباس رضي الله تعالى عنهما كنت خلف النبي صلى الله عليه وسلم يوما فقال يا غلام إني أعلمك كلمات احفظ الله يحفظك" },
+  { id: "T2", text: "عند 4:05: لا تكاد تجد حافظا لكتاب الله يصيبه الخرف أو يطاله الزهايمر حفظ الله تلك الأعضاء للحافظين إياه ويوما قفز أحد الأئمة من على القارب وتلاميذه ينظرون إليه" }] })) });
 mkdirSync(new URL("./out/", import.meta.url), { recursive: true });
 writeFileSync(new URL("./out/live.json", import.meta.url), JSON.stringify(out, null, 1));
