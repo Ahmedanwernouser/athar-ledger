@@ -886,7 +886,7 @@ async function ytRoute(req, env, cors) {
     const order = [...models.filter((m) => !held(m)), ...models.filter(held)];
     const ctl = new AbortController(), active = new Set(); let wake; const woke = new Promise((r) => { wake = r; });
     const finish = (d) => { if (!done) { done = d; ctl.abort(); wake(); } };
-    const lane = async (model) => {
+    const lane = async (model, nudge) => {
       let fails = 0;
       for (let ki = 0; ki < K.keys.length; ki++) {
         if (done) return;
@@ -910,7 +910,7 @@ async function ytRoute(req, env, cors) {
             // 500 / 503 / 524 ("high demand", a timeout on Google's side). Measured: it is not the whole model that is down —
             // in the same minute one key was refused and the next was served. So the model is asked on the next key, up to
             // YT_LANE_TRIES times; the other models are being asked meanwhile, so this costs the visitor no time.
-            if (r.status >= 500) { cool.set(model, Date.now() + YT_COOL_MS); busyNow.add(short(model)); again = true; if (++fails < YT_LANE_TRIES) continue; }
+            if (r.status >= 500) { cool.set(model, Date.now() + YT_COOL_MS); busyNow.add(short(model)); again = true; nudge(); if (++fails < YT_LANE_TRIES) continue; }      // (nudge: the next model is asked now, not after the wait)
             return;                                         // 400 / 404 (this model is not there), or refused too often: this lane ends
           }
           const j = await r.json(); if (done) return;
@@ -928,7 +928,7 @@ async function ytRoute(req, env, cors) {
           return finish({ out, ki, model });
         } catch {
           if (done) return;                                 // abandoned because another lane answered
-          lastStatus = 0; again = true; busyNow.add(short(model)); note(ki, model, 0, "time");      // no answer in time: treated like high demand
+          lastStatus = 0; again = true; busyNow.add(short(model)); note(ki, model, 0, "time"); nudge();      // no answer in time: treated like high demand
           if (++fails < YT_LANE_TRIES) continue;
           return;
         } finally { clearTimeout(limit); ctl.signal.removeEventListener("abort", drop); }
@@ -938,8 +938,10 @@ async function ytRoute(req, env, cors) {
     const waited = () => thin && Date.now() - thinAt > YT_CONFIRM_MS;
     for (const model of order) {
       if (done || waited()) break;
-      const p = lane(model).catch(() => {}); active.add(p); p.then(() => active.delete(p));
-      let timer; await Promise.race([p, woke, new Promise((r) => { timer = setTimeout(r, hedgeMs); })]); clearTimeout(timer);
+      let nudge; const nudged = new Promise((r) => { nudge = r; });
+      const p = lane(model, nudge).catch(() => {}); active.add(p); p.then(() => active.delete(p));
+      // the next lane starts when this one has ended, has been refused once, or has said nothing for the wait
+      let timer; await Promise.race([p, woke, nudged, new Promise((r) => { timer = setTimeout(r, hedgeMs); })]); clearTimeout(timer);
     }
     while (!done && active.size && !waited()) { let timer; await Promise.race([...active, woke, new Promise((r) => { timer = setTimeout(r, 1000); })]); clearTimeout(timer); }
     // nobody else answered: the thin answer is all there is. It is given, and said to be unconfirmed

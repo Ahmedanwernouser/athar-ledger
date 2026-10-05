@@ -842,7 +842,7 @@ sec("/yt: a YouTube video from its link (Gemini)");
     let env = Y({ GEMINI_API_KEY: KS[0], GEMINI_API_KEYS: KS.join(" ") }); up.calls = [];
     up.impl = (url, init) => (keyOf(init) === KS[0] ? new Response("high demand", { status: 503 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
     let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
-    ok(r.status === 200 && r.j.model === "gemini-3.8-flash" && up.calls.length === 2 && keyOf(up.calls[1].init) === KS[1], "/yt a model refused with 'high demand' on one key is served on the next: the best model still answers");
+    ok(r.status === 200 && r.j.model === "gemini-3.8-flash" && up.calls.some((c) => modelOf(c.url) === "3.8-flash" && keyOf(c.init) === KS[1]) && up.calls.length <= 4, "/yt a model refused with 'high demand' on one key is served on the next: the best model still answers  (" + up.calls.length + " questions)");
     env = Y({ GEMINI_API_KEY: KS[0], GEMINI_API_KEYS: KS.join(" ") }); up.calls = [];
     up.impl = (url) => (modelOf(url) === "3.8-flash" ? new Response("timeout", { status: 524 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
     r = await call(yt({ video: VID, from: 0, to: 600 }), env);
