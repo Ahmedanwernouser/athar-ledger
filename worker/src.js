@@ -599,6 +599,7 @@ const YT_AUDIO_TOKENS_PER_SECOND = 32;
 const YT_TIMEOUT_MS = 170_000;
 const YT_COUNT_TIMEOUT_MS = 20_000;
 const YT_GIVE_UP_MS = 150_000;          // no new round of questions after this long: the page is told, and it decides
+const YT_CONFIRM_MS = 60_000;           // how long a thin answer waits for a second model before it is given as it is
 const YT_HEDGE_MS = 20_000;             // a model that has not answered in this long is no longer waited for alone
 const YT_ROUNDS_WAIT_MS = [0, 4000, 10000];   // "high demand" (503) is common and brief: the models are tried up to three times round
 // Measured 5 Oct 2026 (eval/keyprobe/models.mjs, ytmodels.mjs): the free tier counts 20 requests a day PER MODEL and per
@@ -647,6 +648,21 @@ function ytNormalise(j, model, from, to) {
   }
   return { text: words.map((w) => w.word).join(" "), duration: to - from, words, provider: "gemini", model, source: "youtube", approx: true,
     ...(cand.finishReason && cand.finishReason !== "STOP" ? { truncated: true } : {}) };
+}
+
+/**
+ * Is there a stretch of the window without a single word that is too long to take on one model's word: more than two
+ * minutes, or — in a short window — more than a fifth of it and a minute? (before the first word, between two, after the last)
+ */
+const YT_SILENT_S = 120;
+function ytSilent(words, from, to, most = YT_SILENT_S) {
+  if (!(most > 0)) return false;                            // (YT_SILENT_S = "0" switches the rule off)
+  const len = to - from, limit = Math.min(most, Math.max(60, 0.2 * len));
+  if (len <= limit) return false;
+  let at = from, worst = 0;
+  for (const w of words) { if (w.start - at > worst) worst = w.start - at; if (w.end > at) at = w.end; }
+  if (to - at > worst) worst = to - at;
+  return worst > limit;
 }
 
 /** plain text for a title: no control characters, no markup characters, one line, at most `max` characters */
@@ -858,7 +874,8 @@ async function ytRoute(req, env, cors) {
   // without an answer OR has gone YT_HEDGE_MS without one. The first complete answer wins; the others are abandoned.
   // In a quiet hour the best model answers before any other is asked; in a busy one the wait is seconds, not minutes.
   const hedgeMs = /^\d+$/.test(String(env.YT_HEDGE_MS ?? "")) ? Number(env.YT_HEDGE_MS) : YT_HEDGE_MS;
-  let lastStatus = 0, round = 0, again = false, done = null; const busyNow = new Set(), began = Date.now();
+  const silentS = /^\d+$/.test(String(env.YT_SILENT_S ?? "")) ? Number(env.YT_SILENT_S) : YT_SILENT_S;
+  let lastStatus = 0, round = 0, again = false, done = null, thin = null, thinAt = 0; const busyNow = new Set(), began = Date.now();
   for (const wait of YT_ROUNDS_WAIT_MS) {
     // another round is worth it only when something may have changed: a model was in "high demand" (waited for a moment)
     if (round) { if (!again || calls >= YT_CALL_BUDGET || Date.now() - began > YT_GIVE_UP_MS) break; await sleep(env.YT_NO_WAIT ? 0 : wait); }
@@ -894,6 +911,15 @@ async function ytRoute(req, env, cors) {
           const j = await r.json(); if (done) return;
           const out = ytNormalise(j, model, from, to);
           if (!out) { lastStatus = 0; again = true; note(ki, model, 200, "form"); return; }      // not the list that was asked for
+          // Measured on a 58-minute lecture (5 Oct 2026): one model answered a ten-minute window with 159 words, the last
+          // at 1:33, and called it finished, where its neighbours wrote 1,160 words. A model can stop early and say nothing.
+          // So an answer with a long stretch without a word is not taken on one model's say-so: another model is asked.
+          // If that one writes through, it is the answer; if it is as short, the silence is real (music, a pause).
+          if (ytSilent(out.words, from, to, silentS)) {
+            note(ki, model, 200, "short");
+            if (!thin) { thin = { out, ki, model }; thinAt = Date.now(); return; }
+            return finish(out.words.length > thin.out.words.length ? { out, ki, model } : thin);
+          }
           return finish({ out, ki, model });
         } catch {
           if (done) return;                                 // abandoned because another lane answered
@@ -901,12 +927,16 @@ async function ytRoute(req, env, cors) {
         } finally { clearTimeout(limit); ctl.signal.removeEventListener("abort", drop); }
       }
     };
+    // (a thin answer waits for a second model's word for a minute, not for as long as a silent model may take)
+    const waited = () => thin && Date.now() - thinAt > YT_CONFIRM_MS;
     for (const model of order) {
-      if (done) break;
+      if (done || waited()) break;
       const p = lane(model).catch(() => {}); active.add(p); p.then(() => active.delete(p));
       let timer; await Promise.race([p, woke, new Promise((r) => { timer = setTimeout(r, hedgeMs); })]); clearTimeout(timer);
     }
-    while (!done && active.size) await Promise.race([...active, woke]);
+    while (!done && active.size && !waited()) { let timer; await Promise.race([...active, woke, new Promise((r) => { timer = setTimeout(r, 1000); })]); clearTimeout(timer); }
+    // nobody else answered: the thin answer is all there is. It is given, and said to be unconfirmed
+    if (!done && thin) { thin.out.short = true; done = thin; ctl.abort(); }
     if (done) {
       if (done.resp) { giveBack(); await save(); return done.resp; }
       const { out, ki, model } = done;

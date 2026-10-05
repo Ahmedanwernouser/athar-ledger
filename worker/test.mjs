@@ -592,7 +592,8 @@ sec("/llm caps");
 sec("/yt: a YouTube video from its link (Gemini)");
 { const yt = (body, o = {}) => new Request("https://w.dev/yt", { method: "POST", headers: { Origin: OK, "Content-Type": "application/json", ...(o.headers || {}) }, body: typeof body === "string" ? body : JSON.stringify(body) });
   // (two models unless a test says otherwise: the chain of six is tested on its own below)
-  const Y = (o = {}) => baseEnv({ GEMINI_API_KEY: GKEY, YT_NO_WAIT: "1", GEMINI_YT_MODELS: "gemini-3.8-flash,gemini-3.5-flash", ...o });
+  // (… and the stand-in answers are one short piece, so the rule about long silences is off unless a test is about it)
+  const Y = (o = {}) => baseEnv({ GEMINI_API_KEY: GKEY, YT_NO_WAIT: "1", GEMINI_YT_MODELS: "gemini-3.8-flash,gemini-3.5-flash", YT_SILENT_S: "0", ...o });
   const VID = "1foxMsRygJg", mine = (env) => { const k = [...env.CAP.m.keys()].find((x) => x.startsWith("yi:")); return k ? env.CAP.m.get(k) : undefined; };
   const count = (audio) => () => new Response(JSON.stringify({ totalTokens: 1, promptTokensDetails: [{ modality: "VIDEO", tokenCount: 999 }, { modality: "AUDIO", tokenCount: audio }] }), { status: 200 });
   const pieces = (list, extra = {}) => () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(list) }] }, finishReason: "STOP", ...extra }] }), { status: 200 });
@@ -733,7 +734,7 @@ sec("/yt: a YouTube video from its link (Gemini)");
     up.impl = (url) => (modelOf(url) === "gemini-3.6-flash" ? pieces([{ t: "00:01", x: "بسم الله" }])() : modelOf(url) === "gemini-3.8-flash" ? new Response("high demand", { status: 503 }) : dayOut());
     let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
     ok(r.status === 200 && r.j.model === "gemini-3.6-flash", "/yt the chain of models: the one that still has an allowance answers  (asked: " + seen() + ")");
-    eq(seen(), "1:3.8-flash 1:3.5-flash 2:3.5-flash 1:3.7-flash 2:3.7-flash 1:3.5-flash-lite 2:3.5-flash-lite 1:3.6-flash", "/yt order: a busy model is left at once; a model out of quota is asked on the next key; then the next model");
+    eq(seen(), "1:3.8-flash 1:3.5-flash 2:3.5-flash 1:3.7-flash 2:3.7-flash 1:3.5-flash-lite 2:3.5-flash-lite 1:3.1-flash-lite 2:3.1-flash-lite 1:3.6-flash", "/yt order: a busy model is left at once; a model out of quota is asked on the next key; then the next model");
     up.calls = []; r = await call(yt({ video: VID, from: 600, to: 1200 }), env);
     eq(seen(), "2:3.6-flash", "/yt the next window asks nobody who is known to be busy or out of quota, and it is the other key's turn");
     // the day's quota is remembered for the KEY, not for its place in the list: a new key in the same place is asked
@@ -812,6 +813,29 @@ sec("/yt: a YouTube video from its link (Gemini)");
     env = Y({ YT_HEDGE_MS: "20" }); up.calls = []; up.impl = (url, init) => late(60, () => new Response("high demand", { status: 503 }))(url, init);
     r = await call(yt({ video: VID, from: 0, to: 600 }), env);
     ok(r.status === 502 && r.j.upstream_status === 503 && up.calls.length === 6 && env.CAP.writes === 0, "/yt lanes that all end in a refusal: three rounds, then the status, and nothing counted"); }
+  { // a model can stop early and call it finished: an answer with a long stretch without a word needs a second model
+    const modelOf = (url) => /models\/([^:]+):/.exec(String(url))[1].replace("gemini-", "");
+    const through = (a, b, step = 20) => { const l = []; for (let t = a; t < b; t += step) l.push({ t: `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`, x: "كلام يقال في هذا الموضع من المحاضرة الطويلة" }); return pieces(l); };
+    const E = (o = {}) => Y({ YT_SILENT_S: undefined, ...o });
+    // the first model stops at 1:33 of ten minutes; the second writes through: the second is the answer
+    let env = E(); up.calls = []; up.impl = (url) => (modelOf(url) === "3.8-flash" ? through(0, 93)() : through(0, 600)());
+    let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && r.j.model === "gemini-3.5-flash" && r.j.words.at(-1).end > 580 && r.j.short === undefined && up.calls.length === 2 && mine(env) === "1", "/yt an answer that stops at 1:33 of ten minutes is not taken: the next model writes through, and that is the answer");
+    // both stop early: the silence is real; the longer of the two is given, without a warning
+    env = E(); up.calls = []; up.impl = (url) => (modelOf(url) === "3.8-flash" ? through(0, 93)() : through(0, 140)());
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && r.j.model === "gemini-3.5-flash" && r.j.short === undefined && up.calls.length === 2, "/yt two models that both stop early agree that the rest is silence: the fuller answer is given");
+    // nobody else answers: the thin answer is given, and said to be unconfirmed
+    env = E(); up.calls = []; up.impl = (url) => (modelOf(url) === "3.8-flash" ? through(0, 93)() : new Response("high demand", { status: 503 }));
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && r.j.model === "gemini-3.8-flash" && r.j.short === true && mine(env) === "1", "/yt a thin answer that no other model could confirm is given and marked");
+    // a hole in the middle, and a late start, count as well; a full answer, a short window and a pause of a minute do not
+    env = E(); up.calls = []; up.impl = (url) => (modelOf(url) === "3.8-flash" ? pieces([...JSON.parse('[{"t":"00:05","x":"أول الكلام هنا"}]'), { t: "09:50", x: "وآخره هنا" }])() : through(0, 600)());
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env); ok(r.j.model === "gemini-3.5-flash" && up.calls.length === 2, "/yt a hole of nine minutes in the middle is checked too");
+    env = E(); up.calls = []; up.impl = through(0, 600); r = await call(yt({ video: VID, from: 0, to: 600 }), env); ok(r.j.model === "gemini-3.8-flash" && up.calls.length === 1, "/yt an answer that writes through is taken at once");
+    env = E(); up.calls = []; up.impl = through(0, 45); r = await call(yt({ video: VID, from: 0, to: 50 }), env); ok(up.calls.length === 1, "/yt a window of under a minute is never 'too silent'");
+    env = E(); up.calls = []; up.impl = (url) => pieces([...Array.from({ length: 24 }, (_, i) => ({ t: `0${Math.floor(i * 20 / 60)}:${String((i * 20) % 60).padStart(2, "0")}`, x: "كلام يقال في هذا الموضع من المحاضرة" })), { t: "09:40", x: "ثم عاد بعد دقيقة ونصف" }])();
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env); ok(up.calls.length === 1, "/yt a pause of a minute and a half is a pause"); }
   { // why a request failed can be seen from outside — by position, never by key
     const K1 = "AQ.key-one-0000000000", K2 = "AQ.key-two-0000000000";
     up.impl = () => new Response(JSON.stringify({ error: { code: 429, message: "quota for " + K1, details: [{ violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier" }] }, { retryDelay: "30000s" }] } }), { status: 429 });

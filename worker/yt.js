@@ -1,6 +1,6 @@
 // What /yt sends to Gemini for one window of a YouTube video. Kept apart from worker/src.js so that the trial in
 // eval/keyprobe/ytmodels.mjs asks each model with exactly the question the Worker asks.
-export const YT_DEF_MODELS = "gemini-3.8-flash,gemini-3.5-flash,gemini-3.7-flash,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3-flash-preview,gemini-3.1-flash-lite";
+export const YT_DEF_MODELS = "gemini-3.8-flash,gemini-3.5-flash,gemini-3.7-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3-flash-preview";
 export const ytUrl = (id) => "https://www.youtube.com/watch?v=" + id;
 const ytClock = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 const ytPrompt = (from, to, lang) =>

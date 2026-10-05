@@ -359,6 +359,8 @@ export async function transcribeYoutube(video, language, cfg, onProgress = () =>
     about = { title: typeof head.title === "string" ? head.title.slice(0, 200) : "", author: typeof head.author === "string" ? head.author.slice(0, 100) : "" };
   }
   const plan = ytPlan(seconds); let words = again ? again.words : [], model = again ? again.model || "" : "", truncated = !!(again && again.truncated);
+  // windows whose answer had a long stretch without a word and that no second model could confirm: [from, to] in seconds
+  const thin = again && Array.isArray(again.thin) ? again.thin.slice() : [];
   for (let k = again ? Math.min(again.partial.k, plan.length - 1) : 0; k < plan.length; k++) {
     const at = 0.05 + 0.95 * (k / plan.length);
     onProgress(at, { code: "yt.part", args: [k + 1, plan.length] });
@@ -368,16 +370,17 @@ export async function transcribeYoutube(video, language, cfg, onProgress = () =>
     catch (e) {
       // a later window failed: what was transcribed so far is kept and said to be partial, not thrown away
       if (!k || !words.length || (e instanceof AsrError && e.code === "aborted")) throw e;
-      return { words, provider: "gemini", model, seconds, ...about, approx: true, truncated, partial: { upTo: plan[k].cut, k, why: e instanceof AsrError ? e : new AsrError("unknown") } };
+      return { words, provider: "gemini", model, seconds, ...about, approx: true, truncated, thin, partial: { upTo: plan[k].cut, k, why: e instanceof AsrError ? e : new AsrError("unknown") } };
     }
     if (typeof j.model === "string" && j.model) model = j.model.slice(0, 80);
     if (j.truncated) truncated = true;
+    if (j.short === true) thin.push([plan[k].cut, plan[k].to]);
     const part = wordsFromWhisper(j, 0, null).filter(w => w.start != null);
     words = k ? ytStitch(words, part, plan[k].cut) : part;
   }
   for (let i = 1; i < words.length; i++) if (words[i].start < words[i - 1].start) { words[i] = { ...words[i], start: words[i - 1].start, end: Math.max(words[i].end, words[i - 1].start) }; }   // a join never runs time backwards
   onProgress(1, { code: "asr.done" });
-  return { words, provider: "gemini", model, seconds, ...about, approx: true, truncated };
+  return { words, provider: "gemini", model, seconds, ...about, approx: true, truncated, thin };
 }
 
 // ---------------- the checker and the chat (Worker /ask) ----------------

@@ -24,9 +24,10 @@ HOURLY_CAP = "12"
 # /yt (a video from its link, transcribed by Gemini) does NOT count in these: its limit is Google's own (20 requests a
 # day per key and per model), told truthfully when it is reached. It has one counter of its own, per visitor per day:
 # YT_IP_DAILY_CAP = "72"     # windows of ten minutes one visitor may have transcribed in a day (default 72 = 12 hours)
-# GEMINI_YT_MODELS = "gemini-3.8-flash,gemini-3.5-flash,gemini-3.7-flash,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3-flash-preview,gemini-3.1-flash-lite"
+# GEMINI_YT_MODELS = "gemini-3.8-flash,gemini-3.5-flash,gemini-3.7-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3-flash-preview"
 #                              # the chain, best first (default as written; at most 7). Each has its own daily allowance per key.
 # YT_HEDGE_MS = "20000"      # a model that has not answered in this long is no longer waited for alone: the next is asked too
+# YT_SILENT_S = "120"        # an answer with a stretch this long without a word is checked with a second model ("0" = off)
 # Keys: the secret GEMINI_API_KEYS (several, separated by commas or spaces; up to 12) and/or GEMINI_API_KEY. They take turns.
 IP_DAILY_CAP = "24"        # one IP address may use at most this much of the day (set it equal to DAILY_CAP to switch it off)
 MAX_BYTES = "25000000"     # Groq free tier upload limit (25 MB)

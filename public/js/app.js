@@ -559,6 +559,7 @@ async function runYoutube(id, resume = null) {
   if (!live(run)) return;
   const who = { provider: "gemini-yt", model: res.model }, warnings = [msg("warn.yt", () => transcriberLabel(who))];
   if (res.truncated) warnings.push(msg("warn.yt.cut"));
+  if (res.thin && res.thin.length) { const parts = res.thin.slice(0, 6); warnings.push(msg("warn.yt.thin", () => parts.map(([a, b]) => `${fmtTime(a)}–${fmtTime(b)}`).join(getLang() === "ar" ? "، " : ", "))); }
   if (res.partial) { const why = asrMsg(res.partial.why), upTo = res.partial.upTo; warnings.push(msg("warn.yt.partial", () => fmtTime(upTo), () => fmtTime(res.seconds), () => say(why))); }
   const title = res.title ? (res.author ? `${res.title} — ${res.author}` : res.title) : t("yt.title", id);
   await runWords(run, res.words, { title, video: id, warnings, transcribers: [who], fromLink: true, review: resume ? resume.review : null });

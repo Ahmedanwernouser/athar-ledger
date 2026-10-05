@@ -133,3 +133,18 @@ test("a reader's own key is checked with Google when it is saved: accepted, refu
     assert.equal(await checkOwnKey({}, KEY), "unknown");
   } finally { globalThis.fetch = real; }
 });
+
+test("a window whose thin answer no second model could confirm is reported with its place", async () => {
+  const real = globalThis.fetch;
+  const reply = o => new Response(JSON.stringify(o), { status: 200, headers: { "Content-Type": "application/json" } });
+  const words = (text, t0) => text.split(" ").map((w, i) => ({ word: w, start: t0 + i, end: t0 + i + 1 }));
+  globalThis.fetch = async (url, init) => {
+    const b = JSON.parse(init.body);
+    if (b.from == null) return reply({ seconds: 700 });
+    return reply({ words: words(b.from === 0 ? "واحد اثنان ثلاثة أربعة خمسة" : "ثلاثة أربعة خمسة ستة سبعة", b.from === 0 ? 593 : 595), model: "gemini-x", provider: "gemini", approx: true, ...(b.from ? { short: true } : {}) });
+  };
+  try {
+    const r = await transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example" });
+    assert.deepEqual(r.thin, [[600, 700]]);
+  } finally { globalThis.fetch = real; }
+});
