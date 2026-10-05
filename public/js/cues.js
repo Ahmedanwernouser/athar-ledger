@@ -149,8 +149,49 @@ function reportCues(ftok) {
   }
   return out;
 }
+// "قول الحق جل ثناؤه", "يقول المولى تقدست أسماؤه", "قال ربنا جل في علاه": a verb of saying, a name of God, then words that
+// glorify Him. The glorification is what makes it a cue ("قول الحق" alone is "speaking the truth"), and it is recognised by
+// its form — «جلّ / عزّ / تبارك / تقدّس» with the word after it, «تعالى», «سبحانه» — not by a list of the phrases people use.
+const GOD_NAMES = new Set(["الله", "الحق", "ربنا", "المولى", "الرب", "ربكم", "ربي", "الباري", "الخالق", "الرحمن"].map(F));
+const GLORY_1 = new Set(["تعالى", "سبحانه", "وتعالى"].map(F)), GLORY_2 = new Set(["جل", "عز", "تبارك", "تقدس", "تقدست", "جلت", "عزت"].map(F));
+const SAY_HIS_SET = new Set(SAY_HIS.map(F));
+function gloryLength(ftok, i) {
+  let k = i;
+  for (;;) {
+    if (GLORY_1.has(ftok[k])) { k++; continue; }
+    if (GLORY_2.has(ftok[k]) && ftok[k + 1]) { k += ftok[k + 1] === F("في") && ftok[k + 2] ? 3 : 2; continue; }      // «جل ثناؤه», «جل في علاه»
+    return k - i;
+  }
+}
+function godCues(ftok) {
+  const out = [];
+  for (let i = 0; i + 2 < ftok.length; i++) {
+    if (!SAY_SET.has(ftok[i]) || !GOD_NAMES.has(ftok[i + 1])) continue;
+    const g = gloryLength(ftok, i + 2);
+    if (g) out.push({ pos: i, end: i + 2 + g, kind: "quran", trailing: false, weak: false, form: true, listed: true });
+  }
+  return out;
+}
+// "وكان ابن المسيب يقول", "كان الإمام أحمد يقول": somebody NAMED used to say. The name is known as a name by its form — it
+// carries «ابن / بن / أبو / الإمام / الشيخ / عبد» — so "كان الرجل يقول" (a narrative) is not taken for one.
+const KAN = new Set(["كان", "وكان", "فكان", "كانت", "وكانت"].map(F)), YAQUL = new Set(["يقول", "تقول"].map(F));
+const NAME_MARK = new Set(["ابن", "بن", "ابو", "ابي", "ابا", "الامام", "الشيخ", "عبد", "ام", "بنت"].map(F));
+function usedToSayCues(ftok) {
+  const out = [];
+  for (let i = 0; i + 2 < ftok.length; i++) {
+    if (!KAN.has(ftok[i])) continue;
+    for (let j = i + 2; j <= i + 1 + NAME_MAX && j < ftok.length; j++) {
+      if (SAY_SET.has(ftok[j]) && !YAQUL.has(ftok[j])) break;
+      if (!YAQUL.has(ftok[j])) continue;
+      const name = ftok.slice(i + 1, j);
+      if (name.some(w => NAME_MARK.has(w)) && !name.some(w => w === AN || KAN.has(w))) out.push({ pos: i, end: j + 1, kind: "saying", trailing: false, weak: false, form: true });
+      break;
+    }
+  }
+  return out;
+}
 function formCues(ftok) {
-  const out = reportCues(ftok);
+  const out = [...reportCues(ftok), ...godCues(ftok), ...usedToSayCues(ftok)];
   for (let i = 0; i < ftok.length; i++) {
     const say = SAY_SET.has(ftok[i]), an = ftok[i] === AN;
     if (!say && !an) continue;

@@ -55,7 +55,7 @@ function gradesOnItsOwn(sentence, hay) {
     if (!GRADE.test(ws[i])) continue;
     const next = ws[i + 1] ? ws[i] + " " + ws[i + 1] : null, prev = i ? ws[i - 1] + " " + ws[i] : null;
     // … or as the grading itself of some fact («الدرجة: صحيح — …»): "حديث الترمذي 2195 صحيح" says what that fact says
-    const asGrade = hay.includes(" الدرجه " + ws[i].replace(/^ال/, "") + " ") || hay.includes(" grading " + ws[i] + " ");
+    const asGrade = hay.includes(" الدرجه " + ws[i].replace(/^ال/, "").replace(/ه$/, "")) || hay.includes(" grading " + ws[i]);      // («درجته صحيحة» says «الدرجة: صحيح»)
     if (!(asGrade || (next && hay.includes(next)) || (prev && hay.includes(prev)))) return true;
   }
   return false;

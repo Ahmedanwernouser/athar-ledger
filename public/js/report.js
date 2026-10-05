@@ -14,6 +14,15 @@ import { statusOf } from "./agree.js";
 import { gradeSummary } from "./grade.js";
 
 const SENTENCE_END = /[.!?؟…]["'»”)]*$/;
+// A transcript without punctuation (a model's, a subtitle file's) still has places where a clause ends: a pause before the
+// next word, or a next word that opens a new clause. A paragraph that has grown long is closed there, not in mid-sentence.
+const OPENERS = new Set(["ثم", "لكن", "ولكن", "فإن", "وإن", "أما", "وأما", "فأما", "وكان", "وكانت", "فكان", "وقال", "فقال", "يقول", "ويقول", "قال", "وقد", "ولقد", "فلما", "ولما", "وهذا", "وهذه", "فهذا", "ومن", "وفي", "وكلنا", "ويوما", "وأعظم", "حتى", "إذن", "فإذا", "وإذا", "then", "but", "and", "so", "now"]);
+function clauseEndsAfter(words, i) {
+  const a = words[i], b = words[i + 1]; if (!a || !b || !b.w) return false;
+  if (Number.isFinite(a.end) && Number.isFinite(b.start) && b.start - a.end >= 0.35) return true;
+  return OPENERS.has(String(b.w).replace(/[\u064B-\u0652\u0670\u0640]/g, "").toLowerCase());
+}
+const PARA_SOFT = 110;
 const PARA_MAX = 180, PARA_MIN = 70;
 const isArabic = s => /[؀-ۿ]/.test(s);
 
@@ -157,7 +166,7 @@ export function buildCitedDoc({ words, ledger, reviews = {}, title = "", date = 
     if (!e) {
       if (!words[i].w) { i++; continue; }      // a word the reviewer removed
       plain.push(words[i].w); inPara++; i++;
-      if (inPara >= PARA_MAX || (inPara >= PARA_MIN && SENTENCE_END.test(words[i - 1].w))) flushPara();
+      if (inPara >= PARA_MAX + 60 || (inPara >= PARA_MIN && SENTENCE_END.test(words[i - 1].w)) || (inPara >= PARA_SOFT && !owner[i] && clauseEndsAfter(words, i - 1))) flushPara();
       continue;
     }
     flushPlain();
@@ -398,7 +407,7 @@ export function transcriptParagraphs(words) {
   for (let i = 0; i < words.length; i++) {
     const n = i - from + 1, last = i === words.length - 1;
     const pause = !last && Number.isFinite(words[i].end) && Number.isFinite(words[i + 1].start) && words[i + 1].start - words[i].end >= 2.5;
-    if (last || n >= 90 || (n >= 40 && SENT_END.test(words[i].w)) || (n >= 12 && pause)) { out.push({ from, to: i + 1 }); from = i + 1; }
+    if (last || n >= 150 || (n >= 60 && clauseEndsAfter(words, i)) || (n >= 40 && SENT_END.test(words[i].w)) || (n >= 12 && pause)) { out.push({ from, to: i + 1 }); from = i + 1; }
   }
   return out;
 }

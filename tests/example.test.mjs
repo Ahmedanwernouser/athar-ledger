@@ -60,3 +60,19 @@ test("the source's note on where a hadith is from is not the hadith's wording", 
   assert.ok(wd <= 13, "differences counted in the hadith itself: " + wd);
   assert.ok(!e.diff.some(d => d.meta && /يحفظك|تجاهك|الصبر/.test(d.source)), "no word of the hadith is taken for a note");
 });
+
+test("a verse announced by «قول الحق جل ثناؤه» and three exact words is found; a glorification is what makes the cue", async () => {
+  const e = by("18:82")[0];
+  assert.ok(e && e.status === "verbatim" && /ابوهما|أبوهما/.test(e.spoken), "«وكان أبوهما صالحا» — al-Kahf 82");
+  const { findCues } = await import("../public/js/cues.js"); const { fold, norm } = await import("../public/js/text.js");
+  const cues = t => findCues(norm(t).split(" ").map(fold));
+  for (const t of ["قول الحق جل ثناؤه وكان ابوهما صالحا", "يقول المولى تقدست اسماؤه ان الله مع الصابرين", "قال ربنا جل في علاه ادعوني استجب لكم"]) assert.ok(cues(t).some(c => c.kind === "quran" && c.pos === 0), t);
+  for (const t of ["عليك بقول الحق ولو كان مرا", "قال الحق الذي يراه ثم مضى"]) assert.ok(!cues(t).some(c => c.kind === "quran"), "not a cue: " + t);
+});
+test("«وكان ابن المسيب يقول…» announces somebody's words; «كان الرجل يقول» does not", async () => {
+  assert.ok(L.some(e => e.status === "notfound" && e.cue === "saying" && /ابن المسيب/.test(e.spoken)), "the saying is listed as announced and not found");
+  const { findCues } = await import("../public/js/cues.js"); const { fold, norm } = await import("../public/js/text.js");
+  const cues = t => findCues(norm(t).split(" ").map(fold));
+  for (const t of ["وكان ابن المسيب يقول انني لازيد في صلاتي", "كان الامام احمد يقول اصول السنه عندنا", "وكان عبد الله بن المبارك يقول رب عمل صغير"]) assert.ok(cues(t).some(c => c.kind === "saying" && c.pos === 0), t);
+  for (const t of ["وكان الرجل يقول لصاحبه تعال", "وكان الناس يقولون انه مشغول"]) assert.ok(!cues(t).some(c => c.kind === "saying" && c.form), "not a named saying: " + t);
+});

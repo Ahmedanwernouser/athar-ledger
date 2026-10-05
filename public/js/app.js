@@ -183,6 +183,7 @@ function applyLang(l) {
   $("corpusRetry").textContent = t("corpus.retry");
   $("samplesErr").hidden = !S.samplesFailed; $("samplesErr").textContent = S.samplesFailed ? t("err.samples") : "";
   drawPackLabels(); drawProviders(); drawSamples(); drawChatDoor(); drawChatSug();
+  if ($("chatTitle")) $("chatTitle").textContent = t($("chatBox").parentNode === $("tabChat") ? "chat.title.lecture" : "chat.title");
   if (S.err) showError(S.err);
   if (S.busy) $("busyMsg").textContent = say(S.busy);
   if (!$("results").hidden) render();
@@ -1952,6 +1953,15 @@ async function askChat(q) {
     const own = localAnswer(q);
     if (own) { const b = chatBubble("it tool", t("chat.by.tool")); mixed(b.appendChild(el("p", null, own)), own); return; }
     if (S.corpus !== "ready") await corpusReady;
+    // "the link of the hadith": every card carries its source's link, so the page shows the cards — no model is asked
+    // (measured: asked for a link, the model answered "I found no link, only that the link is on its card")
+    if (/(رابط|الرابط|لينك|اللينك|روابط|\blink\b|\burl\b)/i.test(bare(q)) && lectureOpen()) {
+      const lf = lectureFacts().filter(f => f.card.kind === "digest"), x = bare(q);
+      const want = /حديث|احاديث|أحاديث|hadith/i.test(x) ? "h" : /آي|اي[هة]|ايات|سور|قرآن|قران|verse|ayah/i.test(x) ? "q" : "";
+      const typeOf = f => { const c = (S.digestCards || []).find(c => c.ids.join() === f.card.ids.join()); return c ? c.type : ""; };
+      const pick = lf.filter(f => !want || typeOf(f) === want);
+      if (pick.length) { const b = chatBubble("it tool", t("chat.by.tool")); b.append(el("p", null, t("chat.link"))); b.after(chatCards(pick, pick.map(f => f.id))); return; }
+    }
     const facts = []; let total = 0;
     for (const f of [...lectureFacts(), ...(await searchFacts(q))]) { if (facts.length >= 30 || total + f.text.length > CHAT.TOTAL) break; total += f.text.length; facts.push(f); }
     if (job !== S.chat.n) return;

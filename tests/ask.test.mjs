@@ -57,3 +57,18 @@ test("a hadith told in pieces keeps one source among the places that hold a piec
   const st = o => analyze(T.split(/\s+/).map(w => ({ w })), corpus, o).ledger.map(e => e.status + ":" + e.spoken);
   assert.deepEqual(st({}), st({ oneSource: false }), "no status and no wording changes");
 });
+
+test("chat reducer, from a real session: a refusal is said in the tool's own fixed words; nothing is 'repeated' unless a fact says so; a grading a fact carries may be said", async () => {
+  const { parseChat, chatInput } = await import("../worker/ask.js");
+  const facts = [{ id: "L1", text: "في المحاضرة — حديث — الأربعون النووية — رقم 19 — الدرجة: صحيح — أحمد محمد شاكر و٣ غيره — ذُكر مرتين (0:04، 1:49) — الحالة: مطابق مع فروق" },
+    { id: "L5", text: "في المحاضرة — قرآن — سورة إبراهيم — الآية 27 — قيل منه ١١ من ١٨ كلمة · ذُكر مرة واحدة (2:33) — الحالة: مطابق حرفيًا" }, { id: "M1", text: "عن المحاضرة نفسها — عنوانها: «درس» — 4:26" }];
+  const inp = q => chatInput({ q, lang: "ar", facts }), say = (o, q = "سؤال ما") => parseChat(JSON.stringify(o), inp(q));
+  const r = say({ type: "refuse", ids: [], text: "هذا خارج عملك، ويُسأل عنه أهل العلم." });
+  assert.ok(r.type === "refuse" && /خارج عملي/.test(r.text) && !/عملك/.test(r.text));
+  const once = facts.filter(f => f.id !== "L1"), a = parseChat(JSON.stringify({ type: "answer", ids: ["L5"], text: "الآية التي كُررت في المحاضرة هي من سورة إبراهيم." }), chatInput({ q: "اكتب الآية", lang: "ar", facts: once }));
+  assert.ok(a.type === "answer" && !/كرر/.test(a.text.replace(/[ً-ْ]/g, "")), "a verse said once is not called repeated: " + a.text);
+  assert.match(say({ type: "answer", ids: ["L1"], text: "نعم، ذُكر الحديث في المحاضرة مرتين." }).text, /مرتين/, "…but a fact that says «مرتين» may be repeated");
+  assert.match(say({ type: "answer", ids: ["L1"], text: "الواقعة تذكر أن درجة هذا الحديث صحيحة." }).text, /صحيحة/);
+  assert.doesNotMatch(say({ type: "answer", ids: ["L1"], text: "هذا حديث ضعيف جدا." }).text, /ضعيف/, "a grading no fact carries is still dropped");
+  assert.deepEqual(say({ type: "answer", ids: ["M1", "X9"], text: "اسمه في عنوان الفيديو." }).ids, ["M1"]);
+});

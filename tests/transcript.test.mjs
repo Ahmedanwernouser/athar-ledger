@@ -6,13 +6,16 @@ import { transcriptParagraphs, transcriptText, transcriptSrt } from "../public/j
 const W = (text, t0 = 0, step = 0.5) => text.split(" ").map((w, i) => ({ w, start: t0 + i * step, end: t0 + i * step + 0.4 }));
 const many = (n, word = "كلمة") => Array.from({ length: n }, (_, i) => `${word}${i}`).join(" ");
 
-test("paragraphs: every word once and in order; cut at a sentence end, at a pause, or at 90 words", () => {
+test("paragraphs: every word once and in order; cut at a sentence end, at a pause, where a clause ends, or at 150 words", () => {
   const a = W(many(45) + ". " + many(50));
   const ps = transcriptParagraphs(a);
   assert.deepEqual(ps.flatMap(p => [p.from, p.to]).filter((x, i, arr) => i === 0 || i === arr.length - 1), [0, a.length]);
   for (let i = 1; i < ps.length; i++) assert.equal(ps[i].from, ps[i - 1].to);
   assert.equal(ps[0].to, 45, "the sentence end after 45 words closes the first paragraph");
-  assert.equal(transcriptParagraphs(W(many(200))).every(p => p.to - p.from <= 90), true);
+  assert.equal(transcriptParagraphs(W(many(400))).every(p => p.to - p.from <= 150), true);
+  // no punctuation (a model's transcript): a long paragraph closes before a word that opens a clause, not in mid-sentence
+  const c = [...many(70).split(" "), "ثم", ...many(30).split(" ")].map(w => ({ w }));
+  assert.equal(transcriptParagraphs(c)[0].to, 70, "closed before «ثم»");
   const b = [...W(many(15)), ...W(many(15), 60)];                    // a long silence between two stretches
   assert.equal(transcriptParagraphs(b)[0].to, 15);
   assert.deepEqual(transcriptParagraphs([]), []);

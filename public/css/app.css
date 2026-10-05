@@ -1568,3 +1568,6 @@ html[data-theme="dark"] .err .quiet-btn { background: var(--gold); color: #1B140
 .chat-again > summary { cursor: pointer; font-weight: 600; }
 .chat-again[open] > summary { margin-bottom: .6rem; }
 .bubble.tool { border-inline-start: 3px solid var(--gold); }
+
+/* the header's buttons keep to one line each (English labels used to break in two) */
+.navbtn, .brand-what { white-space: nowrap; }
