@@ -19,6 +19,7 @@
 // Errors are always JSON `{error: "<code>"}` with CORS headers, and never contain an upstream body,
 // a stack trace or a key.
 
+import { ASK, checkItems, CHECK_SYSTEM, checkUser, parseCheck, chatInput, CHAT_SYSTEM, chatUser, parseChat } from "./ask.js";
 const GROQ_ASR = "https://api.groq.com/openai/v1/audio/transcriptions";
 const GROQ_CHAT = "https://api.groq.com/openai/v1/chat/completions";
 const GEMINI = (m) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
@@ -101,9 +102,9 @@ export default {
         const asr = asrProviders(env);          // looks at the secrets' presence only; never touches the caps
         if (!asr.available.includes(asr.default)) missing.push(ASR_KEY_NAME[asr.default]);
         if (!allowed.length) missing.push("ALLOWED_ORIGINS");
-        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!(env.GEMINI_API_KEY || env.GEMINI_API_KEYS), embed: embedModels(env) }, 200, cors);
+        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!(env.GEMINI_API_KEY || env.GEMINI_API_KEYS), ask: askOn(env), embed: embedModels(env) }, 200, cors);
       }
-      const route = req.method === "POST" && (path === "/asr" || path === "/llm" || path === "/yt" || path === "/embed") ? path : null;
+      const route = req.method === "POST" && (path === "/asr" || path === "/llm" || path === "/yt" || path === "/embed" || path === "/ask") ? path : null;
       if (!route) return json({ error: "not_found" }, 404, cors);
 
       if (!allowed.includes(origin)) return json({ error: "origin" }, 403, cors);
@@ -111,6 +112,7 @@ export default {
       if (!env.CAP) return json({ error: "server_not_configured" }, 500, cors);
 
       if (route === "/embed") return await embedRoute(req, env, cors);
+      if (route === "/ask") return await askRoute(req, env, cors);
       return route === "/asr" ? await asrRoute(req, env, cors, ctx) : route === "/yt" ? await ytRoute(req, env, cors) : await llmRoute(req, env, cors);
     } catch {
       return json({ error: "internal" }, 500, cors);   // never a stack trace, never without CORS
@@ -827,6 +829,68 @@ async function ytRoute(req, env, cors) {
   }
   if (lastStatus === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...back, ...(retry ? { "Retry-After": retry } : {}) });
   return json({ error: "upstream", ...(lastStatus ? { upstream_status: lastStatus } : {}), stage: "youtube" }, 502, { ...cors, ...back });
+}
+
+// =====================================================================================================
+// /ask  (the checker and the chat; on when there is a Groq key, unless ASK = "off")
+// =====================================================================================================
+// Two closed uses of a language model, both built in worker/ask.js:
+//   mode "check": is a short match a quotation or a coincidence? -> {verdicts: "0110"} (one digit per item) or {verdicts: null}
+//   mode "chat":  a question about the facts the page sends (its ledger, its search results) -> {type, ids, text}
+// The system prompts are fixed here; the caller supplies only the items / facts and the question, all cut to size.
+// Measured on Groq's free tier (5 Oct 2026): 1,000 requests a day and 8,000 tokens a minute PER MODEL, so a model that is
+// busy gives way to the next in ASK_MODELS.
+const DEF_ASK_MODELS = "openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b";
+const DEF_ASK_DAILY_CAP = 800, DEF_ASK_IP_DAILY_CAP = 150, ASK_TIMEOUT_MS = 40_000;
+const askOn = (env) => !!env.GROQ_API_KEY && String(env.ASK || "").toLowerCase() !== "off";
+const askModels = (env) => { const m = String(env.ASK_MODELS || DEF_ASK_MODELS).split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9._/-]{3,60}$/i.test(x)); return m.length ? m.slice(0, 4) : DEF_ASK_MODELS.split(","); };
+function askParams(model, jsonOut) {
+  const id = model.toLowerCase(), p = { temperature: 0, max_completion_tokens: 1200 };
+  if (id.includes("gpt-oss")) { p.reasoning_effort = "low"; p.include_reasoning = false; }
+  else if (/qwen|deepseek/.test(id)) { p.reasoning_effort = "none"; p.reasoning_format = "hidden"; }
+  if (jsonOut) p.response_format = { type: "json_object" };
+  return p;
+}
+async function askRoute(req, env, cors) {
+  if (!askOn(env)) return json({ error: "llm_disabled" }, 501, cors);
+  const raw = await readLimited(req, ASK.MAX_BODY);
+  if (raw === null) return json({ error: "too_large", max_bytes: ASK.MAX_BODY }, 413, cors);
+  let body;
+  try { body = JSON.parse(raw); } catch { return json({ error: "bad_json" }, 400, cors); }
+  if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "bad_json" }, 400, cors);
+  const mode = body.mode === "check" ? "check" : body.mode === "chat" ? "chat" : null;
+  if (!mode) return json({ error: "bad_mode" }, 400, cors);
+  const items = mode === "check" ? checkItems(body) : null, inp = mode === "chat" ? chatInput(body) : null;
+  if (!items && !inp) return json({ error: mode === "check" ? "bad_items" : "too_short" }, 400, cors);
+  const system = items ? CHECK_SYSTEM : CHAT_SYSTEM(inp.lang), user = items ? checkUser(items) : chatUser(inp);
+
+  const t = clock();
+  const { ip, tag } = await ipTag(req, t.day);
+  if (await burstLimited(env.RL_LLM || env.RL, "/ask:" + ip)) return json({ error: "rate_limited", scope: "burst" }, 429, { ...cors, "Retry-After": "60" });
+  const cap = posInt(env.ASK_DAILY_CAP, DEF_ASK_DAILY_CAP), ipCap = posInt(env.ASK_IP_DAILY_CAP, DEF_ASK_IP_DAILY_CAP);
+  const specs = [{ key: "k:" + t.day, cap, ttl: 172800, code: "daily_cap", scope: "day", retry: t.nextDay }];
+  if (ipCap < cap) specs.push({ key: "m:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay });
+  const g = await guard(env.CAP, specs, true);
+  if (g.busy || g.over) return capResponse(g, cors);
+
+  let last = 0, retry = null;
+  for (const model of askModels(env)) {
+    let text = "";
+    try {
+      const r = await fetch(GROQ_CHAT, { method: "POST", signal: AbortSignal.timeout(ASK_TIMEOUT_MS), headers: { Authorization: "Bearer " + env.GROQ_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, ...askParams(model, mode === "chat"), messages: [{ role: "system", content: system }, { role: "user", content: user }] }) });
+      if (!r.ok) { last = r.status; if (r.status === 429) retry = retryAfter(r); try { await r.body?.cancel(); } catch { /* ignore */ } continue; }      // busy, or this model is not there: the next one
+      const j = await r.json(); const got = j?.choices?.[0]?.message?.content;
+      text = typeof got === "string" ? got : "";
+    } catch { last = 0; continue; }
+    if (items) { const v = parseCheck(text, items.length); if (v) return json({ verdicts: v, model }, 200, cors); last = 0; continue; }       // not the digits asked for: the next model
+    const a = parseChat(text, inp); if (a) return json({ ...a, model }, 200, cors); last = 0;
+  }
+  // nobody answered in the form asked for: the unit goes back, and nothing of the model's words leaves
+  await refund(env.CAP, specs);
+  if (items && last !== 429) return json({ verdicts: null }, 200, cors);
+  if (last === 429) return json({ error: "upstream_busy" }, 429, retry ? { ...cors, "Retry-After": retry } : cors);
+  return json({ error: "upstream", ...(last ? { upstream_status: last } : {}) }, 502, cors);
 }
 
 // =====================================================================================================

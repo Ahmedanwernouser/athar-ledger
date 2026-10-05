@@ -3,9 +3,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { CHECK_SYSTEM, checkUser, parseCheck, checkItems, CHAT_SYSTEM, chatUser, parseChat, chatInput } from "../../worker/ask.js";
 const key = process.env.GROQ_API_KEY || "", H = { Authorization: "Bearer " + key, "Content-Type": "application/json" };
-const MODELS = String(process.env.ASK_MODELS || "openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b").split(",");
+const MODELS = String(process.env.ASK_MODELS || "qwen/qwen3.8-27b,openai/gpt-oss-120b").split(",");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const params = (model, json) => ({ temperature: 0, max_completion_tokens: 1200, ...(model.includes("gpt-oss") ? { reasoning_effort: "low", include_reasoning: false } : { reasoning_effort: "none", reasoning_format: "hidden" }), ...(json ? { response_format: { type: "json_object" } } : {}) });
+const params = (model, json) => ({ temperature: 0, max_completion_tokens: json ? 700 : 300, ...(model.includes("gpt-oss") ? { reasoning_effort: "low", include_reasoning: false } : { reasoning_effort: "none", reasoning_format: "hidden" }), ...(json ? { response_format: { type: "json_object" } } : {}) });
 async function ask(model, system, user, json) {
   const t0 = Date.now(), row = {};
   try {
@@ -19,13 +19,17 @@ async function ask(model, system, user, json) {
 }
 const H1 = "إن الزمان قد استدار كهيئته يوم خلق الله السموات والأرض السنة اثنا عشر شهرا منها أربعة حرم ثلاث متواليات ذو القعدة وذو الحجة والمحرم ورجب مضر الذي بين جمادى وشعبان";
 const H2 = "إنما الأعمال بالنيات وإنما لكل امرئ ما نوى فمن كانت هجرته إلى الله ورسوله فهجرته إلى الله ورسوله ومن كانت هجرته لدنيا يصيبها أو امرأة يتزوجها فهجرته إلى ما هاجر إليه";
-const CHECK = { want: "010110", items: [
+const CHECK = { want: "0101100011", items: [
   { said: "وبعدين يا جماعة الأشهر الحرم أربعة [[ذو القعدة وذو الحجة والمحرم ورجب]] وإحنا دلوقتي داخلين على شهر ذي القعدة فلازم نستعد", source: H1 },
   { said: "قال النبي صلى الله عليه وسلم في خطبة الوداع إن الزمان قد استدار كهيئته [[السنة اثنا عشر شهرا منها أربعة حرم ثلاث متواليات ذو القعدة وذو الحجة والمحرم]] ورجب مضر", source: H1 },
   { said: "وكنت امبارح [[مع الناس في المسجد بعد صلاة العشاء]] وقعدنا نتكلم في أحوال البلد", source: "صلى بنا رسول الله صلى الله عليه وسلم ثم جلس مع الناس في المسجد بعد صلاة العشاء فحدثهم حتى ذهب عامة الليل" },
   { said: "يعني إيه بقى [[فمن كانت هجرته إلى الله ورسوله فهجرته إلى الله ورسوله]] يعني اللي نيته لله ياخد أجره كامل", source: H2 },
   { said: "ودايما أقول لكم يا شباب [[من حسن إسلام المرء تركه ما لا يعنيه]] ما تدخلش في اللي مالكش فيه", source: "من حسن إسلام المرء تركه ما لا يعنيه" },
   { said: "وإحنا النهارده هنتكلم عن [[يوم الجمعة وفضل الصلاة على النبي]] فيه وإزاي نستغله", source: "إن من أفضل أيامكم يوم الجمعة فأكثروا علي من الصلاة فيه فإن صلاتكم معروضة علي" },
+  { said: "فلما شفت المنظر ده قلت [[لا حول ولا قوة إلا بالله]] ومشيت وسبتهم", source: "ألا أدلك على كلمة من كنز الجنة لا حول ولا قوة إلا بالله" },
+  { said: "الحمد لله والصلاة والسلام على رسول الله [[اللهم صل على محمد وعلى آل محمد]] أما بعد فموضوعنا النهارده", source: "قولوا اللهم صل على محمد وعلى آل محمد كما صليت على إبراهيم وعلى آل إبراهيم إنك حميد مجيد" },
+  { said: "وخلّي بالك من الكلمة دي [[المسلم من سلم المسلمون من لسانه ويده]] دي قاعدة تمشي عليها في حياتك كلها", source: "المسلم من سلم المسلمون من لسانه ويده والمهاجر من هجر ما نهى الله عنه" },
+  { said: "والشيخ كان دايما يختم الدرس ويقول [[خيركم من تعلم القرآن وعلمه]] ويمشي", source: "خيركم من تعلم القرآن وعلمه" },
 ] };
 const FACTS = [
   { id: "L1", text: "في المحاضرة عند 0:17 — آية قرآنية — مطابق حرفيًا — سورة القلم، الآية 4 — قيل: «وإنك لعلى خلق عظيم» — السياق: الحديث عن حسن الخلق وأنه شهادة من الله لنبيه" },
@@ -47,10 +51,13 @@ const CHATS = [
 ];
 const out = { at: new Date().toISOString(), check: [], chat: [] };
 if (key) for (const model of MODELS) {
-  const items = checkItems({ items: CHECK.items });
-  const c = await ask(model, CHECK_SYSTEM, checkUser(items), false);
-  out.check.push({ model, want: CHECK.want, got: c.raw != null ? parseCheck(c.raw, items.length) : null, raw: c.raw, http: c.http, ms: c.ms, tokens: c.tokens, limReq: c.limReq, limTok: c.limTok, error: c.error });
-  await sleep(4000);
+  // the same ten cases asked three ways: one by one, five at a time, and (to see what the limit of six costs) six and four
+  let single = "";
+  for (const it of CHECK.items) { const one = checkItems({ items: [it] }); const c = await ask(model, CHECK_SYSTEM, checkUser(one), false); single += (c.raw != null && parseCheck(c.raw, 1)) || "?"; if (c.error) out.check.push({ model, how: "single", error: c.error }); await sleep(3500); }
+  out.check.push({ model, how: "single", want: CHECK.want, got: single });
+  let batch = "";
+  for (const part of [CHECK.items.slice(0, 5), CHECK.items.slice(5)]) { const items = checkItems({ items: part }); const c = await ask(model, CHECK_SYSTEM, checkUser(items), false); batch += (c.raw != null && parseCheck(c.raw, items.length)) || "?".repeat(items.length); out.check.push({ model, how: "batch-part", raw: c.raw, http: c.http, tokens: c.tokens, error: c.error }); await sleep(5000); }
+  out.check.push({ model, how: "batch5", want: CHECK.want, got: batch });
   for (const t of CHATS) {
     const inp = chatInput({ q: t.q, facts: t.facts });
     const r = await ask(model, CHAT_SYSTEM("ar"), chatUser(inp), true);
