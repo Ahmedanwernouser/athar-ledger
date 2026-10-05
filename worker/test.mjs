@@ -159,7 +159,7 @@ for (const ao of ["*", "", undefined, OK + "/", "null", "https://other.example"]
   const r = await call(await asr(), env); ok(r.status === 200 && r.h.get("Access-Control-Allow-Origin") === OK && r.h.get("Vary") === "Origin", "exact origin in a list -> 200 with that origin echoed");
   ok(/X-Athar-Remaining/.test(r.h.get("Access-Control-Expose-Headers")) && /Retry-After/.test(r.h.get("Access-Control-Expose-Headers")), "  X-Athar-Remaining and Retry-After are exposed to the page"); }
 { let r = await call(await asr({ method: "OPTIONS" }), baseEnv());
-  ok(r.status === 204 && r.h.get("Access-Control-Allow-Origin") === OK && r.h.get("Access-Control-Max-Age") === "86400" && /POST/.test(r.h.get("Access-Control-Allow-Methods")) && r.h.get("Access-Control-Allow-Headers") === "Content-Type", "OPTIONS allowed origin -> 204 with CORS and Max-Age 86400");
+  ok(r.status === 204 && r.h.get("Access-Control-Allow-Origin") === OK && r.h.get("Access-Control-Max-Age") === "86400" && /POST/.test(r.h.get("Access-Control-Allow-Methods")) && r.h.get("Access-Control-Allow-Headers") === "Content-Type, X-Athar-Key", "OPTIONS allowed origin -> 204 with CORS and Max-Age 86400");
   r = await call(await asr({ method: "OPTIONS", headers: { Origin: "https://evil.example" } }), baseEnv()); ok(r.status === 204 && !r.h.has("Access-Control-Allow-Origin"), "OPTIONS foreign origin -> no Access-Control-Allow-Origin at all");
   r = await call(await asr({ method: "OPTIONS", path: "/llm" }), baseEnv({ CAP: undefined })); eq(r.status, 204, "OPTIONS /llm -> 204"); }
 for (const [m, p] of [["GET", "/asr"], ["HEAD", "/asr"], ["PUT", "/asr"], ["DELETE", "/asr"], ["POST", "/asr/"], ["POST", "//asr"], ["POST", "/ASR"], ["POST", "/health"], ["GET", "/"], ["GET", "/llm"], ["POST", "/asr%2f..%2fllm"], ["POST", "/"], ["POST", "/admin"]]) {
@@ -627,6 +627,34 @@ sec("/yt: a YouTube video from its link (Gemini)");
     ok(last.status === 429 && last.j.error === "upstream_busy" && last.h.get("X-Athar-Remaining-Hour") === "12" && last.h.get("X-Athar-Remaining") === "48", "/yt a busy answer gives the unit back (20 in a row leave 12 / 48)");
     up.impl = pieces([{ t: "00:01", x: "بسم الله" }]); const r = await call(yt({ video: VID, from: 0, to: 600 }), env);
     ok(r.status === 200 && r.h.get("X-Athar-Remaining-Hour") === "11" && r.h.get("X-Athar-Remaining") === "47", "/yt ... and a window that was transcribed costs one"); }
+  { // several keys: one that is out of quota gives way to the next, and the next request starts from the key that answered
+    const K1 = "AIzaKEY_ONE_111", K2 = "AIzaKEY_TWO_222", keyOf = (init) => init.headers["x-goog-api-key"];
+    up.calls = []; up.impl = (url, init) => (keyOf(init) === K1 ? new Response("quota", { status: 429, headers: { "Retry-After": "30" } }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    const env = Y({ GEMINI_API_KEYS: `${K1}, ${K2}` });
+    let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && keyOf(up.calls[0].init) === K1 && keyOf(up.calls[up.calls.length - 1].init) === K2 && !JSON.stringify(r.j).includes("AIza"), "/yt a key out of quota gives way to the next key");
+    up.calls = []; r = await call(yt({ video: VID, from: 600, to: 1200 }), env);
+    ok(r.status === 200 && up.calls.length === 1 && keyOf(up.calls[0].init) === K2, "/yt the next request starts from the key that answered");
+    up.calls = []; up.impl = (url, init) => (keyOf(init) === K2 ? new Response('{"error":{"status":"INVALID_ARGUMENT","message":"API key not valid. Please pass a valid API key.","details":[{"reason":"API_KEY_INVALID"}]}}', { status: 400 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && keyOf(up.calls[up.calls.length - 1].init) === K1, "/yt a key Google no longer accepts is skipped");
+    up.impl = () => new Response("quota", { status: 429 }); r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 429 && r.j.error === "upstream_busy", "/yt every key out of quota -> upstream_busy"); }
+  { // the caller's own key: used alone, the site's allowance untouched, never echoed
+    const OWN = "AIzaOWN_KEY_of_the_caller_0123456789", keyOf = (init) => init.headers["x-goog-api-key"];
+    up.calls = []; up.impl = pieces([{ t: "00:01", x: "بسم الله" }]); const env = Y();
+    let r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": OWN } }), env);
+    ok(r.status === 200 && up.calls.every((c) => keyOf(c.init) === OWN) && !r.h.has("X-Athar-Remaining") && !r.t.includes(OWN), "/yt the caller's own key is the only key used, and is not echoed");
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.h.get("X-Athar-Remaining") === "47" && r.h.get("X-Athar-Remaining-Hour") === "11", "/yt ... and it spent nothing of the site's allowance");
+    up.calls = []; r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": "short key!" } }), env);
+    ok(r.status === 400 && r.j.error === "user_key_invalid" && up.calls.length === 0, "/yt a malformed own key is refused before Google is asked");
+    up.impl = () => new Response('{"error":{"message":"API key not valid. Please pass a valid API key."}}', { status: 400 });
+    r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": OWN } }), env);
+    ok(r.status === 400 && r.j.error === "user_key_invalid" && !r.t.includes("API key"), "/yt an own key Google refuses -> user_key_invalid, upstream text not forwarded");
+    up.calls = []; up.impl = pieces([{ t: "00:01", x: "بسم الله" }]);
+    r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": OWN } }), baseEnv({ YT_NO_WAIT: "1" }));
+    ok(r.status === 200 && keyOf(up.calls[0].init) === OWN, "/yt an own key works on a site that has no Gemini key of its own"); }
   { up.impl = () => new Response("boom " + GKEY, { status: 500 }); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 502 && r.j.error === "upstream" && r.j.upstream_status === 500, "/yt upstream failure: status only, never the body"); }
   { up.calls = []; let n = 0; up.impl = () => (++n <= 4 ? new Response("high demand " + GKEY, { status: 503 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
     const env = Y(); const r = await call(yt({ video: VID, from: 0, to: 600 }), env);

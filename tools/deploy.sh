@@ -62,6 +62,9 @@ fi
 if [ $fail = 0 ]; then
   [ -n "${GROQ_API_KEY:-}" ] && { printf '%s' "$GROQ_API_KEY" | $WR secret put GROQ_API_KEY >"$WORK/s1.out" 2>&1 && say "secret GROQ_API_KEY set" || { say "FAILED: secret GROQ_API_KEY"; fail=1; }; }
   [ -n "$GEM" ] && { printf '%s' "$GEM" | $WR secret put GEMINI_API_KEY >"$WORK/s2.out" 2>&1 && say "secret GEMINI_API_KEY set" || { say "FAILED: secret GEMINI_API_KEY"; fail=1; }; }
+  # every Gemini key (the Worker moves to the next one when a key is out of quota); the list is never printed
+  GEMALL="$(printf '%s' "${GEMINI_API_KEYS:-}" | tr ',;\n\t' '    ' | xargs | tr ' ' ',')"
+  [ -n "$GEMALL" ] && { printf '%s' "$GEMALL" | $WR secret put GEMINI_API_KEYS >"$WORK/s3.out" 2>&1 && say "secret GEMINI_API_KEYS set ($(printf '%s' "$GEMALL" | tr ',' '\n' | grep -c .) keys)" || say "NOTE: secret GEMINI_API_KEYS was not set; the first key alone is used"; }
   [ -z "${GROQ_API_KEY:-}" ] && [ -z "$GEM" ] && say "NOTE: no transcription key was given, so audio upload stays off"
 fi
 

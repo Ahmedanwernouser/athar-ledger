@@ -71,6 +71,7 @@
             </label>
             <label class="videourl"><span id="videoLabel">رابط الفيديو للنص الملصوق (اختياري)</span>
               <input type="url" id="videoUrl" dir="ltr" inputmode="url" placeholder="https://youtu.be/…" autocomplete="off"></label>
+            <button type="button" class="chipbtn" id="btnKey" hidden>مفتاحك الخاص</button>
             <label class="chipbtn filelink"><input type="file" id="transcriptFile" class="vh" accept=".json,.srt,.vtt,.txt" multiple aria-describedby="twoFilesHint"><span id="transcriptFileLabel">افتح ملف تفريغ أو جلسة محفوظة</span></label>
           </div>
           <fieldset class="packs" id="packs" hidden>
@@ -439,6 +440,24 @@
   <p class="note warn" id="lookupClash" hidden><span id="lookupClashMsg"></span> <button type="button" class="link" id="lookupClashOpen">افتح ذلك الاستشهاد</button></p>
   <ol class="lookup-list" id="lookupList"></ol>
   <p class="note" id="lookupScope"></p>
+</dialog>
+
+<dialog id="keyDlg" aria-labelledby="keyTitle">
+  <form method="dialog"><button class="x" aria-label="إغلاق">×</button></form>
+  <h2 id="keyTitle">مفتاحك الخاص</h2>
+  <p id="keyWhy">تفريغ الفيديو من رابط يوتيوب يعمل بحصة مجانية محدودة يتشاركها كل زوار الموقع. إذا انتهت، ضع مفتاح Gemini الخاص بك فتعمل بحصتك أنت، بلا انتظار.</p>
+  <ol class="how" id="keyHow">
+    <li><span id="keyStep1a">افتح</span> <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" lang="en" dir="ltr">aistudio.google.com/apikey</a> <span id="keyStep1b">بحساب جوجل.</span></li>
+    <li id="keyStep2">اضغط «Create API key» وانسخ المفتاح. المستوى المجاني يكفي.</li>
+    <li id="keyStep3">الصقه هنا واضغط «احفظ».</li>
+  </ol>
+  <form class="lookup-form" id="keyForm">
+    <input type="password" id="keyInput" dir="ltr" autocomplete="off" spellcheck="false" aria-labelledby="keyTitle" placeholder="AIza…">
+    <button type="submit" class="btn small" id="keySave">احفظ</button>
+  </form>
+  <p class="note" id="keyMsg" role="status"></p>
+  <p><button type="button" class="link" id="keyForget" hidden>احذف المفتاح من هذا المتصفح</button></p>
+  <p class="note" id="keyPrivacy">أين يذهب المفتاح؟ يُحفَظ في هذا المتصفح فقط. يُرسَل مع طلب تفريغ الرابط إلى خدمة أثَر لتكلّم به Gemini، ولا يُخزَّن فيها ولا يُسجَّل. لا يُستعمل في رفع الملفات الصوتية ولا في أي شيء آخر. تستطيع حذفه من هنا، أو إلغاءه من صفحة جوجل نفسها في أي وقت.</p>
 </dialog>
 
 <dialog id="reader" class="reader" aria-labelledby="readerTitle">

@@ -1508,3 +1508,12 @@ html[data-theme="dark"] .tools .chip[aria-pressed="true"], html[data-theme="dark
 html[data-theme="dark"] .tools .chip.flagchip[aria-pressed="true"] { background: var(--gold); color: #1B1403; }
 .notices li .quiet-btn { margin-inline-start: 8px; background: var(--sheet); box-shadow: var(--shadow-s); }
 html[data-theme="dark"] .notices li .quiet-btn { background: var(--gold); color: #1B1403; box-shadow: none; font-weight: 600; }
+
+/* the reader's own key */
+#keyDlg { width: min(640px, 92vw); }
+#keyDlg p { margin: 10px 0 0; }
+#keyDlg .how { margin-top: 10px; }
+#keyDlg .lookup-form { margin-top: 14px; }
+#keyInput { font-family: ui-monospace, Menlo, Consolas, monospace; text-align: left; }
+.err .quiet-btn { margin-inline-start: 8px; background: var(--sheet); color: var(--ink); box-shadow: var(--shadow-s); }
+html[data-theme="dark"] .err .quiet-btn { background: var(--gold); color: #1B1403; box-shadow: none; font-weight: 600; }

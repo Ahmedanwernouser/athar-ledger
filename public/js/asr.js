@@ -25,7 +25,7 @@ export class AsrError extends Error {
   constructor(code, detail = "", scope = "", retryAfter = null) { super(code); this.name = "AsrError"; this.code = code; this.detail = detail; this.scope = scope; this.retryAfter = retryAfter; }
 }
 
-const SERVER_CODES = new Set(["bad_file", "bad_form", "length_required", "origin", "too_large", "daily_cap", "rate_limited", "upstream_busy", "upstream", "busy",
+const SERVER_CODES = new Set(["user_key_invalid", "bad_file", "bad_form", "length_required", "origin", "too_large", "daily_cap", "rate_limited", "upstream_busy", "upstream", "busy",
   "server_not_configured", "internal", "llm_disabled", "bad_json", "too_short", "provider_unavailable", "bad_video", "bad_window", "yt_unavailable", "too_long"]);
 function codeOf(status, body) {
   const e = body && typeof body.error === "string" ? body.error : "";
@@ -271,7 +271,7 @@ const plainWord = w => String(w).normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, ""
 async function ytPost(cfg, body, signal, onWait = null) {
   const post = async () => {
     let r;
-    try { r = await fetch(endpoint(cfg, "/yt"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal }); }
+    try { r = await fetch(endpoint(cfg, "/yt"), { method: "POST", headers: { "Content-Type": "application/json", ...(cfg.userKey ? { "X-Athar-Key": cfg.userKey } : {}) }, body: JSON.stringify(body), signal }); }      // the reader's own Gemini key, when one was entered
     catch { throw new AsrError(signal && signal.aborted ? "aborted" : "network"); }
     let j = null; try { j = await r.json(); } catch { /* not json */ }
     return { r, j };

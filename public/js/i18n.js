@@ -63,6 +63,11 @@ const D = {
   "e.ext.dorar": ["الدرر السنية", "al-Durar al-Saniyya"], "e.open.dorar": ["ابحث عن هذا اللفظ في الموسوعة الحديثية للدرر السنية (فيها أحكام المحدّثين)", "Search these words in the hadith encyclopaedia of al-Durar al-Saniyya (it lists the scholars' gradings)"],
   "yt.wait": ["خدمة التفريغ مشغولة؛ تُعاد المحاولة تلقائيًّا بعد {0} ثانية…", "The transcription service is busy; trying again by itself in {0} seconds…"],
   "yt.resume": ["أكمل التفريغ من {0}", "Continue transcribing from {0}"], "yt.resuming": ["يُكمَل تفريغ الفيديو من حيث توقّف…", "Continuing the transcription from where it stopped…"],
+  "key.open": ["مفتاحك الخاص", "Your own key"], "key.on": ["مفتاحك الخاص: مفعَّل", "Your own key: on"], "key.use": ["استخدم مفتاحك الخاص", "Use your own key"], "key.change": ["غيِّر مفتاحك", "Change your key"],
+  "key.state.on": ["في هذا المتصفح مفتاح محفوظ، وروابط يوتيوب تُفرَّغ به.", "A key is saved in this browser, and YouTube links are transcribed with it."], "key.state.off": ["لا مفتاح محفوظ: تُستعمل حصة الموقع المجانية.", "No key saved: the site's free allowance is used."],
+  "key.saved": ["حُفظ المفتاح في هذا المتصفح. جرّب الرابط الآن.", "The key is saved in this browser. Try the link now."], "key.forgotten": ["حُذف المفتاح من هذا المتصفح.", "The key was removed from this browser."],
+  "key.bad": ["هذا لا يشبه مفتاح Gemini: انسخه كاملًا بلا مسافات.", "That does not look like a Gemini key: copy all of it, without spaces."],
+  "asr.err.user_key_invalid": ["Gemini لم يقبل مفتاحك الخاص. تأكد أنك نسخته كاملًا وأنه لم يُلغَ.", "Gemini did not accept your own key. Check that you copied all of it and that it was not revoked."],
   "drop.fmt": ["mp3 أو m4a أو wav أو mp4", "mp3, m4a, wav or mp4"],
   "stat.texts.none": ["لا شيء", "None"], "stat.h.1": ["حديث", "1 hadith"], "stat.h.2": ["حديثان", "{0} hadith"], "stat.h.few": ["{0} أحاديث", "{0} hadith"], "stat.h.many": ["{0} حديثًا", "{0} hadith"],
   "stat.q.1": ["موضع من القرآن", "1 Qur'an passage"], "stat.q.2": ["موضعان من القرآن", "{0} Qur'an passages"], "stat.q.few": ["{0} مواضع من القرآن", "{0} Qur'an passages"], "stat.q.many": ["{0} موضعًا من القرآن", "{0} Qur'an passages"],
@@ -475,6 +480,10 @@ export const STATIC = [
   ["#demoWhat", "هكذا يعمل — مثال", "How it works — an example"], ["#demoStatus", "مطابق مع فروق · فرقان في اللفظ", "Match with differences · two words differ"],
   ["#demoSaid", "ما قيل", "Spoken"], ["#demoSrc", "في المصدر", "In the source"], ["#demoGrade", "في صحيح مسلم", "In Sahih Muslim"],
   ["#heroNote", "لا يحكم أثَر على صحة حديث؛ يُريك الدليل. والسجل مسوّدة لمراجعة بشرية.", "Athar does not rule on authenticity; it shows the evidence. The ledger is a draft for human review."],
+  ["#keyTitle", "مفتاحك الخاص", "Your own key"], ["#keyStep1a", "افتح", "Open"], ["#keyStep1b", "بحساب جوجل.", "with a Google account."], ["#keySave", "احفظ", "Save"], ["#keyForget", "احذف المفتاح من هذا المتصفح", "Remove the key from this browser"],
+  ["#keyWhy", "تفريغ الفيديو من رابط يوتيوب يعمل بحصة مجانية محدودة يتشاركها كل زوار الموقع. إذا انتهت، ضع مفتاح Gemini الخاص بك فتعمل بحصتك أنت، بلا انتظار.", "Transcribing a video from its YouTube link runs on a limited free allowance shared by every visitor. When it is spent, enter your own Gemini key and you work on your own allowance, without waiting."],
+  ["#keyStep2", "اضغط «Create API key» وانسخ المفتاح. المستوى المجاني يكفي.", "Press “Create API key” and copy the key. The free tier is enough."], ["#keyStep3", "الصقه هنا واضغط «احفظ».", "Paste it here and press Save."],
+  ["#keyPrivacy", "أين يذهب المفتاح؟ يُحفَظ في هذا المتصفح فقط. يُرسَل مع طلب تفريغ الرابط إلى خدمة أثَر لتكلّم به Gemini، ولا يُخزَّن فيها ولا يُسجَّل. لا يُستعمل في رفع الملفات الصوتية ولا في أي شيء آخر. تستطيع حذفه من هنا، أو إلغاءه من صفحة جوجل نفسها في أي وقت.", "Where does the key go? It is kept in this browser only. It is sent with a link's transcription request to the Athar service, which uses it to talk to Gemini and neither stores nor logs it. It is not used for audio uploads or anything else. You can remove it here, or revoke it on Google's own page, at any time."],
   ["#repoLink", "الشيفرة والتوثيق", "Code & documentation"],
 ];
 

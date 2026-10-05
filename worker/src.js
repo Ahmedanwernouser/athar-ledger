@@ -67,7 +67,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function corsHeaders(origin, allowed) {
   const h = {
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Athar-Key",
     "Access-Control-Expose-Headers": "X-Athar-Remaining, X-Athar-Remaining-Hour, Retry-After",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
@@ -100,7 +100,7 @@ export default {
         const asr = asrProviders(env);          // looks at the secrets' presence only; never touches the caps
         if (!asr.available.includes(asr.default)) missing.push(ASR_KEY_NAME[asr.default]);
         if (!allowed.length) missing.push("ALLOWED_ORIGINS");
-        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!env.GEMINI_API_KEY, embed: embedModels(env) }, 200, cors);
+        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!(env.GEMINI_API_KEY || env.GEMINI_API_KEYS), embed: embedModels(env) }, 200, cors);
       }
       const route = req.method === "POST" && (path === "/asr" || path === "/llm" || path === "/yt" || path === "/embed") ? path : null;
       if (!route) return json({ error: "not_found" }, 404, cors);
@@ -625,9 +625,33 @@ async function ytTitle(id) {
   } catch { return {}; }
 }
 
+/**
+ * The keys a /yt request may use, in the order to try them.
+ *  - the caller's OWN key (header X-Athar-Key): used alone, never stored, never logged, never mixed with the site's keys;
+ *    its use is the caller's own quota, so the site's counters are not touched.
+ *  - otherwise the site's keys: GEMINI_API_KEYS (several, separated by commas / spaces) or the single GEMINI_API_KEY.
+ *    They are tried from the one that answered last; a key that is out of quota or no longer valid gives way to the next.
+ */
+const YT_OWN_KEY = /^[A-Za-z0-9_-]{20,200}$/, YT_SITE_KEY = /^[A-Za-z0-9_-]{8,200}$/, YT_MAX_KEYS = 4;
+let ytKeyAt = 0;
+function ytKeys(env, req) {
+  const own = (req.headers.get("X-Athar-Key") || "").trim();
+  if (own) return YT_OWN_KEY.test(own) ? { keys: [own], own: true, at: 0, n: 1 } : { bad: true };
+  const all = [...new Set(String(env.GEMINI_API_KEYS || "").split(/[\s,;]+/).filter((k) => YT_SITE_KEY.test(k)))].slice(0, YT_MAX_KEYS);
+  if (!all.length && env.GEMINI_API_KEY) all.push(env.GEMINI_API_KEY);
+  const at = all.length ? ytKeyAt % all.length : 0;
+  return { keys: all.slice(at).concat(all.slice(0, at)), own: false, at, n: all.length };
+}
+/** did Google refuse the KEY itself (not the video)? The body is read for this one fact and never forwarded */
+async function ytKeyRefused(r) {
+  let t = ""; try { t = (await r.text()).slice(0, 4000); } catch { /* ignore */ }
+  return /API_KEY_INVALID|API key not valid|API key expired|API_KEY_SERVICE_BLOCKED/i.test(t);
+}
+
 async function ytRoute(req, env, cors) {
-  const key = env.GEMINI_API_KEY;
-  if (!key) return json({ error: "provider_unavailable", provider: "gemini" }, 400, cors);
+  const K = ytKeys(env, req);
+  if (K.bad) return json({ error: "user_key_invalid" }, 400, cors);
+  if (!K.keys.length) return json({ error: "provider_unavailable", provider: "gemini" }, 400, cors);
   const cl = req.headers.get("Content-Length") || "";
   if (/^\d+$/.test(cl) && Number(cl) > 400) return json({ error: "bad_json" }, 400, cors);
   let b;
@@ -638,20 +662,26 @@ async function ytRoute(req, env, cors) {
   const { ip, tag } = await ipTag(req, t.day);
   if (await burstLimited(env.RL, "/yt:" + ip)) return json({ error: "rate_limited", scope: "burst" }, 429, { ...cors, "Retry-After": "60" });
   const models = ytModels(env);
-  const head = { "x-goog-api-key": key, "Content-Type": "application/json" };
+  const headOf = (key) => ({ "x-goog-api-key": key, "Content-Type": "application/json" });
+  const answered = (i) => { if (!K.own && K.n > 1) ytKeyAt = (K.at + i) % K.n; };
 
   // ---- how long is it? (asked before the first window; no cap unit) ----
   if (b.from == null && b.to == null) {
-    let status = 0;
-    for (const model of models) {
+    let status = 0, ra = null;
+    keys: for (let ki = 0; ki < K.keys.length; ki++) {
+     const head = headOf(K.keys[ki]), lastKey = ki === K.keys.length - 1;
+     for (const model of models) {
       try {
         const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:countTokens`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_COUNT_TIMEOUT_MS),
           body: JSON.stringify({ contents: [{ role: "user", parts: [{ file_data: { file_uri: ytUrl(id) } }] }] }) });
         if (!r.ok) {
-          status = r.status; const ra = r.status === 429 ? retryAfter(r) : null;
+          status = r.status; if (r.status === 429) ra = retryAfter(r);
+          if (r.status === 403 || r.status === 400) {
+            if (await ytKeyRefused(r)) { if (K.own) return json({ error: "user_key_invalid" }, 400, cors); status = 0; continue keys; }      // this key is no good: the next one
+            return json({ error: "yt_unavailable" }, 404, cors);      // measured: a private, removed or mistyped video answers 403
+          }
           try { await r.body?.cancel(); } catch { /* ignore */ }
-          if (r.status === 403 || r.status === 400) return json({ error: "yt_unavailable" }, 404, cors);      // measured: a private, removed or mistyped video answers 403
-          if (r.status === 429 && model === models[models.length - 1]) return json({ error: "upstream_busy" }, 429, { ...cors, ...(ra ? { "Retry-After": ra } : {}) });
+          if (r.status === 429 && model === models[models.length - 1]) { if (lastKey) return json({ error: "upstream_busy" }, 429, { ...cors, ...(ra ? { "Retry-After": ra } : {}) }); continue keys; }
           continue;                                         // 404 = this MODEL is not there; 429 / 5xx: the next model may answer
         }
         const j = await r.json();
@@ -659,8 +689,10 @@ async function ytRoute(req, env, cors) {
         const seconds = audio && Number.isFinite(audio.tokenCount) ? Math.round(audio.tokenCount / YT_AUDIO_TOKENS_PER_SECOND) : 0;
         if (!(seconds > 0)) return json({ error: "yt_unavailable" }, 404, cors);
         if (seconds > YT_MAX_SECONDS) return json({ error: "too_long", seconds, max_seconds: YT_MAX_SECONDS }, 413, cors);
+        answered(ki);
         return json({ seconds, ...(await ytTitle(id)) }, 200, cors);
       } catch { status = 0; }
+     }
     }
     return json({ error: "upstream", ...(status ? { upstream_status: status } : {}), stage: "count" }, 502, cors);
   }
@@ -675,32 +707,47 @@ async function ytRoute(req, env, cors) {
     { key: "y:" + t.hour, cap: hourCap, ttl: 7200, code: "rate_limited", scope: "hour", retry: t.nextHour },      // its own hour: the hourly limit of /asr is Groq's, and Groq does no work here
   ];
   if (ipCap < cap) specs.push({ key: "i:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay });
-  const g = await guard(env.CAP, specs, true);          // the same daily counters as /asr: one unit = up to 10 minutes, whoever transcribes
-  if (g.busy || g.over) return capResponse(g, cors);
-  const left = { "X-Athar-Remaining": String(Math.max(cap - g.used[0], 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1], 0)) };
-  const back = { "X-Athar-Remaining": String(Math.max(cap - g.used[0] + 1, 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1] + 1, 0)) };      // after a refund
+  // the caller's own key is the caller's own quota: the site's allowance is neither asked nor spent
+  let left = {}, back = {};
+  if (!K.own) {
+    const g = await guard(env.CAP, specs, true);          // the same daily counters as /asr: one unit = up to 10 minutes, whoever transcribes
+    if (g.busy || g.over) return capResponse(g, cors);
+    left = { "X-Athar-Remaining": String(Math.max(cap - g.used[0], 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1], 0)) };
+    back = { "X-Athar-Remaining": String(Math.max(cap - g.used[0] + 1, 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1] + 1, 0)) };      // after a refund
+  }
+  const giveBack = async () => { if (!K.own) await refund(env.CAP, specs); };
 
   let lastStatus = 0, retry = null;
   for (const wait of YT_ROUNDS_WAIT_MS) {
    if (wait) { if (lastStatus !== 503 && lastStatus !== 500 && lastStatus !== 0) break; await sleep(env.YT_NO_WAIT ? 0 : wait); }
-   for (const model of models) {
-    try {
+   // a key whose quota is spent (429 from every model) or that Google no longer accepts gives way to the next key
+   keys: for (let ki = 0; ki < K.keys.length; ki++) {
+    const head = headOf(K.keys[ki]); let busy = 0;
+    for (const model of models) {
+     try {
       const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:generateContent`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_TIMEOUT_MS),
         body: JSON.stringify(ytBody(model, id, from, to, lang)) });
       if (!r.ok) {
-        lastStatus = r.status; if (r.status === 429) retry = retryAfter(r);
+        lastStatus = r.status; if (r.status === 429) { retry = retryAfter(r); busy++; }
+        if (r.status === 403 || r.status === 400) {
+          if (await ytKeyRefused(r)) { if (K.own) return json({ error: "user_key_invalid" }, 400, cors); lastStatus = 0; continue keys; }
+          if (r.status === 403) { await giveBack(); return json({ error: "yt_unavailable" }, 404, { ...cors, ...back }); }
+          continue;
+        }
         try { await r.body?.cancel(); } catch { /* ignore */ }
-        if (r.status === 403) { await refund(env.CAP, specs); return json({ error: "yt_unavailable" }, 404, { ...cors, ...back }); }
-        continue;                                          // 404 (this model is not there) / 429 / 500 / 503 / 400: the next one may answer
+        continue;                                          // 404 (this model is not there) / 429 / 500 / 503: the next one may answer
       }
       const out = ytNormalise(await r.json(), model, from, to);
       if (!out) { lastStatus = 0; continue; }
+      answered(ki);
       return new Response(JSON.stringify(out), { status: 200, headers: { ...cors, ...left, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
-    } catch { lastStatus = 0; }
+     } catch { lastStatus = 0; }
+    }
+    if (!busy) break;                                      // this key was not out of quota: another key would not answer differently
    }
   }
   // never forward the upstream body. No work was done: the unit goes back
-  await refund(env.CAP, specs);
+  await giveBack();
   if (lastStatus === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...back, ...(retry ? { "Retry-After": retry } : {}) });
   return json({ error: "upstream", ...(lastStatus ? { upstream_status: lastStatus } : {}), stage: "youtube" }, 502, { ...cors, ...back });
 }

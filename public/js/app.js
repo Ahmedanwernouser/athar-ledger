@@ -10,6 +10,7 @@ import { citedDocx, toSession, fromSession, parseStampedText, youtubeId, cleanMa
 import { t, tOpt, has, num, setLang, getLang, srcLabel, transcriberLabel, LANGS } from "./i18n.js";
 
 const CFG = window.ATHAR_CONFIG || {};
+const OWN_KEY = /^[A-Za-z0-9_-]{20,200}$/;
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const HAS_AR = /[ء-ي]/;
@@ -80,7 +81,12 @@ function asrMsg(e) {
   return has(key) && e.code !== "unknown" ? msg(key) : msg("asr.err.unknown", e.detail || "—");
 }
 
-function showError(m) { S.err = m; const e = $("startErr"); e.textContent = say(m); e.hidden = false; }
+/** an error that says a free allowance is spent comes with the way round it: the reader's own key */
+const QUOTA_ERR = /^(asr\.err\.(rate_limited\.hour|daily_cap|upstream_busy|user_key_invalid)|err\.yt\.off)/;
+function showError(m) {
+  S.err = m; const e = $("startErr"); e.textContent = say(m); e.hidden = false;
+  if (CFG.asrUrl && QUOTA_ERR.test(m.key || "")) { const b = el("button", "quiet-btn", t(CFG.userKey ? "key.change" : "key.use")); b.type = "button"; b.onclick = openKey; e.append(" ", b); }
+}
 function clearError() { S.err = null; $("startErr").hidden = true; }
 function screen(name) { for (const n of ["start", "busy", "results"]) $(n).hidden = n !== name; $("btnNew").hidden = name === "start"; }
 function busy(frac, m) { S.busy = m || S.busy; screen("busy"); $("busyBar").style.width = Math.round(100 * frac) + "%"; if (S.busy) $("busyMsg").textContent = say(S.busy); }
@@ -120,10 +126,25 @@ function drawSamples() {
 
 // ---------------- the start screen's one box, its options, and the colours of the page ----------------
 function drawAsk() {
-  const yt = !!(S.asr && S.asr.youtube), up = !!CFG.asrUrl;
+  const yt = canYt(), up = !!CFG.asrUrl;
+  $("btnKey").hidden = !up; $("btnKey").textContent = t(CFG.userKey ? "key.on" : "key.open");
   $("paste").placeholder = t(yt ? "ask.ph.yt" : "ask.ph"); $("paste").setAttribute("aria-label", t(yt ? "ask.ph.yt" : "ask.ph"));
   $("dropMain").textContent = t("ask.file");
   $("askHint").textContent = [t("ask.keys"), up ? t("ask.drop") : ""].filter(Boolean).join(" · ");
+}
+/** a link can be transcribed when the site has a Gemini key, or the reader entered his own */
+const canYt = () => !!(CFG.asrUrl && ((S.asr && S.asr.youtube) || CFG.userKey));
+// ---------------- the reader's own Gemini key: kept in this browser only, sent with a link's transcription and nothing else ----------------
+function openKey() {
+  $("keyInput").value = ""; $("keyMsg").textContent = t(CFG.userKey ? "key.state.on" : "key.state.off"); $("keyForget").hidden = !CFG.userKey;
+  const d = $("keyDlg"); if (!d.open) d.showModal(); $("keyInput").focus();
+}
+function saveKey(v) {
+  v = String(v || "").trim();
+  if (v && !OWN_KEY.test(v)) { $("keyMsg").textContent = t("key.bad"); return; }
+  if (v) { CFG.userKey = v; store.set("athar:gemkey", v); } else { delete CFG.userKey; try { localStorage.removeItem("athar:gemkey"); } catch { /* nothing kept */ } }
+  $("keyInput").value = ""; $("keyMsg").textContent = t(v ? "key.saved" : "key.forgotten"); $("keyForget").hidden = !v;
+  drawAsk(); if (S.err) showError(S.err);
 }
 function openOptions(on) { $("options").hidden = !on; $("btnOptions").setAttribute("aria-expanded", String(on)); }
 function setTheme(th) { document.documentElement.dataset.theme = th === "light" ? "light" : "dark"; store.set("athar:theme", document.documentElement.dataset.theme); drawTheme(); }
@@ -142,7 +163,7 @@ function applyLang(l) {
   $("corpusRetry").textContent = t("corpus.retry");
   $("samplesErr").hidden = !S.samplesFailed; $("samplesErr").textContent = S.samplesFailed ? t("err.samples") : "";
   drawPackLabels(); drawProviders(); drawSamples();
-  if (S.err) $("startErr").textContent = say(S.err);
+  if (S.err) showError(S.err);
   if (S.busy) $("busyMsg").textContent = say(S.busy);
   if (!$("results").hidden) render();
 }
@@ -174,6 +195,10 @@ function boot() {
   else asrProviders(CFG).then(a => { S.asr = a; drawProviders(); drawAsk(); drawSem(); });       // asked once, never waited for
   $("btnTheme").onclick = () => setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
   $("btnOptions").onclick = () => openOptions($("options").hidden);
+  { const k = store.get("athar:gemkey", ""); if (typeof k === "string" && OWN_KEY.test(k)) CFG.userKey = k; }
+  $("btnKey").onclick = openKey;
+  $("keyForm").onsubmit = ev => { ev.preventDefault(); if ($("keyInput").value.trim()) saveKey($("keyInput").value); };
+  $("keyForget").onclick = () => saveKey("");
   // the one box: Enter analyses, Shift+Enter is a new line; it grows with what is pasted into it
   const box = $("paste"), grow = () => { box.style.height = "auto"; box.style.height = Math.min(box.scrollHeight, 280) + "px"; };
   box.addEventListener("input", grow);
@@ -195,7 +220,7 @@ function boot() {
     // a link alone is a video to transcribe; anything else is the text of the lecture
     if (/^\S+$/.test(x) && /^(https?:\/\/)?([a-z]+\.)?(youtube\.com|youtu\.be)\//i.test(x)) {
       const id = youtubeId(x); if (!id) return showError(msg("err.yt.link"));
-      if (!(S.asr && S.asr.youtube)) return showError(msg("err.yt.off"));
+      if (!canYt()) return showError(msg("err.yt.off"));
       return runYoutube(id);
     }
     if (x.length < 20) return showError(msg("err.short"));
