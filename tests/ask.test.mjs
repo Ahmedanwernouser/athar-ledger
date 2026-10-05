@@ -72,3 +72,13 @@ test("chat reducer, from a real session: a refusal is said in the tool's own fix
   assert.doesNotMatch(say({ type: "answer", ids: ["L1"], text: "هذا حديث ضعيف جدا." }).text, /ضعيف/, "a grading no fact carries is still dropped");
   assert.deepEqual(say({ type: "answer", ids: ["M1", "X9"], text: "اسمه في عنوان الفيديو." }).ids, ["M1"]);
 });
+
+test("chat reducer: «هذا الموضوع» is the topic, not the grading «موضوع» — but «حديث موضوع» without a fact is still taken out", () => {
+  const inp = chatInput({ q: "أحاديث عن بر الوالدين", lang: "ar", facts: [{ id: "S1", text: "نص قريب من موضوع السؤال — حديث — صحيح مسلم — رقم 85b — الدرجة: في صحيح مسلم" }] });
+  const ok = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "من النصوص القريبة من هذا الموضوع في المصادر المحمَّلة حديث في صحيح مسلم." }), inp);
+  assert.match(ok.text, /القريبة من هذا الموضوع/);
+  const bad = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "هذا حديث موضوع لا أصل له." }), inp);
+  assert.equal(bad.text, "انظر البطاقات أدناه.");
+  const bad2 = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "الحديث الموضوع لا يُعمل به." }), inp);
+  assert.equal(bad2.text, "انظر البطاقات أدناه.");
+});

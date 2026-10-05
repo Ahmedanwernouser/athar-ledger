@@ -54,6 +54,8 @@ function gradesOnItsOwn(sentence, hay) {
   const ws = fold(sentence).split(" ").filter(Boolean);
   for (let i = 0; i < ws.length; i++) {
     if (!GRADE.test(ws[i])) continue;
+    // «هذا الموضوع», «في الموضوع»: the topic, not the grading «موضوع» (measured 5 Oct: «من النصوص القريبة من هذا الموضوع» — the very words rule ١٤ asks for — was dropped)
+    if (ws[i] === "الموضوع" && !/^(ال)?(حديث|خبر|اثر)$/.test(ws[i - 1] || "")) continue;
     const next = ws[i + 1] ? ws[i] + " " + ws[i + 1] : null, prev = i ? ws[i - 1] + " " + ws[i] : null;
     // … or as the grading itself of some fact («الدرجة: صحيح — …»): "حديث الترمذي 2195 صحيح" says what that fact says
     const asGrade = hay.includes(" الدرجه " + ws[i].replace(/^ال/, "").replace(/ه$/, "")) || hay.includes(" grading " + ws[i]);      // («درجته صحيحة» says «الدرجة: صحيح»)
