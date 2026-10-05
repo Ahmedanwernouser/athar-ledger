@@ -1982,6 +1982,8 @@ function askedText(q) {
   const ws = wordsFromText(raw.replace(/[؟?!.،,:«»"“”]/g, " "));
   if (quoted || raw !== q) return ws;
   let a = 0, b = ws.length;
+  // «اشرح لي حديث …», «ابحث عن قوله …»: the text is what follows the word that announces it, when that word comes early
+  for (let i = Math.min(4, ws.length - 3); i >= 0; i--) if (/^(حديث|الحديث|ايه|الايه|قوله|قول|نص)$/.test(askForm(ws[i].w))) { a = i + 1; break; }
   while (a < b && (ASKING.test(bare(ws[a].w)) || ASK_HEAD.test(askForm(ws[a].w)))) a++;
   while (b > a && (ASKING.test(bare(ws[b - 1].w)) || ASK_TAIL.test(askForm(ws[b - 1].w)))) b--;
   return ws.slice(a, b);

@@ -38,6 +38,7 @@ jobs:
           if [ "$PROBE" = "gemini" ]; then node eval/keyprobe/run.mjs > /dev/null; fi
           if [ "$PROBE" = "ask" ]; then node eval/keyprobe/ask.mjs > /dev/null; fi
           if [ "$PROBE" = "chat2" ]; then node eval/keyprobe/chat2.mjs > /dev/null; fi
+          if [ "$PROBE" = "chat3" ]; then node eval/keyprobe/chat3.mjs > /dev/null; fi
           if [ "$PROBE" = "live" ]; then node eval/keyprobe/live.mjs > /dev/null; fi
           if [ "$PROBE" = "shape" ]; then node eval/keyprobe/shape.mjs > /dev/null; fi
           if [ "$PROBE" = "models" ]; then node eval/keyprobe/models.mjs > /dev/null; fi
