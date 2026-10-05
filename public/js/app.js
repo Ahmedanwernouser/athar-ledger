@@ -125,7 +125,7 @@ function applyLang(l) {
   const other = getLang() === "ar" ? "en" : "ar", b = $("btnLang");
   b.textContent = other === "en" ? "English" : "العربية"; b.lang = other;
   drawCorpusState();
-  $("dropMain").textContent = t(CFG.asrUrl ? "drop.on" : "drop.off"); $("dropSub").textContent = t(CFG.asrUrl ? "drop.on2" : "drop.off2");
+  $("dropMain").textContent = t(CFG.asrUrl ? "drop.on" : "drop.off"); $("audioHint").textContent = t(CFG.asrUrl ? "drop.fmt" : "drop.off2"); $("dropSub").textContent = t("drop.on2"); $("audioTipsTitle").closest("details").hidden = !CFG.asrUrl;
   $("corpusRetry").textContent = t("corpus.retry");
   $("samplesErr").hidden = !S.samplesFailed; $("samplesErr").textContent = S.samplesFailed ? t("err.samples") : "";
   drawPackLabels(); drawProviders(); drawSamples();
@@ -227,7 +227,9 @@ function boot() {
   $("chipAll").onclick = showAll; $("chipFlag").onclick = toggleFlag; $("btnNext").onclick = nextOpen;
   $("btnTry").onclick = () => { const b = $("samples").querySelector(".sample"); if (b) b.click(); else $("waySample").scrollIntoView({ behavior: "smooth" }); };
   $("heroAlt").onclick = ev => { ev.preventDefault(); $("wayText").scrollIntoView({ behavior: "smooth", block: "center" }); $("paste").focus({ preventScroll: true }); };
-  $("trJump").onclick = ev => { ev.preventDefault(); $("transcriptTitle").scrollIntoView({ behavior: "smooth", block: "start" }); };
+  wireTabs();
+  $("btnStartReview").onclick = () => { showTab("ledger"); if (S.ledger.some(e => !reviewed(e))) nextOpen(); else if (S.ledger[0]) selectAndFocus(S.ledger[0]); };
+  $("btnAroundAll").onclick = () => showTab("text", { reveal: true });
   // the two menus of the results band: one open at a time; a click elsewhere, Escape or choosing an item closes them
   const menus = [...document.querySelectorAll("details.menu")];
   for (const m of menus) {
@@ -251,13 +253,47 @@ function boot() {
   $("packAskNo").onclick = () => { store.set("athar:packs", []); $("packAsk").hidden = true; };
   window.addEventListener("beforeprint", beforePrint); window.addEventListener("afterprint", afterPrint);
   // sticky offsets follow the real height of the player (it grows when an audio file is attached and on narrow screens)
-  const setPlayerH = () => { const h = $("player").offsetHeight; if (h) document.documentElement.style.setProperty("--player-h", h + "px"); };
-  if (window.ResizeObserver) new ResizeObserver(setPlayerH).observe($("player")); else window.addEventListener("resize", setPlayerH);
+  const setPlayerH = () => document.documentElement.style.setProperty("--player-h", stickyH() + "px");
+  if (window.ResizeObserver) new ResizeObserver(setPlayerH).observe($("player"));
+  window.addEventListener("resize", setPlayerH);
   mapRove = rove($("map"), ".mark", () => ({ next: ["ArrowRight", "ArrowDown"], prev: ["ArrowLeft", "ArrowUp"] }));
   trRove = rove($("transcript"), ".c", () => ($("transcript").dir === "rtl" ? { next: ["ArrowLeft", "ArrowDown"], prev: ["ArrowRight", "ArrowUp"] } : { next: ["ArrowRight", "ArrowDown"], prev: ["ArrowLeft", "ArrowUp"] }));
   wireMap(); wireTranscript();
   const saved = store.get("athar:lang", null);
   applyLang(LANGS.includes(saved) ? saved : (navigator.language || "ar").startsWith("ar") ? "ar" : "en");
+}
+
+// ---------------- the three sections of the results: summary, ledger and review, transcript ----------------
+const TABS = ["summary", "ledger", "text"], tabId = n => "tab" + n[0].toUpperCase() + n.slice(1), tabBtn = n => $("tabBtn" + n[0].toUpperCase() + n.slice(1));
+/** the height the page keeps clear at the top: the map and the player stick there on a narrow screen, nothing does on a wide one */
+function stickyH() { const p = $("player"); return p && getComputedStyle(p).position === "sticky" ? p.offsetHeight : 0; }
+/** show one section. `focus`: move the keyboard to its tab; `reveal`: in the transcript, bring the selected citation into view */
+function showTab(name, { focus = false, reveal = false } = {}) {
+  if (!TABS.includes(name)) name = "summary";
+  const was = S.tab; S.tab = name;
+  for (const n of TABS) { const on = n === name, b = tabBtn(n); $(tabId(n)).hidden = !on; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; }
+  $("selAct").hidden = true;
+  document.documentElement.style.setProperty("--player-h", stickyH() + "px");
+  if (was !== name && !$("results").hidden) {
+    const top = $("tabs").getBoundingClientRect().top;       // a new section starts at its top, under the tabs
+    if (top < 0) window.scrollBy({ top, behavior: "auto" });
+  }
+  if (focus) tabBtn(name).focus({ preventScroll: true });
+  if (name === "text" && reveal && S.sel) {
+    const e = S.ledger[S.sel - 1], w = e && $("transcript").querySelector(`.c[data-id="${e.id}"]`);
+    if (w) w.scrollIntoView({ block: "center", behavior: "auto" });
+  }
+}
+function wireTabs() {
+  const box = $("tabs");
+  box.addEventListener("click", ev => { const b = ev.target.closest(".tab"); if (b) showTab(b.dataset.tab); });
+  box.addEventListener("keydown", ev => {
+    const b = ev.target.closest(".tab"); if (!b) return;
+    const rtl = document.documentElement.dir === "rtl", i = TABS.indexOf(b.dataset.tab);
+    const d = ev.key === (rtl ? "ArrowLeft" : "ArrowRight") ? 1 : ev.key === (rtl ? "ArrowRight" : "ArrowLeft") ? -1 : ev.key === "Home" ? -i : ev.key === "End" ? TABS.length - 1 - i : 0;
+    if (!d) return;
+    ev.preventDefault(); showTab(TABS[(i + d + TABS.length) % TABS.length], { focus: true });
+  });
 }
 
 /** One tab stop for a whole group; the arrow keys, Home and End move inside it. */
@@ -756,7 +792,8 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
   else S.noAudio = !S.hasTimes ? "na.notimes" : estimated ? "na.est" : video ? (fromLink ? "na.link" : "na.video") : "na.file";
   if (video && !audioFile) { S.video = video; $("videoFrame").src = "https://www.youtube-nocookie.com/embed/" + video; $("video").hidden = false; }
   S.busy = null;
-  render(); screen("results"); window.scrollTo(0, 0);
+  S.kind = audioFile ? "audio" : video ? "video" : "text";
+  showTab("summary"); render(); screen("results"); window.scrollTo(0, 0);
   $("summaryLine").focus({ preventScroll: true });
 }
 
@@ -829,7 +866,7 @@ const sep = () => (getLang() === "ar" ? "، " : ", ");
 const markTitle = e => `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} — ${t("status." + st(e))}${byTwo(e) ? " (" + t("two.tag") + ")" : ""}${e.source ? " — " + srcLabel(e.source, true) : ""}${e.manual ? " — " + t("e.manual") : ""}${e.pass === "t2" ? " — " + t("two.second") : ""}`;
 
 function render() {
-  drawNotices(); drawNoAudio(); drawTranscribers(); drawSummary(); drawMap(); drawLedger(); drawTranscript(); drawMeaningBtn(); drawFixBar(); drawIndexBtn();
+  drawNotices(); drawNoAudio(); drawTranscribers(); drawSummary(); drawMap(); drawLedger(); drawTranscript(); drawMeaningBtn(); drawFixBar(); drawIndexBtn(); drawAround();
 }
 function drawNoAudio() { $("noAudio").hidden = !S.noAudio; $("noAudio").textContent = S.noAudio ? t(S.noAudio) : ""; }
 /** an Arabic counted noun (فرق واحد، فرقين، ٣ فروق، ١١ فرقًا); English has two forms */
@@ -853,7 +890,13 @@ function drawNotices() {
 function drawSummary() {
   const counts = {}; for (const e of S.ledger) counts[st(e)] = (counts[st(e)] || 0) + 1;
   const parts = STATUS_ORDER.filter(s => counts[s]).map(s => `${num(counts[s])} ${t("short." + s)}`).join(sep());
-  $("summaryLine").textContent = S.ledger.length ? t("sum.line", "\u2068" + titleNow() + "\u2069", counted("n.spot", S.ledger.length), parts) : t("sum.none", titleNow());
+  const head = $("summaryLine"), title = titleNow(); head.textContent = title; head.removeAttribute("lang"); head.removeAttribute("dir"); mixed(head, title);
+  head.setAttribute("aria-label", S.ledger.length ? t("sum.line", title, counted("n.spot", S.ledger.length), parts) : t("sum.none", title));
+  $("resMeta").textContent = [t("meta." + (S.kind || "text")), S.hasTimes ? fmtTime(S.duration) : "", t("meta.words", num(S.words.length))].filter(Boolean).join(" · ");
+  const pills = $("statPills"); pills.textContent = "";
+  pills.append(el("li", "pill", S.ledger.length ? counted("n.spot", S.ledger.length) : t("sum.none", title)));
+  for (const s of STATUS_ORDER) if (counts[s]) { const li = el("li", "pill s-" + s, `${num(counts[s])} ${t("short." + s)}`); li.style.setProperty("--c", `var(--${s}-on)`); pills.append(li); }
+  $("tabLedgerN").textContent = S.ledger.length ? num(S.ledger.length) : "";
   const f = $("filters");
   for (const s of STATUS_ORDER) {
     let c = f.querySelector(`[data-s="${s}"]`);
@@ -885,6 +928,13 @@ function drawProgress() {
   if (!flagged && S.onlyFlag) { S.onlyFlag = false; }
   drawFilterState();
   drawCommittee();
+  // the summary's cards: what needs a look (anything that is not a clean verbatim match), and how far the review is
+  const by = {}; let needs = 0;
+  for (const e of S.ledger) { const s = st(e); if (s !== "verbatim" || flagsOf(e).length) { needs++; if (s !== "verbatim") by[s] = (by[s] || 0) + 1; } }
+  $("statNeeds").textContent = needs ? counted("stat.place", needs) : t("stat.needs.none");
+  $("statNeedsSub").textContent = needs ? [...STATUS_ORDER.filter(s => by[s]).map(s => `${num(by[s])} ${t("short." + s)}`), flagged ? t("stat.flags", num(flagged)) : ""].filter(Boolean).join(sep()) : n ? t("stat.needs.sub.none") : "";
+  $("statRv").textContent = t("stat.rv", num(done), num(n)); $("statRvBar").style.width = (n ? 100 * done / n : 0) + "%";
+  $("btnStartReview").hidden = !n; $("btnStartReview").textContent = t(!done ? "stat.rv.go" : done < n ? "stat.rv.more" : "stat.rv.done");
 }
 function drawCommittee() {
   const box = $("committee"), list = $("committeeList"); box.hidden = !S.ledger.length; list.textContent = "";
@@ -1018,17 +1068,24 @@ function sourceSpan(d, text, mark) {
   if (tip.length) s.title = tip.join(" — ");
   const f = document.createDocumentFragment(); f.append(s, " "); return f;
 }
-function sourceLine(s, main) {
+function sourceLine(s, main, { chip = null, whole = null } = {}) {
   const p = el("p", "src"), label = srcLabel(s);
-  p.append(mixed(el("span", main ? "src-main" : null, label), label));
+  p.append(mixed(el("span", main ? "src-main" : "src-name", label), label));
   if (s.heading) { const h = s.heading.length > 70 ? s.heading.slice(0, 70) + "…" : s.heading; p.append(mixed(el("span", "agree", h), h)); }
+  if (chip) p.append(chip);
+  const acts = el("span", "src-acts");
+  if (whole) acts.append(whole);
   if (s.url) {
     const quran = s.url.includes("quran.com");
-    // a sunnah.com address without a hadith in it opens a book or the whole collection: the link text says so
+    // a sunnah.com address without a hadith in it opens a book or the whole collection: the button says so
     const level = quran ? "hadith" : s.linkLevel || (/^https:\/\/sunnah\.com\/[^/:]+\/?$/.test(s.url) ? "collection" : "hadith");
-    const a = el("a", null, t(quran ? "e.open.q" : level === "book" ? "e.open.h.book" : level === "collection" ? "e.open.h.collection" : "e.open.h"));
-    a.href = s.url; a.target = "_blank"; a.rel = "noopener"; p.append(a);
+    const a = el("a", "quiet-btn ext", t(quran ? "e.ext.q" : level === "book" ? "e.ext.book" : level === "collection" ? "e.ext.collection" : "e.ext.h"));
+    a.title = t(quran ? "e.open.q" : level === "book" ? "e.open.h.book" : level === "collection" ? "e.open.h.collection" : "e.open.h"); a.setAttribute("aria-label", a.title);
+    a.lang = "en"; a.dir = "ltr";
+    if (level !== "hadith") { a.removeAttribute("lang"); a.removeAttribute("dir"); }
+    a.href = s.url; a.target = "_blank"; a.rel = "noopener"; acts.append(a);
   }
+  if (acts.childNodes.length) p.append(acts);
   return p;
 }
 const textBlock = (text, cls = "") => { const p = el("p", cls, text); const d = dirOf(text); p.classList.add(d); p.dir = d; p.lang = scriptOf(text); return p; };
@@ -1057,26 +1114,28 @@ function quranBlock(s, cls = "", limitWords = 0) {
  * "Show the whole hadith": the text is in the library, so nobody has to leave the page to read it. `s.arabic` is the whole
  * text (in the original wording when the worker attached it); nothing is offered when what is shown is already all of it.
  */
-function wholeToggle(s, shown) {
-  if (!s || s.type !== "h" || s.via === "en" || !s.arabic) return null;
+function wholeButton(s, shown, key = null) {
+  const full = s && (s.displayFull || s.arabic);
+  if (!s || s.type !== "h" || s.via === "en" || !full) return null;
   const strip = x => String(x || "").replace(/…/g, "").replace(/\s+/g, " ").trim();
-  if (strip(shown) && strip(shown).length >= strip(s.arabic).length - 2) return null;
-  const f = el("div", "whole"), b = el("button", "btn small line whole-btn", t("e.whole")); b.type = "button"; b.setAttribute("aria-expanded", "false");
+  if (strip(shown) && strip(shown).length >= strip(full).length - 2) return null;
+  const b = el("button", "quiet-btn whole-btn", t("e.whole")); b.type = "button"; b.setAttribute("aria-expanded", "false");
   let box = null;
-  b.onclick = () => {
-    if (!box) { box = s.original ? origBlock(s.arabic, "whole-text") : textBlock(s.arabic, "whole-text"); f.append(box); }
-    else box.hidden = !box.hidden;
-    const open = !box.hidden; b.textContent = t(open ? "e.whole.hide" : "e.whole"); b.setAttribute("aria-expanded", String(open));
+  const set = open => {
+    if (!box) { box = s.displayFull || s.original ? origBlock(full, "whole-text") : textBlock(full, "whole-text"); (b.closest(".src") || b).after(box); }
+    box.hidden = !open; b.textContent = t(open ? "e.whole.hide" : "e.whole"); b.setAttribute("aria-expanded", String(open));
+    if (key) S.openState.set(key, open);
   };
-  f.append(b); return f;
+  b.onclick = () => set(!(box && !box.hidden));
+  if (key && S.openState.get(key)) queueMicrotask(() => { if (b.isConnected) set(true); else requestAnimationFrame(() => b.isConnected && set(true)); });      // what the reader opened stays open across redraws
+  return b;
 }
 const ayahDigits = text => text.replace(/﴿(\d+)﴾/g, (_, k) => `﴿${Number(k).toLocaleString("ar-EG", { useGrouping: false })}﴾`);
 const isQuran = s => !!(s && s.type === "q" && s.display);
 function candBlock(k) {
-  const c = el("div", "cand"); c.append(sourceLine(k, false));
+  const c = el("div", "cand"); c.append(sourceLine(k, false, { whole: wholeButton(k, k.excerptDisplay || k.excerpt) }));
   c.append(isQuran(k) ? quranBlock(k) : excerptBlock(k));        // a verse is always shown as it is written, never as search words
   if (k.translation && getLang() === "en" && (isQuran(k) || dirOf(k.excerpt) === "rtl")) c.append(textBlock(k.translation.text));
-  const w = wholeToggle(k, k.excerptDisplay || k.excerpt); if (w) c.append(w);
   return c;
 }
 function details(e, name, summary, ...children) {
@@ -1150,7 +1209,8 @@ function drawEntry(e) {
     const parts = [e.excerpt.head && t("note.excerpt_head"), e.excerpt.tail && !e.tailUnmatched && t("note.excerpt_tail")].filter(Boolean);
     if (parts.length) tag(`${t("tag.excerpt")}: ${parts.join(sep())}`);
   }
-  { const gc = e.status !== "notfound" && !e.weakOnly ? gradeChip(e.source, e.parallels) : null; if (gc) tags.push(gc); }
+  const gc = e.status !== "notfound" && !e.weakOnly ? gradeChip(e.source, e.parallels) : null;
+  const mainLine = () => sourceLine(src, true, { chip: gc, whole: viaEn ? null : wholeButton(src, "", e.key + "/whole") });
   if (e.tailUnmatched) li.append(el("p", "note", t("note.tail_unmatched", e.tailUnmatchedSpoken || "")));
   // what a second transcription of the same recording says about these words
   if (g2) {
@@ -1163,13 +1223,13 @@ function drawEntry(e) {
   if (e.pass === "t2") li.append(el("p", "note", t("two.second.note")));
 
   if (e.status === "meaning" && e.meaningVia === "llm" && src) {
-    li.append(sourceLine(src, true));
+    li.append(mainLine());
     const c = el("div", "cand"), strength = tOpt("strength." + e.meaningStrengthCode) || e.meaningStrength || "";
     c.append(el("span", null, t("e.incorpus", strength)), isQuran(src) ? quranBlock(src) : src.type === "h" && e.meaningDisplay ? origBlock(e.meaningDisplay) : textBlock(e.meaningText || "")); li.append(c);
   } else if (e.status === "meaning" && e.candidates) {
     li.append(el("p", "note", t("note.meaning_lex")));
     e.candidates.slice(0, 3).forEach(k => li.append(candBlock(k)));
-  } else if (src) li.append(sourceLine(src, true));
+  } else if (src) li.append(mainLine());
   if (e.manual) {       // a person chose this source: say so, and show the corpus text unless it is already compared word by word above
     if (src && !(e.diff && (hasDiff || partQ))) {
       const c = el("div", "cand"), origText = src.type === "h" ? (srcH && src.display) || src.excerptDisplay || (src.original && !src.excerpt ? src.arabic : "") : "";
@@ -1192,7 +1252,6 @@ function drawEntry(e) {
   }
   // the hadith as the source writes it (after the chain of narrators), for a textual match made in Arabic
   const more = [];      // [label, node...]: everything a reviewer opens only sometimes sits behind ONE disclosure
-  if (src && src.type === "h" && !viaEn && src.displayFull && textual(e)) more.push([t("e.hadith.text"), longBlock(src.displayFull, 150, "cand-text", true)]);
   const note = e.noteCode ? tOpt("note." + e.noteCode) : "";
   if (e.status === "notfound") {
     li.append(el("p", "note", note || t("note.notfound")));
@@ -1307,55 +1366,79 @@ function gradeChip(src, parallels) {
 
 // ---------------- digest: every hadith / passage of the Qur'an once (built by the worker from the entries' source positions) ----------------
 let digestJob = 0;
+/** when an entry was said, as a button that opens it in the ledger */
+function whenChip(e) {
+  const c2 = e.counts, wd = c2 ? c2.diff + c2.added + c2.omitted : 0;
+  const b = el("button", "at s-" + st(e), `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} · ${t("short." + st(e))}${e.status === "meaning" || !wd ? "" : " · " + counted("n.wdiff", wd)}`); b.type = "button";
+  b.title = markTitle(e); b.onclick = () => selectAndFocus(e);
+  return b;
+}
+function drawStatTexts(nH, nQ) {
+  $("statTexts").textContent = [nH && counted("stat.h", nH), nQ && counted("stat.q", nQ)].filter(Boolean).join(" · ") || t("stat.texts.none");
+}
 async function drawDigest() {
   const job = ++digestJob, box = $("digest"), list = $("digestList");
+  drawNeeds();
+  const none = () => { box.hidden = true; list.textContent = ""; drawStatTexts(0, 0); };
   const items = S.ledger.map(digestItem).filter(Boolean);
-  if (!items.length) { box.hidden = true; list.textContent = ""; return; }
+  if (!items.length) return none();
   let cards; try { cards = await call("digest", { items }); } catch { cards = null; }
   if (job !== digestJob) return;
-  if (!cards || !cards.length) { box.hidden = true; list.textContent = ""; return; }
+  if (!cards || !cards.length) return none();
   const byId = new Map(S.ledger.map(e => [e.id, e]));
   const nH = cards.filter(c => c.type === "h").length, nQ = cards.length - nH;
   $("digestGlance").textContent = [nH && t("dg.count.h", num(nH)), nQ && t("dg.count.q", num(nQ))].filter(Boolean).join(sep());
+  drawStatTexts(nH, nQ);
   list.textContent = "";
   for (const c of cards) {
     const card = el("article", "dg-card dg-" + c.type);
     const all = c.ids.map(id => byId.get(id)).filter(Boolean);
-    const head = el("div", "dg-head");
-    head.append(el("span", "kind", t("dg.kind." + c.type)), el("span", "dg-times", counted("dg.times", all.length)));
-    card.append(head);
-    if (c.wordings.length > 1) card.append(el("p", "note", t("dg.wordings")));
-    for (const w of c.wordings) {
-      const sec = el("div", "dg-wording"), mine = w.ids.map(id => byId.get(id)).filter(Boolean);
-      const line = sourceLine(w.source, true);
-      if (c.wordings.length > 1) line.prepend(el("span", "dg-as", t("dg.wording", "") .trim() + " "));
+    c.wordings.forEach((w, wi) => {
+      const sec = el("div", "dg-wording" + (wi ? " also" : "")), mine = w.ids.map(id => byId.get(id)).filter(Boolean);
+      const gc = c.type === "h" ? gradeChip(w.source, mine.flatMap(e => e.parallels || [])) : null;
+      const line = sourceLine(w.source, true, { chip: gc });
+      line.prepend(wi ? el("span", "dg-as", t("dg.also")) : el("span", "kindpill k-" + c.type, t("dg.kind." + c.type)));
       sec.append(line);
-      const row = el("p", "tags"), gc = c.type === "h" ? gradeChip(w.source, mine.flatMap(e => e.parallels || [])) : null;
-      if (gc) row.append(gc);
-      row.append(el("span", "tag", !w.said ? t("dg.said.none") : w.said >= w.total ? t("dg.said.all", num(w.total)) : t("dg.said.part", num(w.said), num(w.total))));
-      sec.append(row);
       const p = el("p", "dg-text rtl" + (w.original ? " orig" : "") + (c.type === "q" ? " quran" : "")); p.dir = "rtl"; p.lang = "ar";
       w.segs.forEach((g, i) => { if (i) p.append(" "); p.append(el("span", w.said && !g.said ? "unsaid" : "said", g.t)); });
       const words = w.segs.reduce((n, g) => n + g.t.split(" ").length, 0);
       if (words > 90) {
         p.classList.add("folded");
-        const b = el("button", "link dg-more", t("dg.more")); b.type = "button";
+        const b = el("button", "quiet-btn dg-more", t("dg.more")); b.type = "button";
         b.onclick = () => { const f = p.classList.toggle("folded"); b.textContent = t(f ? "dg.more" : "dg.less"); };
         sec.append(p, b);
       } else sec.append(p);
-      const when = el("p", "dg-when");
-      for (const e of mine) {
-        const c2 = e.counts, wd = c2 ? c2.diff + c2.added + c2.omitted : 0;
-        const b = el("button", "chip dg-at s-" + st(e), `${S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))} · ${t("status." + st(e))}${e.status === "meaning" ? "" : " · " + (wd ? counted("n.wdiff", wd) : t("dg.clean"))}`); b.type = "button";
-        b.onclick = () => selectAndFocus(e);
-        when.append(b);
-      }
+      const meter = el("div", "dg-meter"), bar = el("span", "meter"), fill = el("i"); bar.setAttribute("aria-hidden", "true");
+      fill.style.width = (w.total ? Math.round(100 * Math.min(w.said, w.total) / w.total) : 0) + "%"; bar.append(fill);
+      const saidLine = !w.said ? t("dg.said.none") : w.said >= w.total ? t("dg.said.all", num(w.total)) : t("dg.said.part", num(w.said), num(w.total));
+      if (w.said) meter.append(bar);
+      meter.append(el("span", null, [saidLine, wi ? "" : counted("dg.times", all.length)].filter(Boolean).join(" · ")));
+      sec.append(meter);
+      const when = el("p", "dg-when"); for (const e of mine) when.append(whenChip(e));
       sec.append(when);
       card.append(sec);
-    }
+    });
     list.append(card);
   }
   box.hidden = false;
+}
+/** what the digest cannot hold: places that were announced and not matched in wording, and places that carry an alert */
+function drawNeeds() {
+  const box = $("needs"), list = $("needsList"); list.textContent = "";
+  const items = S.ledger.filter(e => !digestItem(e) && (!textual(e) || flagsOf(e).length));
+  box.hidden = !items.length;
+  const MAX = 12, cut = x => { const ws = String(x || "").split(" "); return ws.length > 45 ? ws.slice(0, 45).join(" ") + " …" : ws.join(" "); };
+  for (const e of items.slice(0, MAX)) {
+    const card = el("article", "dg-card need s-" + st(e)), head = el("div", "need-head");
+    head.append(el("span", "status", t("status." + st(e))), el("span", "need-time", S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))), el("span", "kind", kindOf(e)));
+    for (const f of flagsOf(e)) head.append(el("span", "flagtag", t("flag." + f)));
+    card.append(head, textBlock(cut(e.spoken), "dg-text need-text"));
+    const near = e.status === "notfound" ? (e.suggestions || [])[0] : (e.candidates || [])[0] || e.source;
+    if (near) { const label = srcLabel(near); card.append(mixed(el("p", "note", t("needs.near", label)), label)); }
+    const b = el("button", "quiet-btn strong", t("needs.open")); b.type = "button"; b.onclick = () => selectAndFocus(e);
+    card.append(b); list.append(card);
+  }
+  if (items.length > MAX) list.append(el("p", "note", t("needs.more", num(items.length - MAX))));
 }
 
 function drawLedger() {
@@ -1475,8 +1558,10 @@ function wireTranscript() {
 function focusEntry(e, scroll, play) {
   S.sel = e.id;
   document.querySelectorAll(".entry.on, .mark.on, .transcript .c.on").forEach(x => x.classList.remove("on"));
+  if (scroll && S.tab !== "ledger") showTab("ledger");
   let li = $("e" + e.id); if (!li) { flushLedger(); li = $("e" + e.id); }
   if (li) { li.classList.add("on"); if (scroll && !li.hidden) centre(li); }
+  drawAround();
   const mk = $("map").querySelector(`.mark[data-id="${e.id}"]`); if (mk) mk.classList.add("on");
   const T = $("transcript");
   T.querySelectorAll(`.c[data-id="${e.id}"]`).forEach(c => c.classList.add("on"));
@@ -1492,12 +1577,24 @@ function focusEntry(e, scroll, play) {
 function centre(li) {
   const big = $("ledger").classList.contains("big");
   const go = behavior => {
-    const ph = $("player").offsetHeight, r = li.getBoundingClientRect(), room = window.innerHeight - ph;
+    const ph = stickyH(), r = li.getBoundingClientRect(), room = window.innerHeight - ph;
     const dy = r.height >= room - 24 ? r.top - ph - 12 : r.top - ph - (room - r.height) / 2;       // a row taller than the screen is aligned by its top
     if (Math.abs(dy) > 2) window.scrollBy({ top: dy, behavior });
   };
   if (big || reducedMotion()) { go("auto"); requestAnimationFrame(() => requestAnimationFrame(() => go("auto"))); }      // rows not laid out yet change height once reached
   else go("smooth");
+}
+
+/** the words said just before and after the selected citation (the whole transcript has its own section) */
+const AROUND = 28;
+function drawAround() {
+  const p = $("aroundText"), e = S.sel ? S.ledger[S.sel - 1] : null, n = S.words.length; p.textContent = "";
+  p.classList.toggle("none", !e); $("btnAroundAll").hidden = !n;
+  if (!e) { p.removeAttribute("dir"); p.removeAttribute("lang"); p.textContent = n ? t("around.none") : ""; return; }
+  const a = Math.max(0, e.wordStart - AROUND), b = Math.min(n - 1, e.wordEnd + AROUND), join = (i, j) => { const ws = []; for (let k = i; k <= j; k++) { const w = wordAt(k); if (w) ws.push(w); } return ws.join(" "); };
+  const sample = join(a, b); p.dir = dirOf(sample); p.lang = scriptOf(sample);
+  const cited = el("mark", "s-" + st(e), join(Math.max(0, e.wordStart), Math.min(n - 1, e.wordEnd)));
+  p.append((a > 0 ? "… " : "") + join(a, e.wordStart - 1) + " ", cited, " " + join(e.wordEnd + 1, b) + (b < n - 1 ? " …" : ""));
 }
 
 let lastNow = -1;
@@ -1542,6 +1639,7 @@ function onShortcut(ev) {
   const k = /^[a-z0-9?]$/i.test(ev.key) ? ev.key.toLowerCase() : KEY_BY_CHAR[ev.key] || (ev.shiftKey ? "" : KEY_BY_CODE[ev.code]) || "";
   if (!"jk123pn?".includes(k) || !k) return;
   if (k === "?") { ev.preventDefault(); $("keys").showModal(); return; }
+  if (S.tab !== "ledger" && k !== "j" && k !== "k") return;      // a verdict is given to an entry the reviewer is looking at
   const shown = S.ledger.filter(e => !isOff(e)); if (!shown.length) return;
   const cur = S.sel ? S.ledger[S.sel - 1] : null, at = cur ? shown.indexOf(cur) : -1;
   ev.preventDefault();
@@ -1690,7 +1788,7 @@ function adjustLookup(edge, d) {
 }
 function lookupCandidate(c, canAdd) {
   const li = el("li", "lk s-" + c.status), s = c.source;
-  li.append(el("span", "status", t("lk.st." + c.status)), sourceLine(s, true));
+  const line = sourceLine(s, true); li.append(el("span", "status", t("lk.st." + c.status)), line);
   const matched = c.entry && c.entry.diff ? c.entry.diff.filter(d => d.source).map(d => d.source).join(" ") : "";
   const cut = x => { const ws = String(x || "").split(" "); return ws.length > 70 ? ws.slice(0, 70).join(" ") + " …" : ws.join(" "); };
   // a hadith is shown in its original wording when the worker attached it: the matched words, else the excerpt, else the text
@@ -1698,7 +1796,7 @@ function lookupCandidate(c, canAdd) {
   const text = cut(orig || matched || s.excerpt || s.arabic || "");
   if (isQuran(s)) li.append(quranBlock(s, "cand-text", 70)); else if (text) li.append(orig ? origBlock(text, "cand-text") : textBlock(text, "cand-text"));
   if (s.translation && getLang() === "en") li.append(textBlock(cut(s.translation.text), "cand-text"));
-  { const w = wholeToggle(s, text); if (w) li.append(w); }
+  { const w = wholeButton(s, text); if (w) { let acts = line.querySelector(".src-acts"); if (!acts) { acts = el("span", "src-acts"); line.append(acts); } acts.prepend(w); } }
   if (canAdd) { const b = el("button", "btn small", t("lk.add")); b.type = "button"; b.onclick = () => addManual(c); li.append(b); }
   return li;
 }

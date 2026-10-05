@@ -31,31 +31,14 @@
   <section id="start" class="start">
     <div class="hero">
       <div class="hero-in">
-        <div class="hero-text">
-          <h1 id="startTitle" tabindex="-1">ما الذي استشهد به المتحدث، وأين، وبأي لفظ؟</h1>
-          <p class="lede">ارفع محاضرة أو الصق نصّها: يجد أثَر كل آية وحديث قيل فيها، يربطه بلحظته في التسجيل، ويقارن لفظه بالمصدر كلمةً كلمة، ثم يُخرج النص بحواشيه. لا يحكم على صحة حديث؛ يُريك الدليل.</p>
-          <p class="hero-cta"><button type="button" class="btn gold" id="btnTry">شاهد مثالًا جاهزًا</button> <a class="hero-alt" href="#wayText" id="heroAlt">أو ابدأ بنصّك</a></p>
-          <div class="corpus-state" id="corpusState" role="status">
-            <div class="bar"><i id="corpusBar"></i></div>
-            <span id="corpusMsg">تُحمَّل المصادر…</span>
-            <button type="button" class="navbtn retry" id="corpusRetry" hidden>أعد المحاولة</button>
-          </div>
+        <h1 id="startTitle" tabindex="-1">ما الذي استشهد به المتحدث، وأين، وبأي لفظ؟</h1>
+        <p class="lede">ارفع محاضرة أو الصق نصّها: يجد أثَر كل آية وحديث قيل فيها، ويقارن لفظه بالمصدر كلمةً كلمة. لا يحكم على صحة حديث؛ يُريك الدليل.</p>
+        <p class="hero-cta"><button type="button" class="btn gold" id="btnTry">شاهد مثالًا جاهزًا</button> <a class="hero-alt" href="#wayText" id="heroAlt">أو ابدأ بنصّك</a></p>
+        <div class="corpus-state" id="corpusState" role="status">
+          <div class="bar"><i id="corpusBar"></i></div>
+          <span id="corpusMsg">تُحمَّل المصادر…</span>
+          <button type="button" class="navbtn retry" id="corpusRetry" hidden>أعد المحاولة</button>
         </div>
-
-        <!-- a real line from the sample ledger, shown as the product's own output -->
-        <figure class="specimen" id="specimen" role="img" aria-label="مثال من السجل: حديث قيل بلفظ يختلف عن المصدر في كلمتين">
-          <div class="spec-map" aria-hidden="true">
-            <i class="v" style="inset-inline-start:6%;width:5%"></i><i class="v" style="inset-inline-start:18%;width:9%"></i>
-            <i class="p on" style="inset-inline-start:33%;width:13%"></i><i class="v" style="inset-inline-start:52%;width:11%"></i>
-            <i class="n" style="inset-inline-start:69%;width:6%"></i><i class="v" style="inset-inline-start:84%;width:8%"></i>
-          </div>
-          <div class="spec-head"><span class="spec-time">0:46</span><span id="specKind">حديث</span><span class="spec-status" id="specStatus">مطابق مع فروق</span></div>
-          <p class="spec-label" id="specSpoken">ما قيل</p>
-          <p class="spec-q" dir="rtl" lang="ar">من كان يؤمن بالله واليوم الآخر فليقل <em>كلامًا طيبًا</em> أو <em>ليسكت</em></p>
-          <p class="spec-label" id="specSource">في المصدر</p>
-          <p class="spec-q from" dir="rtl" lang="ar">من كان يؤمن بالله واليوم الآخر فليقل <em>خيرًا</em> أو <em>ليصمت</em></p>
-          <figcaption><span class="spec-ref" dir="rtl" lang="ar">صحيح مسلم — رقم 47</span><span id="specNote">فرقان في اللفظ</span></figcaption>
-        </figure>
       </div>
     </div>
 
@@ -63,12 +46,11 @@
       <div class="ways">
         <div class="way way-audio" id="wayAudio">
           <h2>تسجيل صوتي أو مرئي</h2>
-          <p id="audioHint">mp3 أو m4a أو wav أو mp4. يُفرَّغ التسجيل ثم يُحلَّل.</p>
           <label class="drop" id="drop">
-            <input type="file" id="file" class="vh" accept="audio/*,video/*,.mp3,.m4a,.wav,.ogg,.mp4,.webm" aria-describedby="dropSub">
+            <input type="file" id="file" class="vh" accept="audio/*,video/*,.mp3,.m4a,.wav,.ogg,.mp4,.webm" aria-describedby="dropSub audioHint">
             <svg class="wave" viewBox="0 0 120 32" aria-hidden="true"><g fill="currentColor"><rect x="2" y="13" width="3" height="6" rx="1.5"/><rect x="10" y="9" width="3" height="14" rx="1.5"/><rect x="18" y="4" width="3" height="24" rx="1.5"/><rect x="26" y="10" width="3" height="12" rx="1.5"/><rect x="34" y="7" width="3" height="18" rx="1.5"/><rect x="42" y="12" width="3" height="8" rx="1.5"/><rect x="50" y="2" width="3" height="28" rx="1.5"/><rect x="58" y="8" width="3" height="16" rx="1.5"/><rect x="66" y="11" width="3" height="10" rx="1.5"/><rect x="74" y="5" width="3" height="22" rx="1.5"/><rect x="82" y="10" width="3" height="12" rx="1.5"/><rect x="90" y="13" width="3" height="6" rx="1.5"/><rect x="98" y="8" width="3" height="16" rx="1.5"/><rect x="106" y="11" width="3" height="10" rx="1.5"/><rect x="114" y="14" width="3" height="4" rx="1.5"/></g></svg>
             <span class="drop-main" id="dropMain">اختر ملفًّا أو اسحبه إلى هنا</span>
-            <span class="drop-sub" id="dropSub">يُرسَل الصوت إلى خدمة التفريغ ولا يُحفَظ عندنا. يُحتفَظ بعدّاد مجهول قصير الأجل فقط لتطبيق الحد اليومي المجاني.</span>
+            <span class="drop-fmt" id="audioHint">mp3 أو m4a أو wav أو mp4</span>
           </label>
           <label class="reclang"><span id="recLangLabel">لغة التسجيل</span>
             <select id="recLang"><option value="ar">عربي</option><option value="en">إنجليزي</option><option value="en+ar">إنجليزي مع تلاوة عربية (تفريغ مرّتين)</option></select>
@@ -82,30 +64,35 @@
               <input type="text" id="ytUrl" dir="ltr" inputmode="url" placeholder="https://youtu.be/…" autocomplete="off" aria-describedby="ytNote">
               <button type="submit" class="btn" id="btnYt">حلِّل من الرابط</button>
             </div>
-            <p class="hint" id="ytNote">للفيديوهات العامة. يفرّغه نموذج Gemini العام من الرابط مباشرة بلا تحميل؛ الأزمنة تقريبية، وقد يختلف لفظ كلمة عمّا قيل. للتدقيق ارفع الملف.</p>
           </form>
+          <details class="tips">
+            <summary id="audioTipsTitle">الخصوصية ودقة التفريغ</summary>
+            <p class="hint" id="dropSub">يُرسَل الصوت إلى خدمة التفريغ ولا يُحفَظ عندنا. يُحتفَظ بعدّاد مجهول قصير الأجل فقط لتطبيق الحد اليومي المجاني.</p>
+            <p class="hint" id="ytNote">للفيديوهات العامة. يفرّغه نموذج Gemini العام من الرابط مباشرة بلا تحميل؛ الأزمنة تقريبية، وقد يختلف لفظ كلمة عمّا قيل. للتدقيق ارفع الملف.</p>
+          </details>
         </div>
 
         <div class="way way-text" id="wayText">
           <h2 id="wayTextTitle">نص مفرَّغ جاهز</h2>
-          <p id="wayTextHint">الصق نص المحاضرة بالعربية أو الإنجليزية، أو ملف تفريغ (JSON من Whisper أو SRT/VTT) لتبقى الأزمنة.</p>
-          <textarea id="paste" rows="7" dir="auto" placeholder="الصق نص المحاضرة هنا…" aria-labelledby="wayTextTitle" aria-describedby="wayTextHint"></textarea>
+          <textarea id="paste" rows="6" dir="auto" placeholder="الصق نص المحاضرة هنا…" aria-labelledby="wayTextTitle" aria-describedby="wayTextHint"></textarea>
           <label class="videourl"><span id="videoLabel">رابط الفيديو (اختياري)</span>
             <input type="url" id="videoUrl" dir="ltr" inputmode="url" placeholder="https://youtu.be/…" autocomplete="off"></label>
-          <p class="hint" id="ytHint">من يوتيوب: افتح «عرض النص المكتوب» تحت الفيديو، انسخه كله بأزمنته والصقه هنا، وضع رابط الفيديو ليُفتح عند لحظة كل استشهاد.</p>
           <div class="row">
             <button type="button" class="btn" id="btnAnalyzeText" disabled>حلِّل النص</button>
-            <label class="link filelink"><input type="file" id="transcriptFile" class="vh" accept=".json,.srt,.vtt,.txt" multiple aria-describedby="twoFilesHint"><span id="transcriptFileLabel">أو اختر ملف تفريغ أو جلسة محفوظة</span></label>
+            <label class="quiet-btn filelink"><input type="file" id="transcriptFile" class="vh" accept=".json,.srt,.vtt,.txt" multiple aria-describedby="twoFilesHint"><span id="transcriptFileLabel">أو اختر ملف تفريغ أو جلسة محفوظة</span></label>
           </div>
-          <p class="hint" id="twoFilesHint">لمقارنة تفريغين للتسجيل نفسه: اختر ملفَّي تفريغ بأزمنة معًا؛ الأول في القائمة هو النص المعتمد والثاني للمقارنة.</p>
+          <details class="tips">
+            <summary id="textTipsTitle">ما الذي يصلح هنا؟</summary>
+            <p class="hint" id="wayTextHint">الصق نص المحاضرة بالعربية أو الإنجليزية، أو ملف تفريغ (JSON من Whisper أو SRT/VTT) لتبقى الأزمنة.</p>
+            <p class="hint" id="ytHint">من يوتيوب: افتح «عرض النص المكتوب» تحت الفيديو، انسخه كله بأزمنته والصقه هنا، وضع رابط الفيديو ليُفتح عند لحظة كل استشهاد.</p>
+            <p class="hint" id="twoFilesHint">لمقارنة تفريغين للتسجيل نفسه: اختر ملفَّي تفريغ بأزمنة معًا؛ الأول في القائمة هو النص المعتمد والثاني للمقارنة.</p>
+          </details>
         </div>
       </div>
-      <label class="semopt" id="semWrap" hidden><input type="checkbox" id="semOn" checked>
-        <span id="semLabel">اقتراحات «بالمعنى» بنموذج جُمل: تُرسَل الكلمات التي تلي عبارة الاستشهاد فقط (لا النص كله) إلى نموذج على Cloudflare ليرتّب أقرب النصوص. أزِل العلامة ليبقى كل شيء في متصفحك.</span></label>
       <p class="err" id="startErr" role="alert" hidden></p>
 
-      <div class="way way-sample" id="waySample">
-        <div class="way-sample-head">
+      <div class="way-sample" id="waySample">
+        <div class="sec-head">
           <h2>جرّب على مثال</h2>
           <p>نصوص تجريبية بلا صوت، لترى شكل السجل قبل أن ترفع شيئًا.</p>
         </div>
@@ -113,12 +100,16 @@
         <p class="err" id="samplesErr" role="alert" hidden></p>
       </div>
 
-      <fieldset class="packs" id="packs" hidden>
-        <legend>كتب إضافية يُبحث فيها (تُحمَّل عند الاختيار)</legend>
-        <p class="pack-ask" id="packAsk" hidden><span id="packAskMsg"></span> <button type="button" class="btn small" id="packAskYes"></button> <button type="button" class="link" id="packAskNo"></button></p>
-        <div id="packList" class="pack-list"></div>
-        <p class="pack-note" id="packNote" role="status" hidden></p>
-      </fieldset>
+      <div class="options" id="options">
+        <fieldset class="packs" id="packs" hidden>
+          <legend>كتب إضافية يُبحث فيها (تُحمَّل عند الاختيار)</legend>
+          <p class="pack-ask" id="packAsk" hidden><span id="packAskMsg"></span> <button type="button" class="btn small" id="packAskYes"></button> <button type="button" class="link" id="packAskNo"></button></p>
+          <div id="packList" class="pack-list"></div>
+          <p class="pack-note" id="packNote" role="status" hidden></p>
+        </fieldset>
+        <label class="semopt" id="semWrap" hidden><input type="checkbox" id="semOn" checked>
+          <span id="semLabel">اقتراحات «بالمعنى» بنموذج جُمل: تُرسَل الكلمات التي تلي عبارة الاستشهاد فقط (لا النص كله) إلى نموذج على Cloudflare ليرتّب أقرب النصوص. أزِل العلامة ليبقى كل شيء في متصفحك.</span></label>
+      </div>
     </div>
   </section>
 
@@ -132,44 +123,82 @@
   <!-- ===================== results ===================== -->
   <section id="results" hidden>
     <div class="res-head">
-      <div class="wrap res-head-in">
-        <h1 id="summaryLine" class="summary-line" tabindex="-1"></h1>
-        <div class="exports">
-          <button type="button" class="btn gold" id="btnDocx">تنزيل النص بحواشيه (Word)</button>
-          <details class="menu" id="menuWord">
-            <summary id="menuWordTitle">خيارات Word</summary>
-            <div class="menu-box">
-              <label class="opt" id="optMushafWrap"><input type="checkbox" id="optMushaf"><span id="optMushafLabel">الآيات برسم المصحف</span></label>
-              <label class="opt" id="optHadithWrap"><input type="checkbox" id="optHadith"><span id="optHadithLabel">الأحاديث الحرفية بلفظ المصدر مشكولًا</span></label>
-            </div>
-          </details>
-          <details class="menu" id="menuMore">
-            <summary id="menuMoreTitle">تنزيلات أخرى وطباعة</summary>
-            <div class="menu-box">
-              <button type="button" class="menu-item" id="btnPrint">اطبع التقرير</button>
-              <button type="button" class="menu-item" id="btnIndex">فهرس زمني لوصف الفيديو</button>
-              <button type="button" class="menu-item" id="btnTxt2">النص المفرَّغ كاملًا (TXT)</button>
-              <button type="button" class="menu-item" id="btnSrt2">النص بأزمنته (SRT)</button>
-              <button type="button" class="menu-item" id="btnCsv">جدول (CSV)</button>
-              <button type="button" class="menu-item" id="btnJson">بيانات (JSON)</button>
-            </div>
-          </details>
-          <button type="button" class="btn ondark" id="btnSave">احفظ المراجعة</button>
+      <div class="wrap">
+        <div class="rh-top">
+          <div class="rh-title">
+            <p class="rh-meta" id="resMeta"></p>
+            <h1 id="summaryLine" class="summary-line" tabindex="-1"></h1>
+          </div>
+          <div class="exports">
+            <button type="button" class="btn gold" id="btnDocx">تنزيل النص بحواشيه (Word)</button>
+            <details class="menu" id="menuWord">
+              <summary id="menuWordTitle">خيارات Word</summary>
+              <div class="menu-box">
+                <label class="opt" id="optMushafWrap"><input type="checkbox" id="optMushaf"><span id="optMushafLabel">الآيات برسم المصحف</span></label>
+                <label class="opt" id="optHadithWrap"><input type="checkbox" id="optHadith"><span id="optHadithLabel">الأحاديث الحرفية بلفظ المصدر مشكولًا</span></label>
+              </div>
+            </details>
+            <details class="menu" id="menuMore">
+              <summary id="menuMoreTitle">تنزيلات أخرى</summary>
+              <div class="menu-box">
+                <button type="button" class="menu-item" id="btnSave">احفظ المراجعة (ملف جلسة)</button>
+                <button type="button" class="menu-item" id="btnPrint">اطبع التقرير</button>
+                <button type="button" class="menu-item" id="btnIndex">فهرس زمني لوصف الفيديو</button>
+                <button type="button" class="menu-item" id="btnTxt2">النص المفرَّغ كاملًا (TXT)</button>
+                <button type="button" class="menu-item" id="btnSrt2">النص بأزمنته (SRT)</button>
+                <button type="button" class="menu-item" id="btnCsv">جدول (CSV)</button>
+                <button type="button" class="menu-item" id="btnJson">بيانات (JSON)</button>
+              </div>
+            </details>
+          </div>
+        </div>
+        <ul class="pills" id="statPills"></ul>
+        <div class="tabs" id="tabs" role="tablist" aria-label="أقسام النتائج">
+          <button type="button" class="tab" role="tab" id="tabBtnSummary" data-tab="summary" aria-controls="tabSummary" aria-selected="true">الملخص</button>
+          <button type="button" class="tab" role="tab" id="tabBtnLedger" data-tab="ledger" aria-controls="tabLedger" aria-selected="false" tabindex="-1"><span id="tabLedgerLabel">السجل والمراجعة</span> <span class="tab-n" id="tabLedgerN"></span></button>
+          <button type="button" class="tab" role="tab" id="tabBtnText" data-tab="text" aria-controls="tabText" aria-selected="false" tabindex="-1">النص المفرَّغ</button>
         </div>
       </div>
     </div>
 
     <div class="wrap"><ul class="notices" id="notices" role="status" hidden></ul></div>
 
-    <div class="wrap">
-      <details class="digest" id="digest" open hidden>
-        <summary><span id="digestTitle">النصوص المذكورة في المحاضرة</span> <span class="glance" id="digestGlance"></span></summary>
-        <p class="note" id="digestSub">كل حديث وكل موضع من القرآن مرة واحدة: نصّه كاملًا، وما قيل منه في المحاضرة كلها، ومتى قيل. الكلام الباهت لم يُنطَق.</p>
-        <div class="dg-list" id="digestList"></div>
-      </details>
-    </div>
+    <!-- ---------- tab 1: the summary ---------- -->
+    <div class="wrap panel" id="tabSummary" role="tabpanel" aria-labelledby="tabBtnSummary">
+      <div class="stats" id="stats">
+        <div class="stat">
+          <p class="stat-label" id="statTextsLabel">نصوص مذكورة</p>
+          <p class="stat-num" id="statTexts"></p>
+          <p class="stat-sub" id="statTextsSub">كل نص مرة واحدة، مهما تكرر</p>
+        </div>
+        <div class="stat">
+          <p class="stat-label" id="statNeedsLabel">يحتاج نظرك</p>
+          <p class="stat-num" id="statNeeds"></p>
+          <p class="stat-sub" id="statNeedsSub"></p>
+        </div>
+        <div class="stat">
+          <p class="stat-label" id="statRvLabel">المراجعة</p>
+          <p class="stat-num" id="statRv"></p>
+          <div class="stat-bar" aria-hidden="true"><i id="statRvBar"></i></div>
+          <button type="button" class="quiet-btn" id="btnStartReview">ابدأ المراجعة</button>
+        </div>
+      </div>
 
-    <div class="wrap">
+      <section class="digest" id="digest" hidden>
+        <div class="sec-head">
+          <h2 id="digestTitle">النصوص المذكورة في المحاضرة</h2>
+          <span class="glance" id="digestGlance"></span>
+        </div>
+        <p class="note" id="digestSub">النص كاملًا من المصدر. الغامق قيل في المحاضرة، والباهت لم يُنطَق.</p>
+        <div class="dg-list" id="digestList"></div>
+      </section>
+
+      <section class="needs" id="needs" hidden>
+        <div class="sec-head"><h2 id="needsTitle">مواضع لم يُطابَق نصّها</h2></div>
+        <p class="note" id="needsSub">أُعلن عنها في المحاضرة ولم يوجد لفظها في المصادر، أو وُجد لها شبيه ضعيف. راجعها في السجل.</p>
+        <div class="dg-list" id="needsList"></div>
+      </section>
+
       <details class="committee" id="committee">
         <summary><span id="committeeTitle">ملخّص للجنة المراجعة</span> <span class="glance" id="committeeGlance"></span></summary>
         <dl class="committee-list" id="committeeList"></dl>
@@ -177,25 +206,17 @@
       </details>
     </div>
 
-    <div class="player" id="player">
-      <div class="wrap">
-        <audio id="audio" controls preload="metadata" hidden></audio>
-        <div class="map" id="map" role="group" aria-label="خريطة الاستشهادات على طول التسجيل"></div>
-        <div class="map-scale"><span id="mapStart">0:00</span><span class="noaudio" id="noAudio" hidden></span><span id="mapEnd"></span></div>
-        <div class="progress" id="progress">
-          <span id="progressText" role="status"></span>
-          <span class="pbar" aria-hidden="true"><i id="progressBar"></i></span>
-          <button type="button" class="btn small line" id="btnNext">التالي غير المراجَع</button>
-          <a class="link tr-jump" href="#transcriptTitle" id="trJump">النص المفرَّغ</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="wrap">
+    <!-- ---------- tab 2: the ledger and its review ---------- -->
+    <div class="wrap panel" id="tabLedger" role="tabpanel" aria-labelledby="tabBtnLedger" hidden>
       <p class="tr-by" id="trBy" hidden></p>
       <div class="tools">
         <div class="filters" id="filters" role="group" aria-label="تصفية السجل"><button type="button" class="chip all" id="chipAll" aria-pressed="true">الكل</button><button type="button" class="chip flagchip" id="chipFlag" aria-pressed="false" hidden></button><button type="button" class="chip open" id="chipOpen" aria-pressed="false" hidden></button></div>
-        <button type="button" class="link keys" id="btnKeys">اختصارات (؟)</button>
+        <div class="progress" id="progress">
+          <span id="progressText" role="status"></span>
+          <span class="pbar" aria-hidden="true"><i id="progressBar"></i></span>
+          <button type="button" class="quiet-btn" id="btnNext">التالي غير المراجَع</button>
+        </div>
+        <p class="rv-effect" id="rvEffect">حكمك يغيّر ملف Word: «خاطئة» تحذف حاشية الموضع، و«سليمة» تزيل عنه علامة «*».</p>
         <p class="meaning-cta"><button type="button" class="btn small line" id="btnMeaning" hidden>ابحث عن الاقتباسات بالمعنى</button></p>
         <details class="legend-wrap" id="legendWrap">
           <summary id="legendTitle">مفتاح علامات الفروق</summary>
@@ -207,26 +228,46 @@
             <span><b class="k k-del">كلمة</b> <span id="lgDel">في المصدر ولم تُنطَق</span></span>
           </div>
         </details>
+        <button type="button" class="link keys" id="btnKeys">اختصارات (؟)</button>
       </div>
 
       <div class="cols">
         <ol class="ledger" id="ledger"></ol>
-        <aside class="transcript-wrap">
+        <aside class="side" id="side">
           <div class="video" id="video" hidden><iframe id="videoFrame" title="video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+          <div class="player" id="player">
+            <div class="side-head"><h2 id="mapTitle">خريطة المحاضرة</h2><span class="side-end" id="mapEnd"></span></div>
+            <audio id="audio" controls preload="metadata" hidden></audio>
+            <div class="map" id="map" role="group" aria-label="خريطة الاستشهادات على طول التسجيل"></div>
+            <div class="map-scale"><span id="mapStart">0:00</span><span class="noaudio" id="noAudio" hidden></span></div>
+          </div>
+          <div class="around" id="around">
+            <div class="side-head"><h2 id="aroundTitle">النص حول هذا الموضع</h2></div>
+            <p class="around-text" id="aroundText"></p>
+            <button type="button" class="quiet-btn" id="btnAroundAll">النص المفرَّغ كاملًا</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ---------- tab 3: the transcript ---------- -->
+    <div class="wrap panel" id="tabText" role="tabpanel" aria-labelledby="tabBtnText" hidden>
+      <div class="transcript-wrap">
+        <div class="sec-head">
           <h2 id="transcriptTitle">النص المفرَّغ</h2>
           <p class="tr-tools" id="trTools">
-            <button type="button" class="btn small line" id="btnRead">اقرأه كاملًا</button>
-            <button type="button" class="link" id="btnTxt">نزّله (TXT)</button>
-            <button type="button" class="link" id="btnSrt">بأزمنته (SRT)</button>
+            <button type="button" class="quiet-btn" id="btnRead">وضع القراءة</button>
+            <button type="button" class="quiet-btn" id="btnTxt">نزّله (TXT)</button>
+            <button type="button" class="quiet-btn" id="btnSrt">بأزمنته (SRT)</button>
           </p>
-          <form class="csearch" id="csearch" role="search">
-            <input type="text" enterkeyhint="search" id="csearchQ" dir="auto" placeholder="ابحث في المصادر" aria-label="ابحث في المصادر عن نص" autocomplete="off">
-            <button type="submit" class="btn small" id="csearchGo">ابحث</button>
-          </form>
-          <p class="tr-hint" id="trHint">ظلِّل نصًّا فاتَ الأداةَ للبحث عن مصدره. لتصحيح كلمة في استشهاد: حدِّده ثم اضغط الكلمة.</p>
-          <p class="fixbar" id="fixBar" role="status" hidden><span id="fixCount"></span> <button type="button" class="link" id="btnUndoFixes">تراجع عن كل التصحيحات</button></p>
-          <div class="transcript" id="transcript" role="group" aria-label="النص المفرَّغ"></div>
-        </aside>
+        </div>
+        <p class="tr-hint" id="trHint">ظلِّل نصًّا فاتَ الأداةَ للبحث عن مصدره. لتصحيح كلمة في استشهاد: حدِّده ثم اضغط الكلمة.</p>
+        <form class="csearch" id="csearch" role="search">
+          <input type="text" enterkeyhint="search" id="csearchQ" dir="auto" placeholder="ابحث في المصادر" aria-label="ابحث في المصادر عن نص" autocomplete="off">
+          <button type="submit" class="btn small" id="csearchGo">ابحث</button>
+        </form>
+        <p class="fixbar" id="fixBar" role="status" hidden><span id="fixCount"></span> <button type="button" class="link" id="btnUndoFixes">تراجع عن كل التصحيحات</button></p>
+        <div class="transcript" id="transcript" role="group" aria-label="النص المفرَّغ"></div>
       </div>
     </div>
   </section>
