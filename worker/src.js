@@ -840,13 +840,15 @@ async function ytRoute(req, env, cors) {
 // The system prompts are fixed here; the caller supplies only the items / facts and the question, all cut to size.
 // Measured on Groq's free tier (5 Oct 2026): 1,000 requests a day and 8,000 tokens a minute PER MODEL, so a model that is
 // busy gives way to the next in ASK_MODELS.
-// Live trials (eval/keyprobe/ask.mjs, ten check cases and eight questions): qwen answered the chat best and made no
-// harmful mistake as a checker; gpt-oss-120b once called a true quotation a coincidence. So a match is dismissed only
-// when BOTH models say "coincidence" ("0"); one voice alone, or no second answer, is a doubt ("?") and the match stays.
-const DEF_ASK_MODELS = "qwen/qwen3.8-27b,openai/gpt-oss-120b";
+// Live trials (eval/keyprobe/ask.mjs, ten check cases asked three ways, and eight questions): qwen worded the chat best;
+// as checkers, with the worked examples in the question, neither model called a true quotation a coincidence (15 of 15
+// each) and gpt-oss-120b recognised more of the coincidences (11 of 15; qwen 8 of 15) — but in an earlier form of the
+// question gpt-oss-120b did dismiss a true quotation once. So a match is dismissed only when BOTH models say
+// "coincidence" ("0"); one voice alone, or no second answer, is a doubt ("?"): the match stays in the ledger, marked.
+const DEF_ASK_MODELS = "qwen/qwen3.8-27b,openai/gpt-oss-120b", DEF_ASK_CHECK_MODELS = "openai/gpt-oss-120b,qwen/qwen3.8-27b";
 const DEF_ASK_DAILY_CAP = 800, DEF_ASK_IP_DAILY_CAP = 150, ASK_TIMEOUT_MS = 40_000;
 const askOn = (env) => !!env.GROQ_API_KEY && String(env.ASK || "").toLowerCase() !== "off";
-const askModels = (env) => { const m = String(env.ASK_MODELS || DEF_ASK_MODELS).split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9._/-]{3,60}$/i.test(x)); return m.length ? m.slice(0, 3) : DEF_ASK_MODELS.split(","); };
+const askModels = (env, check) => { const def = check ? DEF_ASK_CHECK_MODELS : DEF_ASK_MODELS, m = String((check ? env.ASK_CHECK_MODELS : env.ASK_MODELS) || def).split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9._/-]{3,60}$/i.test(x)); return m.length ? m.slice(0, 3) : def.split(","); };
 function askParams(model, mode) {
   // (measured: qwen's free tier refuses a request that MAY write more than 1,000 tokens)
   const id = model.toLowerCase(), reasons = id.includes("gpt-oss"), p = { temperature: 0, max_completion_tokens: mode === "chat" ? (reasons ? 900 : 500) : (reasons ? 400 : 40) };
@@ -886,7 +888,7 @@ async function askRoute(req, env, cors) {
   const g = await guard(env.CAP, specs, true);
   if (g.busy || g.over) return capResponse(g, cors);
 
-  const models = askModels(env); let last = 0, retry = null;
+  const models = askModels(env, !!items); let last = 0, retry = null;
   const note = (x) => { last = x.status || 0; if (x.status === 429 && x.retry) retry = x.retry; };
   if (items) {
     // the first model that answers in the form asked for gives the first voice

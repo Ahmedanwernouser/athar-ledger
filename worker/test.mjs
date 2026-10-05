@@ -715,14 +715,16 @@ sec("/ask: the checker and the chat (Groq)");
   eq((await call(ask({ mode: "check", items: [{ said: "no mark here at all", source: "some source text" }] }), baseEnv())).j.error, "bad_items", "/ask check: the stretch must be marked");
   eq((await call(ask({ mode: "chat", q: "" }), baseEnv())).j.error, "too_short", "/ask chat: an empty question");
   eq((await call(ask({ mode: "check", items: IT }, { headers: { Origin: "https://evil.example" } }), baseEnv())).status, 403, "/ask from another origin");
-  // check: two voices
-  up.calls = []; up.impl = (url, init) => said(JSON.parse(init.body).model.includes("qwen") ? "01" : "0")();
+  // check: two voices (the first is gpt-oss-120b, the second qwen)
+  up.calls = []; up.impl = (url, init) => said(JSON.parse(init.body).model.includes("gpt-oss") ? "01" : "0")();
   let r = await call(ask({ mode: "check", items: IT }), baseEnv());
-  ok(r.status === 200 && r.j.verdicts === "01" && up.calls.length === 2 && modelOf(up.calls[0]).includes("qwen") && JSON.parse(up.calls[1].init.body).messages[1].content.includes("ذو القعدة") && !JSON.parse(up.calls[1].init.body).messages[1].content.includes("من سلم"), "/ask check: what the first model calls a coincidence is put, alone, to a second model; both agree -> 0");
-  up.calls = []; up.impl = (url, init) => said(JSON.parse(init.body).model.includes("qwen") ? "01" : "1")();
+  ok(r.status === 200 && r.j.verdicts === "01" && up.calls.length === 2 && modelOf(up.calls[0]).includes("gpt-oss-120b") && modelOf(up.calls[1]).includes("qwen") && JSON.parse(up.calls[1].init.body).messages[1].content.includes("ذو القعدة") && !JSON.parse(up.calls[1].init.body).messages[1].content.includes("من سلم"), "/ask check: what the first model calls a coincidence is put, alone, to a second model; both agree -> 0");
+  up.calls = []; up.impl = (url, init) => said(JSON.parse(init.body).model.includes("gpt-oss") ? "01" : "1")();
   r = await call(ask({ mode: "check", items: IT }), baseEnv()); eq(r.j.verdicts, "?1", "/ask check: the second model disagrees -> a doubt, not a dismissal");
-  up.impl = (url, init) => (JSON.parse(init.body).model.includes("qwen") ? said("01")() : new Response("busy " + KEY, { status: 429 }));
+  up.impl = (url, init) => (JSON.parse(init.body).model.includes("gpt-oss") ? said("01")() : new Response("busy " + KEY, { status: 429 }));
   r = await call(ask({ mode: "check", items: IT }), baseEnv()); eq(r.j.verdicts, "?1", "/ask check: no second voice -> a doubt");
+  up.calls = []; up.impl = (url, init) => (JSON.parse(init.body).model.includes("gpt-oss") ? new Response("over capacity", { status: 503 }) : said("01")());
+  r = await call(ask({ mode: "check", items: IT }), baseEnv()); ok(r.j.verdicts === "?1" && up.calls.length === 3, "/ask check: the first model is down -> the other gives the first voice, and alone it cannot dismiss");
   up.calls = []; up.impl = said("11"); r = await call(ask({ mode: "check", items: IT }), baseEnv()); ok(r.j.verdicts === "11" && up.calls.length === 1, "/ask check: nothing called a coincidence -> one call");
   up.impl = said("The first one is a list of months, so 0. " + KEY); r = await call(ask({ mode: "check", items: IT }), baseEnv());
   ok(r.status === 200 && r.j.verdicts === null && !r.t.includes(KEY) && !r.t.includes("months"), "/ask check: an answer that is not the digits asked for -> nothing, and none of its words leave");

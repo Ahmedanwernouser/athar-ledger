@@ -73,7 +73,7 @@ const D = {
   "ck.n.1": ["مطابقة واحدة", "1 match"], "ck.n.2": ["مطابقتان", "{0} matches"], "ck.n.few": ["{0} مطابقات", "{0} matches"], "ck.n.many": ["{0} مطابقة", "{0} matches"],
   "ck.line": ["المطابقات القصيرة التي لم تسبقها عبارة استشهاد عُرضت على مدقّق (نموذجان لغويان، سؤال واحد: اقتباس أم تشابه عارض؟).", "Short matches that no cue announced were put to a checker (two language models, one question: quotation or coincidence?)."],
   "ck.out": ["استُبعدت {0} عدّها النموذجان تشابهًا عارضًا (أسفل السجل، ويمكن إعادتها).", "{0} set aside: both models called them a coincidence (listed under the ledger; they can be put back)."],
-  "ck.doubt": ["{0} شكّ فيها أحد النموذجين فبقيت وعليها علامة.", "{0} doubted by one model: kept, and marked."],
+  "ck.doubt": ["{0} شكّ فيها أحد النموذجين: بقيت في السجل وعليها علامة، ولم تدخل في بطاقات الملخص.", "{0} doubted by one model: kept in the ledger, marked, and left out of the summary's cards."],
   "ck.sure": ["{0} عُدّت اقتباسًا.", "{0} taken as quotations."],
   "ck.unasked": ["{0} لم تُدقَّق (المدقّق متوقف أو غير متاح): قد يكون بعضها تشابهًا عارضًا.", "{0} not checked (the checker is off or unavailable): some may be coincidences."],
   "ck.unasked.failed": ["{0} لم تُدقَّق لأن المدقّق لم يُجب الآن: قد يكون بعضها تشابهًا عارضًا.", "{0} not checked because the checker did not answer just now: some may be coincidences."],

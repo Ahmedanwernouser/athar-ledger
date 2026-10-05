@@ -1073,7 +1073,7 @@ function drawProgress() {
   drawCommittee();
   // the summary's cards: what needs a look (anything that is not a clean verbatim match), and how far the review is
   const by = {}; let needs = 0;
-  for (const e of S.ledger) { const s = st(e); if (s !== "verbatim" || flagsOf(e).length) { needs++; if (s !== "verbatim") by[s] = (by[s] || 0) + 1; } }
+  for (const e of S.ledger) { const s = st(e); if (s !== "verbatim" || flagsOf(e).length || verdictOf(e) === "?") { needs++; if (s !== "verbatim") by[s] = (by[s] || 0) + 1; } }
   $("statNeeds").textContent = needs ? counted("stat.place", needs) : t("stat.needs.none");
   $("statNeedsSub").textContent = needs ? [...STATUS_ORDER.filter(s => by[s]).map(s => `${num(by[s])} ${t("short." + s)}`), flagged ? t("stat.flags", num(flagged)) : ""].filter(Boolean).join(sep()) : n ? t("stat.needs.sub.none") : "";
   $("statRv").textContent = t("stat.rv", num(done), num(n)); $("statRvBar").style.width = (n ? 100 * done / n : 0) + "%";
@@ -1595,6 +1595,7 @@ function needCardEl(e) {
   const card = el("article", "dg-card need s-" + st(e) + " t-" + typeOf(e)), head = el("div", "need-head");
   head.append(kindPill(e), el("span", "status", t("status." + st(e))), el("span", "need-time", S.hasTimes ? fmtTime(e.start) : t("e.word", num(e.wordStart + 1))));
   for (const f of flagsOf(e)) head.append(el("span", "flagtag", t("flag." + f)));
+  if (verdictOf(e) === "?") head.append(el("span", "flagtag", t("ck.tag.q")));
   card.append(head, textBlock(cut(e.spoken), "dg-text need-text"));
   const near = e.status === "notfound" ? (e.suggestions || [])[0] : (e.candidates || [])[0] || e.source;
   if (near) { const label = srcLabel(near); card.append(mixed(el("p", "note", t("needs.near", label)), label)); }
@@ -1602,12 +1603,14 @@ function needCardEl(e) {
   card.append(b);
   return card;
 }
-const needsOf = () => S.ledger.filter(e => !digestItem(e) && (!textual(e) || flagsOf(e).length));
+/** what goes into the one-per-text summary: not a short match one model doubted (it stays in the ledger, marked, and is listed under "needs a look") */
+const inDigest = e => (verdictOf(e) === "?" ? null : digestItem(e));
+const needsOf = () => S.ledger.filter(e => !inDigest(e) && (!textual(e) || flagsOf(e).length || verdictOf(e) === "?"));
 async function drawDigest() {
   const job = ++digestJob, box = $("digest"), list = $("digestList");
   drawNeeds();
   const none = () => { box.hidden = true; list.textContent = ""; S.digestCards = []; drawStatTexts(0, 0); };
-  const items = S.ledger.map(digestItem).filter(Boolean);
+  const items = S.ledger.map(inDigest).filter(Boolean);
   if (!items.length) return none();
   let cards; try { cards = await call("digest", { items }); } catch { cards = null; }
   if (job !== digestJob) return;
