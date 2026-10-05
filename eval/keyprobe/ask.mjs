@@ -58,7 +58,10 @@ if (key) for (const model of MODELS) {
   let batch = "";
   for (const part of [CHECK.items.slice(0, 5), CHECK.items.slice(5)]) { const items = checkItems({ items: part }); const c = await ask(model, CHECK_SYSTEM, checkUser(items), false); batch += (c.raw != null && parseCheck(c.raw, items.length)) || "?".repeat(items.length); out.check.push({ model, how: "batch-part", raw: c.raw, http: c.http, tokens: c.tokens, error: c.error }); await sleep(5000); }
   out.check.push({ model, how: "batch5", want: CHECK.want, got: batch });
-  for (const t of CHATS) {
+  let pairs = "";
+  for (let k = 0; k < CHECK.items.length; k += 2) { const items = checkItems({ items: CHECK.items.slice(k, k + 2) }); const c = await ask(model, CHECK_SYSTEM, checkUser(items), false); pairs += (c.raw != null && parseCheck(c.raw, items.length)) || "?".repeat(items.length); await sleep(4000); }
+  out.check.push({ model, how: "batch2", want: CHECK.want, got: pairs });
+  for (const t of (process.env.PROBE_CHAT ? CHATS : CHATS.slice(1, 2))) {
     const inp = chatInput({ q: t.q, facts: t.facts });
     const r = await ask(model, CHAT_SYSTEM("ar"), chatUser(inp), true);
     out.chat.push({ model, name: t.name, expect: t.expect, parsed: r.raw != null ? parseChat(r.raw, inp) : null, raw: r.raw && r.raw.slice(0, 700), http: r.http, ms: r.ms, tokens: r.tokens, error: r.error });

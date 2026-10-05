@@ -1887,6 +1887,13 @@ async function searchFacts(q) {
     return { id: "S" + (i + 1), text: cutTo(text, CHAT.FACT), card: { kind: "search", c } };
   });
 }
+/** the facts that hold (nearly) all the content words of the question: found by counting words, not by a model */
+function aboutFacts(q, facts) {
+  const f = x => bare(x).replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/[^\u0621-\u064Aa-zA-Z\s]/g, " ").toLowerCase();
+  const ws = [...new Set(f(q).split(/\s+/).filter(w => w.length > 1 && !ASKING.test(w) && !/^(صحيح|صحيحه|ضعيف|موضوع|ال)$/.test(w)))];
+  if (ws.length < 3) return [];
+  return facts.filter(x => { const hay = " " + f(x.text) + " "; return ws.filter(w => hay.includes(" " + w + " ")).length >= Math.ceil(0.75 * ws.length); }).slice(0, 2).map(x => x.id);
+}
 function chatBubble(cls, label) { const b = el("div", "bubble " + cls); if (label) b.append(el("span", "bubble-by", label)); $("chatLog").append(b); return b; }
 function chatCards(facts, ids) {
   const box = el("div", "chat-cards"), byId = new Map(S.ledger.map(e => [e.id, e])), seen = new Set();
@@ -1916,7 +1923,10 @@ async function askChat(q) {
     if (a && typeof a.text === "string") {
       const b = chatBubble("it " + (a.type === "answer" ? "" : a.type), a.type === "answer" ? t("chat.by") : t("chat.by." + a.type));
       mixed(b.appendChild(el("p", null, a.text)), a.text);
-      if (a.type === "answer" && Array.isArray(a.ids) && a.ids.length) b.after(chatCards(facts, a.ids));
+      // the cards: what the model pointed at; and, whatever it said, a fact that plainly holds the words of the question
+      // (asked "is hadith X sound?" about a hadith the ledger has without a grading, a model may answer "not found" and name nothing)
+      const ids = [...new Set([...(a.type === "answer" && Array.isArray(a.ids) ? a.ids : []), ...(a.type === "refuse" ? [] : aboutFacts(q, facts))])];
+      if (ids.length) b.after(chatCards(facts, ids));
       S.chat.prev = cutTo(q + " ← " + a.text, CHAT.PREV);
     } else {
       // no model answer: what the page itself found is still shown, and said to be that
