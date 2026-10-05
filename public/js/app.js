@@ -44,7 +44,7 @@ const S = {
   run: 0, cur: null,                    // the analysis in progress or on screen; anything older must not touch the page
   words: [], ledger: [], hidden: new Set(), review: {}, reviewKey: "", hasTimes: false, duration: 0,
   title: "", titleKey: null, audioUrl: null, noAudio: "", warnings: [], openState: new Map(), sel: null,
-  info: null, corpus: "loading", corpusErr: "", samplesFailed: false,
+  info: null, corpus: "loading", corpusErr: "", samplesFailed: false, samples: [],
   err: null, busy: null, packNote: null,
   meaning: { state: "idle", done: 0, total: 0, hit: 0 },
   // the reviewer's own work on this transcript (kept in localStorage next to the verdicts, and in a saved session)
@@ -107,6 +107,18 @@ function goStart() {
   $("startTitle").focus({ preventScroll: true });
 }
 
+/** the sample cards, in the language of the page (a sample's own language does not decide how it is described) */
+function drawSamples() {
+  const box = $("samples"); box.textContent = "";
+  for (const s of S.samples || []) {
+    const ar = getLang() === "ar", title = (ar ? s.title_ar : s.title_en) || s.title, note = (ar ? s.note_ar : s.note_en) || s.note;
+    const b = el("button", "sample"); b.type = "button"; b.dir = dirOf(title); b.lang = scriptOf(title);
+    b.append(el("b", null, title), el("small", null, note));
+    b.onclick = () => runSample(s);
+    box.append(b);
+  }
+}
+
 // ---------------- language ----------------
 function applyLang(l) {
   setLang(l); store.set("athar:lang", getLang());
@@ -116,7 +128,7 @@ function applyLang(l) {
   $("dropMain").textContent = t(CFG.asrUrl ? "drop.on" : "drop.off"); $("dropSub").textContent = t(CFG.asrUrl ? "drop.on2" : "drop.off2");
   $("corpusRetry").textContent = t("corpus.retry");
   $("samplesErr").hidden = !S.samplesFailed; $("samplesErr").textContent = S.samplesFailed ? t("err.samples") : "";
-  drawPackLabels(); drawProviders();
+  drawPackLabels(); drawProviders(); drawSamples();
   if (S.err) $("startErr").textContent = say(S.err);
   if (S.busy) $("busyMsg").textContent = say(S.busy);
   if (!$("results").hidden) render();
@@ -150,13 +162,7 @@ function boot() {
   $("ytForm").onsubmit = ev => { ev.preventDefault(); const id = youtubeId($("ytUrl").value.trim()); if (!id) return showError(msg("err.yt.link")); runYoutube(id); };
   $("asrProv").onchange = () => store.set("athar:asrprov", $("asrProv").value);
   fetch(new URL("../samples/manifest.json", import.meta.url)).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then(list => {
-    for (const s of list) {
-      const ar = getLang() === "ar", title = (ar && s.title_ar) || s.title, note = (ar && s.note_ar) || s.note;
-      const b = el("button", "sample"); b.type = "button"; b.dir = dirOf(title); b.lang = scriptOf(title);
-      b.append(el("b", null, title), el("small", null, note));
-      b.onclick = () => runSample(s);
-      $("samples").append(b);
-    }
+    S.samples = list; drawSamples();
   }).catch(() => { S.samplesFailed = true; $("samplesErr").textContent = t("err.samples"); $("samplesErr").hidden = false; });
 
   // the value is cleared so that choosing the same file again (after an error, or with another language) starts again
@@ -274,7 +280,7 @@ let mapRove = null, trRove = null;
 const packs = new Map();      // id -> {id, ar, en, mb, lab, cb, state: "none"|"loading"|"loaded", promise}
 const packFail = new Map();   // id -> technical detail of the last failed load (cleared when the pack loads)
 let packQueue = Promise.resolve(), packFails = 0;
-const packName = id => { const p = packs.get(id); return !p ? id : getLang() === "en" && p.en ? p.en : p.ar; };
+const packName = id => { const p = packs.get(id); return !p ? id : getLang() === "en" ? p.en || tOpt("pack.name." + id) || p.ar : p.ar; };
 const packsChosen = () => store.get("athar:packs", []).filter(id => typeof id === "string");
 const packsWanted = () => packsChosen().filter(id => packs.has(id) && packs.get(id).state === "none");
 function choose(id, on) { const cur = new Set(packsChosen()); on ? cur.add(id) : cur.delete(id); store.set("athar:packs", [...cur]); }
@@ -1047,12 +1053,30 @@ function quranBlock(s, cls = "", limitWords = 0) {
   f.append(textBlock(ayahDigits(text), cls));
   return f;
 }
+/**
+ * "Show the whole hadith": the text is in the library, so nobody has to leave the page to read it. `s.arabic` is the whole
+ * text (in the original wording when the worker attached it); nothing is offered when what is shown is already all of it.
+ */
+function wholeToggle(s, shown) {
+  if (!s || s.type !== "h" || s.via === "en" || !s.arabic) return null;
+  const strip = x => String(x || "").replace(/…/g, "").replace(/\s+/g, " ").trim();
+  if (strip(shown) && strip(shown).length >= strip(s.arabic).length - 2) return null;
+  const f = el("div", "whole"), b = el("button", "btn small line whole-btn", t("e.whole")); b.type = "button"; b.setAttribute("aria-expanded", "false");
+  let box = null;
+  b.onclick = () => {
+    if (!box) { box = s.original ? origBlock(s.arabic, "whole-text") : textBlock(s.arabic, "whole-text"); f.append(box); }
+    else box.hidden = !box.hidden;
+    const open = !box.hidden; b.textContent = t(open ? "e.whole.hide" : "e.whole"); b.setAttribute("aria-expanded", String(open));
+  };
+  f.append(b); return f;
+}
 const ayahDigits = text => text.replace(/﴿(\d+)﴾/g, (_, k) => `﴿${Number(k).toLocaleString("ar-EG", { useGrouping: false })}﴾`);
 const isQuran = s => !!(s && s.type === "q" && s.display);
 function candBlock(k) {
   const c = el("div", "cand"); c.append(sourceLine(k, false));
   c.append(isQuran(k) ? quranBlock(k) : excerptBlock(k));        // a verse is always shown as it is written, never as search words
   if (k.translation && getLang() === "en" && (isQuran(k) || dirOf(k.excerpt) === "rtl")) c.append(textBlock(k.translation.text));
+  const w = wholeToggle(k, k.excerptDisplay || k.excerpt); if (w) c.append(w);
   return c;
 }
 function details(e, name, summary, ...children) {
@@ -1674,6 +1698,7 @@ function lookupCandidate(c, canAdd) {
   const text = cut(orig || matched || s.excerpt || s.arabic || "");
   if (isQuran(s)) li.append(quranBlock(s, "cand-text", 70)); else if (text) li.append(orig ? origBlock(text, "cand-text") : textBlock(text, "cand-text"));
   if (s.translation && getLang() === "en") li.append(textBlock(cut(s.translation.text), "cand-text"));
+  { const w = wholeToggle(s, text); if (w) li.append(w); }
   if (canAdd) { const b = el("button", "btn small", t("lk.add")); b.type = "button"; b.onclick = () => addManual(c); li.append(b); }
   return li;
 }

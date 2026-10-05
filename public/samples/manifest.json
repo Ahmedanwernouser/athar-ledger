@@ -3,13 +3,17 @@
   "id": "demo-clean",
   "title": "محاضرة قصيرة عن حسن الخلق",
   "note": "نص تجريبي كتبه مساعد ذكاء اصطناعي (Claude) لغرض العرض، وليس محاضرة حقيقية (بلا صوت؛ الأزمنة تقديرية). فيه آيات وأحاديث حرفية، حديث بلفظ مغيَّر، نسبة منطوقة لا توافق المصادر، اقتباس بالمعنى، وعبارتان شائعتان لا توجدان في المصادر.",
-  "transcript": "samples/demo-clean.json"
+  "transcript": "samples/demo-clean.json",
+  "title_en": "A short Arabic lecture on good character",
+  "note_en": "Sample Arabic text written by an AI assistant (Claude) for demonstration, not a real lecture (no audio; times are estimated). It has verses and hadith said word for word, a hadith with changed wording, a spoken attribution that does not match the sources, a paraphrase, and two popular sayings that are not in the sources."
  },
  {
   "id": "demo-noisy",
   "title": "المحاضرة نفسها بعد محاكاة أخطاء التفريغ",
   "note": "النص نفسه بعد إفساد ١٢٪ من كلماته آليًّا (محاكاة لأخطاء التفريغ الصوتي) لإظهار كيف يُعلِّم السجلُّ الفروق المحتملة.",
-  "transcript": "samples/demo-noisy.json"
+  "transcript": "samples/demo-noisy.json",
+  "title_en": "The same lecture after simulated transcription errors",
+  "note_en": "The same text after 12% of its words were corrupted automatically (a simulation of speech-recognition errors), to show how the ledger marks likely differences."
  },
  {
   "id": "demo-en",

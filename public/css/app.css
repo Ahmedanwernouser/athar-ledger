@@ -981,3 +981,8 @@ html[dir=rtl] .reader-text[dir=rtl] .rt, .reader-text[dir=rtl] .rt { margin: 0 0
 .dg-at { font-size: .82rem; }
 @media (max-width: 640px) { .digest { padding: 10px 12px 12px; } .dg-card { padding: 10px 12px; } .dg-text { font-size: 1.08rem; } }
 @media print { .dg-text.folded { max-height: none; -webkit-mask-image: none; mask-image: none; } .dg-more { display: none; } .dg-card { break-inside: avoid; } .dg-text .unsaid { color: #777; } }
+
+/* the whole hadith, opened in place */
+.whole { margin-top: 8px; }
+.whole-text { margin: 10px 0 0; padding: 12px 14px; background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r-s); line-height: 2.1; }
+@media print { .whole-btn { display: none; } }
