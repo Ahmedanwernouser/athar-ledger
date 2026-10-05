@@ -31,6 +31,10 @@ export function gradeSummary(source, parallels = []) {
   const also = alsoIn ? alsoIn.collection : null;
   const gs = (source.grades || []).map(g => ({ ...g, cls: gradeClass(g.grade) })).filter(g => g.cls !== "neutral");
   if (!gs.length) {
+    // A compilation (the Forty of an-Nawawi, Riyad as-Salihin) records no grading of its own: the grading is that of the
+    // collection the hadith is taken from, when the same hadith was found there too. It is said whose narration was graded.
+    const via = (parallels || []).find(p => p && p.type === "h" && !p.weak && p.collection && p.collection !== source.collection && (p.grades || []).some(g => gradeClass(g.grade) !== "neutral"));
+    if (via) { const r = gradeSummary({ ...via }, (parallels || []).filter(p => p !== via && p.collection !== source.collection)); if (r && r.kind !== "none" && r.kind !== "sahihayn") return { ...r, also: r.also || also, via }; }
     const kindOnly = (source.grades || [])[0];
     return { kind: "none", also, ...(kindOnly ? { note: kindOnly.grade } : {}) };
   }

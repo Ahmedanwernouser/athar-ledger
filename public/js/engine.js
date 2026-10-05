@@ -10,7 +10,7 @@
 // no substituted, added or omitted word. Split/glued words and a few mis-heard NON-words are tolerated as transcription
 // artefacts; a spoken form that is itself a real word (يكفر for يغفر) is a wording difference. Everything else that
 // still clears the evidence thresholds is "partial", with the differences listed in `diff`.
-import { tokenizeTranscript, stem, isLatin, wordText, fold, normMixed } from "./text.js";
+import { tokenizeTranscript, stem, isLatin, wordText, fold, normMixed, takhrijMask } from "./text.js";
 import { align, summarize } from "./align.js";
 import { SEM, semText } from "./sem.js";
 import { findCues, findGradings, findCollectionSpans, findQuranReferences, formulaMask, dhikrMask, DEVOTIONAL, FUNCTION_WORDS, QURAN_HOMOGRAPHS, OPEN_PARTICLES } from "./cues.js";
@@ -878,19 +878,22 @@ export function analyze(words, corpus, options = {}) {
     const weakBooks = [];
     for (const m of (c.weak || []).slice().sort((x, y) => rank(y) - rank(x) || y.sum.q - x.sum.q || srank(x) - srank(y))) {
       // a weak-books passage that only partly shares the words of a text the ordinary books hold well, and says nothing about its rank, is a book merely quoting it
-      if (rank(m) < 3 || (!c.weakOnly && rank(m) <= rank(c.best) && !corpus.describe(m.pidA, m.pidB).bookWords)) continue;
-      const w = corpus.describe(m.pidA, m.pidB);
+      // the book's verdict words are shown only when they can be about THIS text: in the same passage, after the text begins,
+      // close to its end, and before the next hadith of the book opens (corpus.bookWordsFor)
+      const about = m.pidA === m.pidB ? corpus.bookWordsFor(m.pidA, m.ps, m.pe) : "";
+      if (rank(m) < 3 || (!c.weakOnly && rank(m) <= rank(c.best) && !about)) continue;
+      const w = { ...corpus.describe(m.pidA, m.pidB), bookWords: about };
       if (weakBooks.some(x => x.collection === w.collection)) continue;
       weakBooks.push({ ...w, q: +m.sum.q.toFixed(3), status: m.status, statusAr: STATUS[m.status].ar, evidence: +m.sum.evidence.toFixed(1) });
     }
+    const shown = renderDiff(b, tok, metaMask);
     const entry = {
       ts: c.ts, te: c.te, wordStart: src[c.ts], wordEnd: src[c.te - 1],
       start: wordTime(c.ts).start ?? null, end: wordTime(c.te - 1).end ?? null,
       spoken: spokenText(c.ts, c.te),
       type: c.weakOnly ? "h" : d.type, status: b.status, statusAr: STATUS[b.status].ar, fidelity: STATUS[b.status].fidelity,
       weakBooks, weakOnly: !!c.weakOnly, inNormalBooks: !c.weakOnly, weakSearched: corpus.hasWeak(),
-      agreement: +b.sum.q.toFixed(3),
-      counts: { exact: b.sum.exact, asr: b.sum.asr + b.sum.join, near: b.sum.near, diff: b.sum.diff, added: b.sum.ins, omitted: b.sum.del },
+      ...countsOf(shown, b.sum),
       evidence: +b.sum.evidence.toFixed(1),
       // of the agreeing words, those that are not function words (particles, prepositions, pronouns), and their evidence
       contentWords: b.sum.content, contentEvidence: +b.sum.contentEvidence.toFixed(1),
@@ -901,7 +904,7 @@ export function analyze(words, corpus, options = {}) {
       source: uniq[0],
       parallels: uniq.slice(1).filter(s => s.type !== "b" || uniq[0].type === "b"),
       inBooks: uniq[0].type === "b" ? [] : uniq.slice(1).filter((s, i, arr) => s.type === "b" && arr.findIndex(x => x.label === s.label) === i).slice(0, 8),
-      diff: renderDiff(b, tok),
+      diff: shown,
       cue: cue ? cue.kind : null,
       attribution: null,
     };
@@ -1287,15 +1290,30 @@ function cueEndBefore(X, ts) {
 }
 
 /** word-by-word comparison for display: spoken vs source */
-function renderDiff(m, tok) {
-  const out = [];
+function renderDiff(m, tok, spokenMeta = null) {
+  const out = [], tk = m.isQ ? null : takhrijMask(m.P);
   for (const o of m.ops) {
     const sp = o.ti >= 0 ? tok[m.tOff + o.ti] + (o.ti2 != null ? " " + tok[m.tOff + o.ti2] : "") : "";
     const so = o.pi >= 0 ? m.P[o.pi] + (o.pi2 != null ? " " + m.P[o.pi2] : "") : "";
     const kind = o.op === "joinT" || o.op === "joinP" ? "asr" : o.op;
-    out.push({ kind, spoken: sp, source: so });
+    // the source's note on where the hadith is from (takhrijMask), or the speaker's own ("أخرجه الترمذي وقال…"): not the hadith's wording
+    const meta = !!tk && (o.pi >= 0 ? tk[o.pi] === 1 : !!spokenMeta && o.ti >= 0 && spokenMeta[m.tOff + o.ti] === 1);
+    out.push(meta ? { kind, spoken: sp, source: so, meta: true } : { kind, spoken: sp, source: so });
+  }
+  // words the speaker put in between two words of the source's note belong to his own note ("وزاد الإمام أحمد")
+  if (tk) for (let i = 0; i < out.length; i++) if (!out[i].meta && out[i].kind === "ins") {
+    let a = i - 1, b = i + 1; while (a >= 0 && out[a].kind === "ins" && !out[a].meta) a--; while (b < out.length && out[b].kind === "ins" && !out[b].meta) b++;
+    if (a >= 0 && b < out.length && out[a].meta && out[b].meta) out[i].meta = true;
   }
   return out;
+}
+/** the counts and the agreement of a comparison, the notes on the source left out (they are not the wording of the text) */
+function countsOf(diff, sum) {
+  if (!diff.some(d => d.meta)) return { counts: { exact: sum.exact, asr: sum.asr + sum.join, near: sum.near, diff: sum.diff, added: sum.ins, omitted: sum.del }, agreement: +sum.q.toFixed(3) };
+  const c = { exact: 0, asr: 0, near: 0, diff: 0, added: 0, omitted: 0 };
+  for (const d of diff) if (!d.meta) c[d.kind === "ins" ? "added" : d.kind === "del" ? "omitted" : d.kind]++;
+  const cols = c.exact + c.asr + c.near + c.diff + c.added + c.omitted;
+  return { counts: c, agreement: cols ? +((c.exact + c.asr + 0.7 * c.near) / cols).toFixed(3) : +sum.q.toFixed(3) };
 }
 
 /**

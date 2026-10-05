@@ -3,7 +3,7 @@ import { Corpus, httpFetcher } from "./corpus.js";
 import { analyze } from "./engine.js";
 import { resolveByMeaning, applyMeaning } from "./meaning.js";
 import { llmClient } from "./asr.js";
-import { norm } from "./text.js";
+import { norm, takhrijMask } from "./text.js";
 import { lookup, describeRef } from "./lookup.js";
 import { HadithDisplay, wordsOf } from "./display.js";
 import { SemIndex, fetchVectors } from "./sem.js";
@@ -530,8 +530,10 @@ export function buildDigest(items) {
     const wordings = f.map(g => {
       const pid = corpus.coreRef.get(g.ref), toks = corpus.tok(pid), chain = corpus.chainLen(pid), o = origOf(pid);
       const said = new Set(); for (const it of g.items) if (it.keyed) for (const p of it.said) if (p >= chain && p < toks.length) said.add(p);
+      // the source's own note on the hadith ("رواه الترمذي وقال…") is shown with the text but is not part of "how much of it was said"
+      const tk = takhrijMask(toks); let notes = 0, saidNotes = 0; for (let i = chain; i < toks.length; i++) if (tk[i]) { notes++; if (said.has(i)) saidNotes++; }
       const text = o ? (i, j) => o.pieces.slice(o.at[i], j + 1 < o.at.length ? o.at[j + 1] : o.pieces.length).join(" ") : (i, j) => toks.slice(i, j + 1).join(" ");
-      return { source: decorateSource(corpus.describe(pid)), segs: runs(chain, toks.length, said, text), total: toks.length - chain, said: said.size, original: !!o, ids: g.items.map(it => it.id) };
+      return { source: decorateSource(corpus.describe(pid)), segs: runs(chain, toks.length, said, text), total: toks.length - chain - notes, said: said.size - saidNotes, original: !!o, ids: g.items.map(it => it.id) };
     }).sort((x, y) => y.ids.length - x.ids.length || y.said - x.said);
     cards.push({ type: "h", ids: wordings.flatMap(w => w.ids), wordings });
   }

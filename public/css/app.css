@@ -1559,3 +1559,6 @@ html[data-theme="dark"] .err .quiet-btn { background: var(--gold); color: #1B140
 @media print { #results #tabChat, #results #tabChat[hidden], .chat-screen { display: none !important; } }
 .chat-found .lookup-list { margin: 0; }
 .chat-found .lk { background: none; padding: 0; border: 0; border-radius: 0; }
+
+/* a note on the source inside a compared text ("رواه الترمذي وقال حديث حسن صحيح"): shown, not counted, not coloured */
+.w-meta { opacity: .55; font-size: .92em; }

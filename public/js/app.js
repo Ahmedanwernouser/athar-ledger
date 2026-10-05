@@ -4,6 +4,7 @@ import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProvi
 import { compareLedgers, applyAgreement, marksOf, statusOf, timeTolerance } from "./agree.js";
 import { flagsOf } from "./flags.js";
 import { gradeSummary } from "./grade.js";
+import { gradeLine } from "./report.js";
 import { digestItem } from "./digest.js";
 import { toCsv, toJson, download } from "./exporter.js";
 import { citedDocx, toSession, fromSession, parseStampedText, youtubeId, cleanManual, cleanFixes, committeeSummary, summaryLines, descriptionIndex, transcriptParagraphs, transcriptText, transcriptSrt } from "./report.js";
@@ -561,7 +562,8 @@ async function runYoutube(id, resume = null) {
   if (res.truncated) warnings.push(msg("warn.yt.cut"));
   if (res.thin && res.thin.length) { const parts = res.thin.slice(0, 6); warnings.push(msg("warn.yt.thin", () => parts.map(([a, b]) => `${fmtTime(a)}–${fmtTime(b)}`).join(getLang() === "ar" ? "، " : ", "))); }
   if (res.partial) { const why = asrMsg(res.partial.why), upTo = res.partial.upTo; warnings.push(msg("warn.yt.partial", () => fmtTime(upTo), () => fmtTime(res.seconds), () => say(why))); }
-  const title = res.title ? (res.author ? `${res.title} — ${res.author}` : res.title) : t("yt.title", id);
+  // (a title that already carries the channel's name is not given it a second time)
+  const title = res.title ? (res.author && !res.title.includes(res.author) ? `${res.title} — ${res.author}` : res.title) : t("yt.title", id);
   await runWords(run, res.words, { title, video: id, warnings, transcribers: [who], fromLink: true, review: resume ? resume.review : null });
   if (live(run) && res.partial) { S.ytResume = { id, lang, res }; drawNotices(); }
 }
@@ -1205,6 +1207,7 @@ const heardBy2 = mark => (!mark ? "" : mark.b == null ? t("two.heard.out") : mar
 function wordSpan(d, mark) {
   const said = d.spokenDisplay || d.spoken;      // the word as transcribed when the worker could tie it to the transcript
   const f = document.createDocumentFragment(), words = saidWords(said, d.spokenDisplay ? d.wordIdx : null);
+  if (d.meta) { const m = el("span", "w-meta"); m.append(words); m.title = t("d.meta"); f.append(m, " "); return f; }      // a note on the source, not the wording of the text
   if (d.kind === "exact" && !mark) { f.append(words, " "); return f; }
   const cls = { asr: "w-asr", near: "w-near", diff: "w-diff", ins: "w-ins" }[d.kind] || "";
   const s = el("span", [cls, mark ? "ag ag-" + mark.c : ""].filter(Boolean).join(" ")); s.append(words);
@@ -1223,6 +1226,7 @@ function spokenBlock(e) {
 /** the source side of one compared word. `text` is the verbatim display word for the Qur'an, the stored word otherwise. */
 function sourceSpan(d, text, mark) {
   if (!text) return null;
+  if (d.meta) { const m = el("span", "w-meta", text); m.title = t("d.meta"); const g = document.createDocumentFragment(); g.append(m, " "); return g; }
   if (d.kind === "exact" || d.kind === "asr") return document.createTextNode(text + " ");
   const s = el("span", (d.kind === "del" ? "w-del" : d.kind === "diff" ? "w-diff" : "w-near") + (mark ? " ag ag-" + mark.c : ""), text);
   const tip = [d.spoken ? d.spokenDisplay || d.spoken : "", mark ? t("two.mark." + mark.c) : "", heardBy2(mark)].filter(Boolean);
@@ -1533,19 +1537,6 @@ function drawReview(e) {
 
 /** The ledger is drawn a screenful first and the rest in slices, so a long one shows at once. */
 let ledgerJob = 0, flushLedger = () => {};
-/** the recorded standing of a hadith source as one tag (grade.js), or null for anything else */
-function gradeLine(src, parallels) {
-  const g = gradeSummary(src, parallels); if (!g) return null;
-  const who = by => (by.length > 1 ? t("g.by.more", by[0], num(by.length - 1)) : by[0]);
-  const also = g.also ? t("g.also", t("col." + g.also)) : "";
-  let text, cls = "", title = t("g.title");
-  if (g.kind === "sahihayn") { text = t("g.sahihayn", t("col." + g.collection)); cls = "ok"; title = t("g.sahihayn.title"); }
-  else if (g.kind === "strong") { text = t("g.one", g.grade, who(g.by)) + also; cls = "ok"; }
-  else if (g.kind === "weak") { text = t("g.one", g.grade, who(g.by)) + also; cls = "warn"; }
-  else if (g.kind === "mixed") { text = t("g.mixed", g.strong.grade, who(g.strong.by), g.weak.grade, who(g.weak.by)) + also; cls = "mix"; }
-  else { text = (g.note ? g.note + " · " : "") + t("g.none") + also; cls = g.also ? "ok" : "quiet"; }
-  return { text, cls, title };
-}
 function gradeChip(src, parallels) {
   const g = gradeLine(src, parallels); if (!g) return null;
   const x = mixed(el("span", "tag grade " + g.cls, g.text), g.text); x.title = g.title;
@@ -1583,7 +1574,7 @@ function digestCardEl(c, byId) {
   c.wordings.forEach((w, wi) => {
     const sec = el("div", "dg-wording" + (wi ? " also" : "")), mine = w.ids.map(id => byId.get(id)).filter(Boolean);
     const gc = c.type === "h" ? gradeChip(w.source, mine.flatMap(e => e.parallels || [])) : null;
-    const line = sourceLine(w.source, true, { chip: gc, dorar: w.segs.filter(g => g.said).map(g => g.t).join(" ") });
+    const line = sourceLine(w.source, true, { chip: gc, dorar: (() => { const k = w.segs.findIndex(g => g.said); return w.segs.slice(Math.max(k, 0)).map(g => g.t).join(" "); })() });      // the text as it stands in the source from the first word that was said — never said words stitched together across a gap
     line.prepend(wi ? el("span", "dg-as", t("dg.also")) : el("span", "kindpill k-" + c.type, t("dg.kind." + c.type)));
     sec.append(line);
     const p = el("p", "dg-text rtl" + (w.original ? " orig" : "") + (c.type === "q" ? " quran" : "")); p.dir = "rtl"; p.lang = "ar";
@@ -1636,7 +1627,7 @@ async function drawDigest() {
   const byId = new Map(S.ledger.map(e => [e.id, e]));
   S.digestCards = cards;
   const nH = cards.filter(c => c.type === "h").length, nQ = cards.length - nH;
-  $("digestGlance").textContent = [nH && t("dg.count.h", num(nH)), nQ && t("dg.count.q", num(nQ))].filter(Boolean).join(sep());
+  $("digestGlance").textContent = [nH && counted("stat.h", nH), nQ && counted("stat.q", nQ)].filter(Boolean).join(sep());
   drawStatTexts(nH, nQ);
   list.textContent = "";
   for (const c of cards) list.append(digestCardEl(c, byId));

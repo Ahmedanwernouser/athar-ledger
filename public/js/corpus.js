@@ -2,7 +2,7 @@
 // (tafsir, fiqh, seerah, aqeedah, more hadith), each with its own shingle indexes. Passage ids are global:
 // the core comes first, packs are appended in the order they are loaded.
 // Works in the browser (fetch) and in Node (fs) through an injected `fetcher(name, kind)`.
-import { fold, fnv1a, stem, normEn, noteMaqsura } from "./text.js";
+import { fold, fnv1a, stem, normEn, noteMaqsura, norm } from "./text.js";
 import { Vectors } from "./vectors.js";
 
 export const SURAHS = ["الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس","هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه","الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم","لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر","فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق","الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة","الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج","نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس","التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","المسد","الإخلاص","الفلق","الناس"];
@@ -386,6 +386,36 @@ export class Corpus {
   /** Jalalayn's commentary on an ayah, if the tafsir pack is loaded */
   tafsirOf(surah, ayah) { const pid = this.tafsirPid.get(`${surah}:${ayah}`); return pid == null ? null : this.P[pid].n; }
 
+  /**
+   * Where in a passage of a weak-hadith book its own verdict words ("g") stand: {at, end, open} in the passage's words, or
+   * null when they are not in THIS passage. (The build step also copied a verdict from the passage that FOLLOWS when a
+   * passage had none of its own — and such books list one hadith after another, so that verdict is usually about the
+   * next hadith. Found on 5 Oct 2026: a hadith of Sahih Muslim shown with another hadith's "باطل… كذب". A verdict that
+   * is not in the passage is therefore never shown.)  open = the excerpt itself opens a new entry "(…" before its end.
+   */
+  verdictAt(pid) {
+    const p = this.P[pid]; if (!p || !p.g) return null;
+    if (p._g !== undefined) return p._g;
+    const g = norm(p.g).split(" ").filter(Boolean), tk = this.tok(pid); let at = -1;
+    const k = Math.min(g.length, 5);
+    if (k >= 3) outer: for (let i = 0; i + k <= tk.length; i++) { for (let j = 0; j < k; j++) if (tk[i + j] !== g[j]) continue outer; at = i; break; }
+    return (p._g = at < 0 ? null : { at, end: Math.min(tk.length, at + g.length) });
+  }
+  /**
+   * The book's verdict words for a text matched at words [ps, pe) of the passage — only when they can be ABOUT that text:
+   * they begin after the text begins, and not more than `reach` words after it ends, with no new entry opened in between
+   * (an entry of such a book opens with "(" before its hadith). Otherwise "".
+   */
+  bookWordsFor(pid, ps, pe, reach = 30) {
+    const p = this.P[pid], v = this.verdictAt(pid); if (!v) return "";
+    if (v.end <= ps || v.at > pe + reach) return "";
+    // the printed excerpt: a "(" after the matched text and before the verdict's own words opens another hadith
+    const raw = String(p.g), cut = raw.indexOf("("), close = raw.indexOf(")");
+    if (cut >= 0 && v.at >= pe) { const before = norm(raw.slice(0, cut)).split(" ").filter(Boolean).length; if (v.at + before >= pe && before < 7) return ""; }
+    if (close >= 0 && (cut < 0 || close < cut) && v.at >= pe) { /* the excerpt begins inside an entry's heading and closes it: the verdict follows that heading, not ours */ const head = norm(raw.slice(0, close)).split(" ").filter(Boolean).length; if (v.at + head > pe) return ""; }
+    return raw;
+  }
+
   /** Human label + deep link for a passage (or an ayah range pidA..pidB). */
   describe(pid, pidEnd = pid) {
     const p = this.P[pid];
@@ -421,7 +451,7 @@ export class Corpus {
       }
       const where = p.p ? ` — ${p.v ? "ج" + arNum(p.v) + " " : ""}ص${arNum(p.p)}` : "";
       return { type: "b", domain: bk.domain, domainAr: bk.domain_ar, collection: key, book: bk.title, author: bk.author, heading: p.h || "",
-        ...(bk.domain === "hadith-weak" ? { weak: true, weakKind: bk.kind === "mushtahir" ? "mushtahir" : "mawdu", bookWords: p.g || "" } : {}),
+        ...(bk.domain === "hadith-weak" ? { weak: true, weakKind: bk.kind === "mushtahir" ? "mushtahir" : "mawdu", bookWords: this.verdictAt(pid) ? p.g : "" } : {}),
         label: `${bk.title}، ${bk.author}${where}`, short: `${bk.title}${where}`, url: null, ref: p.r };
     }
     const [col, num] = p.r.split(":");

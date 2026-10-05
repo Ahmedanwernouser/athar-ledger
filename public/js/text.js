@@ -241,3 +241,33 @@ export function fmtTime(sec) {
   const p = x => String(x).padStart(2, "0");
   return h ? `${h}:${p(m)}:${p(r)}` : `${m}:${p(r)}`;
 }
+
+// ---------------- takhrij inside a stored hadith text ----------------
+// A compilation (the Forty of an-Nawawi, Riyad as-Salihin, Bulugh al-Maram) prints, after or inside the hadith, where it
+// is from and what was said of it: «رواه الترمذي [رقم: 2516] وقال: حديث حسن صحيح. وفي رواية غير الترمذي: …»; at-Tirmidhi
+// ends his own with «قال أبو عيسى هذا حديث حسن صحيح». These words are not the wording of the hadith: a speaker who says
+// «أخرجه الترمذي» where the book has «رواه الترمذي» has not changed the hadith. They are found by form — a word that
+// opens such a note, then every following word that belongs to the vocabulary of such notes — and are left out of the
+// count of differences and of "how much of the text was said". (Tokens are in the search form: norm().)
+const TK_COLLECTORS = ["البخاري", "مسلم", "الترمذي", "النسائي", "داود", "ماجه", "احمد", "مالك", "الدارمي", "الحاكم", "البيهقي", "الطبراني", "الدارقطني", "حبان", "خزيمه", "البزار", "يعلي", "شيبه", "الشيخان", "الشافعي", "عيسي", "عبد", "الرزاق", "الامام", "ابن", "ابو", "ابي", "الموطا", "المسند", "السنن", "الصحيحين", "الصحيح", "صحيحه", "صحيحيهما", "مسنده", "سننه", "المستدرك", "الجامع", "الكبير", "الاوسط", "الصغير", "وغيره", "وغيرهما", "وغيرهم"];
+const TK_WORDS = new Set([...TK_COLLECTORS, "قال", "حديث", "حسن", "صحيح", "غريب", "ضعيف", "جيد", "في", "روايه", "روايته", "غير", "رقم", "عليه", "اللفظ", "له", "لفظ", "لفظه", "بلفظ", "باسناد", "اسناده", "سنده", "بسند", "صححه", "حسنه", "ضعفه", "هذا", "عن", "من", "علي", "شرط", "شرطهما", "هما", "زاد", "الوجه", "لا", "نعرفه", "الا", "هكذا", "اخرجه", "رواه", "رواها", "خرجه", "متفق", "ايضا", "وهو", "هو", "كتاب", "باب"]);
+const tkBase = w => (TK_WORDS.has(w) ? w : w.length > 2 && (w[0] === "و" || w[0] === "ف" || w[0] === "ل") ? (TK_WORDS.has(w.slice(1)) ? w.slice(1) : w.startsWith("لل") && TK_WORDS.has("ال" + w.slice(2)) ? "ال" + w.slice(2) : "") : "");
+const TK_OPEN = new Set(["رواه", "رواها", "اخرجه", "خرجه"]);
+const TK_NAMES = new Set([...TK_COLLECTORS.filter(w => !["ابن", "ابو", "ابي", "عبد", "الامام", "الكبير", "الاوسط", "الصغير"].includes(w)), "حسن", "صحيح", "ضعيف", "غريب", "متفق"]);
+const tkCache = new WeakMap();
+/** @param toks  the words of a stored hadith text in search form  ->  Uint8Array, 1 where a word belongs to such a note */
+export function takhrijMask(toks) {
+  let m = tkCache.get(toks); if (m) return m;
+  m = new Uint8Array(toks.length);
+  const b = toks.map(tkBase), num = w => /^[0-9٠-٩]+$/.test(w);
+  for (let i = 0; i < toks.length; i++) {
+    const opens = TK_OPEN.has(b[i]) || (b[i] === "متفق" && b[i + 1] === "عليه") || (b[i] === "في" && b[i + 1] === "روايه" && toks[i] !== "في")      // «وفي رواية …»
+      || (b[i] === "قال" && toks[i + 1] === "ابو" && toks[i + 2] === "عيسي") || (b[i] === "زاد" && b[i + 1] && TK_COLLECTORS.includes(b[i + 1]));
+    if (!opens) continue;
+    let j = i; while (j < toks.length && (b[j] || num(toks[j]))) j++;
+    // «وفي رواية قال…» with no book named and no grading may be the narrator's own words: a note names a book or a grading
+    let named = false; for (let k = i; k < j; k++) if (TK_NAMES.has(b[k])) { named = true; break; }
+    if (named) { for (let k = i; k < j; k++) m[k] = 1; i = j - 1; }
+  }
+  tkCache.set(toks, m); return m;
+}

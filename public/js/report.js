@@ -11,11 +11,26 @@ import { t, srcLabel, num, getLang, collectionName } from "./i18n.js";
 import { buildDocx } from "./docx.js";
 import { fmtTime } from "./text.js";
 import { statusOf } from "./agree.js";
+import { gradeSummary } from "./grade.js";
 
 const SENTENCE_END = /[.!?؟…]["'»”)]*$/;
 const PARA_MAX = 180, PARA_MIN = 70;
 const isArabic = s => /[؀-ۿ]/.test(s);
 
+/** the recorded standing of a hadith source as one tag (grade.js), or null for anything else */
+export function gradeLine(src, parallels) {
+  const g = gradeSummary(src, parallels); if (!g) return null;
+  const who = by => (by.length > 1 ? t("g.by.more", by[0], num(by.length - 1)) : by[0]);
+  const also = g.also ? t("g.also", t("col." + g.also)) : "";
+  let text, cls = "", title = t("g.title");
+  if (g.kind === "sahihayn") { text = t("g.sahihayn", t("col." + g.collection)); cls = "ok"; title = t("g.sahihayn.title"); }
+  else if (g.kind === "strong") { text = t("g.one", g.grade, who(g.by)) + also; cls = "ok"; }
+  else if (g.kind === "weak") { text = t("g.one", g.grade, who(g.by)) + also; cls = "warn"; }
+  else if (g.kind === "mixed") { text = t("g.mixed", g.strong.grade, who(g.strong.by), g.weak.grade, who(g.weak.by)) + also; cls = "mix"; }
+  else { text = (g.note ? g.note + " · " : "") + t("g.none") + also; cls = g.also ? "ok" : "quiet"; }
+  if (g.via) text = t("g.via", text, srcLabel(g.via));
+  return { text, cls, title };
+}
 /** what the footnote of one ledger entry says, or null when the entry gets none */
 export function footnoteFor(e, verdict) {
   if (verdict === "no") return null;
@@ -33,6 +48,8 @@ export function footnoteFor(e, verdict) {
     if (status === "partial" && s.type === "q" && s.display && s.via !== "en") x += " " + s.display;
     if (status === "verbatim" && e.status === "partial") x += " " + t("doc.fn.two");
     if (s.via === "en") x += " " + t("doc.fn.viaen");
+    // the recorded grading belongs in the note itself: a reader of the printed page sees nothing else
+    if (s.type === "h" && s.via !== "en") { const g = gradeLine(s, e.parallels || []); if (g) x += " " + t("doc.fn.gradeline", g.text); }
     if (e.attribution && e.attribution.agrees === false) x += " " + t("doc.fn.attr");
     if (e.tailUnmatched) x += " " + t("doc.fn.tail");
     if (e.weakOnly) x += " " + t("doc.fn.weakonly");
@@ -43,6 +60,7 @@ export function footnoteFor(e, verdict) {
     return { text: x + star, quote: true, kind: s.type };
   }
   if (status === "meaning" && s) return { text: t("doc.fn.meaning", srcLabel(s)) + star, quote: false, kind: s.type };
+  if (status === "notfound" && e.cue === "saying") return { text: t("doc.fn.saying") + star, quote: false, kind: "s" };
   if (status === "notfound" && ["quran", "hadith"].includes(e.cue)) return { text: t("doc.fn.notfound") + star, quote: false, kind: e.cue === "quran" ? "q" : "h" };
   return null;
 }

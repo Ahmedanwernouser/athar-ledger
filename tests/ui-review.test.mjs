@@ -175,7 +175,7 @@ test("committee summary: counts follow the ledger and the verdicts as they are n
   assert.equal(s2.hadith, s.hadith); assert.equal(s2.collections.bukhari, (s.collections.bukhari || 0) + 1 - (h.source.collection === "bukhari" ? 1 : 0));
   assert.equal(s2.manual, 1); assert.deepEqual(s2.review, { yes: 2, no: 1, unsure: 1, none: ledger.length + 1 - 4 });
   const lines = summaryLines(s2);
-  assert.ok(lines.find(l => l.label === "أحاديث").value.includes("البخاري"));
+  assert.ok(lines.find(l => l.label === "مواضع استشهاد بحديث").value.includes("البخاري"));
   assert.ok(lines.find(l => l.label === "حالة المراجعة").value.includes("سليمة ٢"));
   // the document carries the summary after the subtitle, as short paragraphs
   const d = buildCitedDoc({ words, ledger });
