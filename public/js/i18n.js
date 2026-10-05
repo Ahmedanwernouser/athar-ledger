@@ -231,7 +231,7 @@ const D = {
   "busy.en": ["تُحمَّل الترجمات الإنجليزية…", "Loading the English translations…"],
   "busy.pass2": ["تفريغ ثانٍ بالعربية لالتقاط التلاوة…", "Second transcription pass in Arabic to catch recitation…"],
   "reader.copied": ["نُسخ النص.", "Copied."], "reader.nocopy": ["تعذّر النسخ: حدّد النص وانسخه يدويًّا.", "Could not copy: select the text and copy it by hand."],
-  "yt.length": ["يُسأل عن طول الفيديو…", "Asking how long the video is…"], "yt.part": ["يُفرَّغ الجزء {0} من {1} من الفيديو (من الرابط)…", "Transcribing part {0} of {1} of the video (from the link)…"],
+  "yt.length": ["يُسأل عن طول الفيديو…", "Asking how long the video is…"], "yt.part": ["يُفرَّغ الجزء {0} من {1} من الفيديو (من الرابط)… قد يأخذ الجزء نحو دقيقة.", "Transcribing part {0} of {1} of the video (from the link)… a part can take about a minute."],
   "yt.title": ["فيديو يوتيوب {0}", "YouTube video {0}"],
   "err.yt.link": ["لم أتعرّف على رابط يوتيوب. الصق رابط الفيديو كما هو، مثل https://youtu.be/XXXXXXXXXXX", "That does not look like a YouTube link. Paste the video's link as it is, like https://youtu.be/XXXXXXXXXXX"],
   "warn.yt": ["فُرِّغ هذا الفيديو من الرابط بنموذج لغوي عام ({0}) لا بمفرِّغ صوتي متخصص: الأزمنة تقريبية (بدقة الجملة)، وقد يكتب النموذج كلمة على غير ما قيلت. ما وُصف بأنه «مع فروق» راجِعه بالسماع، وللتدقيق ارفع ملف الصوت.", "This video was transcribed from its link by a general language model ({0}), not by a dedicated transcriber: times are approximate (to the sentence), and the model may write a word differently from what was said. Check anything marked “with differences” by ear; for close work, upload the audio file."],
