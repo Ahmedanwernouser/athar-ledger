@@ -57,7 +57,7 @@ test("the source's note on where a hadith is from is not the hadith's wording", 
   // in the lecture: «أخرجه الترمذي وقال حديث حسن صحيح وزاد الإمام أحمد» against «رواه الترمذي … وفي رواية غير الترمذي» is no difference in the hadith
   const e = by("nawawi:19")[0], wd = e.counts.diff + e.counts.added + e.counts.omitted;
   assert.ok(e.diff.some(d => d.meta) && e.diff.filter(d => d.meta && /الترمذي|اخرجه|احمد/.test(d.spoken + d.source)).length >= 3);
-  assert.ok(wd <= 13, "differences counted in the hadith itself: " + wd);
+  assert.ok(wd <= 9, "differences counted in the hadith itself: " + wd);
   assert.ok(!e.diff.some(d => d.meta && /يحفظك|تجاهك|الصبر/.test(d.source)), "no word of the hadith is taken for a note");
 });
 
@@ -75,4 +75,13 @@ test("«وكان ابن المسيب يقول…» announces somebody's words; �
   const cues = t => findCues(norm(t).split(" ").map(fold));
   for (const t of ["وكان ابن المسيب يقول انني لازيد في صلاتي", "كان الامام احمد يقول اصول السنه عندنا", "وكان عبد الله بن المبارك يقول رب عمل صغير"]) assert.ok(cues(t).some(c => c.kind === "saying" && c.pos === 0), t);
   for (const t of ["وكان الرجل يقول لصاحبه تعال", "وكان الناس يقولون انه مشغول"]) assert.ok(!cues(t).some(c => c.kind === "saying" && c.form), "not a named saying: " + t);
+});
+
+test("two words that changed places are a change of order; a collection named inside the quotation is checked against where the text was found", () => {
+  const e = by("nawawi:19")[0];
+  assert.equal(e.counts.moved, 2, "«ما أصابك… ليخطئك / ما أخطأك… ليصيبك» said the other way round");
+  assert.ok(e.counts.diff + e.counts.added + e.counts.omitted <= 9);
+  assert.equal(e.diff.filter(d => d.moved).length, 4);
+  assert.ok(e.attribution && e.attribution.code === "collection_ok" && e.attribution.said.includes("tirmidhi"), "«أخرجه الترمذي» is checked");
+  const t = by("tirmidhi:2195")[0]; assert.equal(t.counts.moved, 1);
 });

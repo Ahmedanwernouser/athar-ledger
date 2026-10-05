@@ -300,7 +300,7 @@
       <!-- the one chat box of the page: it sits here, or in the fourth tab of the results when a lecture is open -->
       <div class="chat" id="chatBox">
         <div class="sec-head"><h2 id="chatTitle">اسأل أثَر</h2></div>
-        <p class="note" id="chatWhat">يجيب من سجل المحاضرة المفتوحة ومن البحث في المصادر المحمَّلة (القرآن وكتب الحديث وما اخترته من كتب) فقط. لا يُفتي، وما لا يجده يقول إنه لم يجده.</p>
+        <p class="note" id="chatWhat">يجيب من ثلاثة: سجل المحاضرة المفتوحة، وكلام المحاضر نفسه (يلخّصه، ويقول ماذا قال عن شيء ومتى)، والبحث في المصادر المحمَّلة. «فسّر آية…» يعرض نص تفسير الجلالين نفسه. لا يُفتي ولا يشرح من عنده، وما لا يجده يقول إنه لم يجده.</p>
         <div class="chat-log" id="chatLog" role="log" aria-live="polite"></div>
         <div class="chat-sug" id="chatSug"></div>
         <form class="chat-form" id="chatForm">
@@ -309,7 +309,7 @@
             <button type="submit" class="ask-go" id="chatGo">اسأل</button>
           </div></div>
         </form>
-        <p class="note" id="chatNote">الجُمل التي تحت «صياغة نموذج لغوي» كتبها نموذج (على Groq) من الوقائع المعروضة تحتها، وقد يخطئ في الصياغة. نص الآية والحديث والمصدر والدرجة في البطاقات من المصادر نفسها لا من النموذج. يُرسَل إليه سؤالك وملخّص السجل ونتائج البحث.</p>
+        <p class="note" id="chatNote">الجُمل التي تحت «صياغة نموذج لغوي» كتبها نموذج (على Groq) من الوقائع المعروضة تحتها، وقد يخطئ في الصياغة. نص الآية والحديث والمصدر والدرجة في البطاقات من المصادر نفسها لا من النموذج. يُرسَل إليه سؤالك وملخّص السجل ونتائج البحث ومقاطع من نص المحاضرة المفرَّغ (كلها إن كانت قصيرة). ما يكتبه عن كلام المحاضر صياغته هو: راجِعه على المقاطع المعروضة تحته.</p>
       </div>
     </div>
   </section>
@@ -332,7 +332,7 @@
     <li><b>المقارنة.</b> المواضع المرشّحة تُحاذى مع نص المصدر كلمةً كلمة، فيُعرف ما طابق وما اختلف وما زيد وما نقص.</li>
     <li><b>الوصف.</b> يُعطى كل استشهاد وصفًا من خمسة بحسب ما عُدَّ من الكلمات، لا بحسب رأي نموذج لغوي. الاستثناء الوحيد: إذا فُعِّلت خطوة «البحث بالمعنى» الاختيارية فقد يختار نموذج لغوي واحدًا من النصوص التي رشّحها البحث من المصادر؛ يُكتب على ذلك الموضع أن نموذجًا اختاره، ويبقى محتاجًا إلى تأكيد بشري.</li>
     <li><b>المدقّق.</b> مطابقة قصيرة (عشر كلمات فأقل) لحديث أو كتاب لم تسبقها عبارة استشهاد قد تكون تشابهًا عارضًا: تعداد أشهر، عبارة شائعة. تُعرض على نموذجين لغويين بسؤال واحد جوابه رقم: اقتباس أم تشابه عارض؟ لا تُستبعد إلا إذا اتفقا، وما استُبعد يبقى معروضًا أسفل السجل ويُعاد بضغطة. النموذج لا يغيّر وصفًا ولا نصًّا ولا يضيف مصدرًا، ويُطفأ من «خيارات».</li>
-    <li><b>اسأل أثَر.</b> يبحث بأدوات أثَر نفسها (سجل المحاضرة، وبحث المصادر) ثم يعرض النتائج على نموذج لغوي يختار منها ويكتب جملًا رابطة قصيرة. نص الآية والحديث والمصدر والدرجة في البطاقات من المصادر لا من النموذج؛ وأي حكم أو اقتباس في جملته ليس في تلك النتائج يُحذف قبل أن يصلك. لا يُفتي.</li>
+    <li><b>اسأل أثَر.</b> يبحث بأدوات أثَر نفسها (سجل المحاضرة، وبحث المصادر) ثم يعرض النتائج — ومعها مقاطع من كلام المحاضر نفسه — على نموذج لغوي يختار منها ويكتب جملًا قصيرة: يلخّص ما قاله المحاضر وينسبه إليه، والمقاطع تُعرض تحت جوابه بأزمنتها. نص الآية والحديث والمصدر والدرجة في البطاقات من المصادر لا من النموذج؛ وأي حكم أو اقتباس في جملته ليس في تلك النتائج يُحذف قبل أن يصلك. لا يُفتي.</li>
     <li><b>الاقتراح بالمعنى.</b> ما لم يُطابَق لفظه يُبحث عنه بحثًا هجينًا: كلمات نادرة مشتركة، ومتجهات معنى مدرَّبة على المصادر نفسها، ثم إعادة ترتيب. الناتج اقتراحات للمراجعة، لا مطابقات.</li>
     <li><b>تفريغان.</b> إذا فُرِّغ التسجيل بمفرِّغَين قورن السجلّان كلمةً بكلمة: حيث سمع أحدهما لفظ المصدر عُدَّ الخلاف من التفريغ ووُصف الاستشهاد بأنه «حرفي بترجيح تفريغين»، وحيث اتفقا على غير لفظ المصدر بقي فرقًا في اللفظ؛ وهذا ترجيح لا قطع، فقد يخطئ المفرِّغان الخطأ نفسه أو يصحِّح أحدهما ما قاله المتحدث إلى النص المشهور.</li>
     <li><b>الإنجليزية.</b> الكلام الإنجليزي يُقارن بترجمات منشورة تحمل مراجع المصادر العربية نفسها، فالمطابقة بالإنجليزية تقود إلى النص العربي. لا يُترجم شيء من النصوص الشرعية آليًّا.</li>
@@ -383,7 +383,7 @@
     <li><b>Comparison.</b> Candidate spots are aligned with the source text word by word: what agrees, what differs, what was added or left out.</li>
     <li><b>Status.</b> Each citation gets one of five statuses from counted words, not from a language model's opinion. The one exception: when the optional “by meaning” step is enabled, a language model may pick one of the passages the search retrieved from the corpus; that entry is labelled as picked by a model and still needs human confirmation.</li>
     <li><b>The checker.</b> A short match (ten words or fewer) with a hadith or a book that no cue announced may be a coincidence: a list of months, a common phrase. It is put to two language models with one question answered by a digit: quotation or coincidence? It is set aside only when both agree, stays listed under the ledger, and comes back with one press. The model changes no status and no text and adds no source; it can be switched off under Options.</li>
-    <li><b>Ask Athar.</b> It searches with Athar's own tools (the lecture's ledger, the search of the sources), then shows the results to a language model that chooses among them and writes a few connecting sentences. The text of a verse or hadith, its source and its grading in the cards come from the sources, not from the model; a grading or a quotation in its sentences that is not in those results is removed before it reaches you. It gives no rulings.</li>
+    <li><b>Ask Athar.</b> It searches with Athar's own tools (the lecture's ledger, the search of the sources), then shows the results — and passages of the lecturer's own words — to a language model that chooses among them and writes a few sentences: it sums up what the lecturer said and attributes it to him, and the passages are shown beneath its answer with their times. The text of a verse or hadith, its source and its grading in the cards come from the sources, not from the model; a grading or a quotation in its sentences that is not in those results is removed before it reaches you. It gives no rulings.</li>
     <li><b>By meaning.</b> What was not matched in wording is searched with a hybrid of rare shared words and meaning vectors trained on the corpus itself, then re-ranked. The result is suggestions to review, not matches.</li>
     <li><b>Two transcriptions.</b> When the recording is transcribed by two transcribers, the two ledgers are compared word by word: where one of them heard the source's word, the difference is taken to be a transcription slip and the citation is labelled “verbatim by two transcriptions”; where both agree on another word, it remains a difference of wording. This is a weighing of evidence, not a proof: both transcribers can make the same mistake, and one may “correct” what the speaker said to the well-known text.</li>
     <li><b>English.</b> English speech is compared with published translations that carry the same references as the Arabic sources, so a match in English leads to the Arabic text. Nothing sacred is machine-translated.</li>
