@@ -5,13 +5,13 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["eval/keyprobe/**", ".github/workflows/key-probe.yml"]
+    paths: ["eval/keyprobe/**", "worker/ask.js", ".github/workflows/key-probe.yml"]
 permissions:
   contents: write
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,7 +23,7 @@ jobs:
           PROBE: ${{ vars.KEY_PROBE || 'groq' }}
         run: |
           if [ "$PROBE" = "gemini" ] || [ "$PROBE" = "all" ]; then node eval/keyprobe/run.mjs > /dev/null; fi
-          node eval/keyprobe/groq.mjs > /dev/null
+          node eval/keyprobe/ask.mjs > /dev/null
       - name: publish results
         if: always()
         run: |
