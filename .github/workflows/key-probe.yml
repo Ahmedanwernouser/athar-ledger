@@ -1,0 +1,36 @@
+# Which of the site's Gemini keys answer, and what limit a refusing one names (eval/keyprobe/run.mjs).
+# Keys are repository secrets; never printed, never written: a key is named by its position. Results: branch `key-probe-results`.
+name: key-probe
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["eval/keyprobe/**", ".github/workflows/key-probe.yml"]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: probe
+        env:
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+        run: node eval/keyprobe/run.mjs > /dev/null
+      - name: publish results
+        if: always()
+        run: |
+          set -e
+          mkdir -p /tmp/out && cp -r eval/keyprobe/out/. /tmp/out/ 2>/dev/null || echo '{"error":"no result"}' > /tmp/out/result.json
+          git config user.name "key-probe"
+          git config user.email "key-probe@users.noreply.github.com"
+          git checkout --orphan key-probe-results
+          git rm -rfq --cached .
+          rm -rf keyprobe && mkdir keyprobe && cp -r /tmp/out/. keyprobe/
+          echo "${GITHUB_SHA}" > keyprobe/COMMIT
+          git add -f keyprobe
+          git commit -qm "key probe for ${GITHUB_SHA}"
+          git push -f origin key-probe-results
