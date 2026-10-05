@@ -19,7 +19,11 @@ jobs:
       - name: probe
         env:
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
-        run: node eval/keyprobe/run.mjs > /dev/null
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          PROBE: ${{ vars.KEY_PROBE || 'groq' }}
+        run: |
+          if [ "$PROBE" = "gemini" ] || [ "$PROBE" = "all" ]; then node eval/keyprobe/run.mjs > /dev/null; fi
+          node eval/keyprobe/groq.mjs > /dev/null
       - name: publish results
         if: always()
         run: |
