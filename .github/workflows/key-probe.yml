@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       what:
-        description: "ask (the prompts against Groq) | live (the deployed Worker's /ask) | gemini (the Gemini keys)"
+        description: "ask (the prompts against Groq) | live (the deployed Worker's /ask) | gemini (the Gemini keys) | shape (the keys' form and whether each answers now)"
         default: live
   push:
     branches: [main]
@@ -24,13 +24,14 @@ jobs:
         env:
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          PROBE: ${{ inputs.what || 'ask' }}
+          PROBE: ${{ inputs.what || 'shape' }}
           LIVE_WORKER: https://athar-asr.athar-7399079d.workers.dev
           LIVE_ORIGIN: https://athar-ledger.pages.dev
         run: |
           if [ "$PROBE" = "gemini" ]; then node eval/keyprobe/run.mjs > /dev/null; fi
           if [ "$PROBE" = "ask" ]; then node eval/keyprobe/ask.mjs > /dev/null; fi
           if [ "$PROBE" = "live" ]; then node eval/keyprobe/live.mjs > /dev/null; fi
+          if [ "$PROBE" = "shape" ]; then node eval/keyprobe/shape.mjs > /dev/null; fi
       - name: publish results
         if: always()
         run: |
