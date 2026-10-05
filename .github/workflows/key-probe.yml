@@ -31,6 +31,7 @@ jobs:
           if [ "$PROBE" = "shape" ]; then node eval/keyprobe/shape.mjs > /dev/null; fi
           if [ "$PROBE" = "models" ]; then node eval/keyprobe/models.mjs > /dev/null; fi
           if [ "$PROBE" = "ytmodels" ]; then node eval/keyprobe/ytmodels.mjs > /dev/null; fi
+          if [ "$PROBE" = "ytstream" ]; then node eval/keyprobe/ytstream.mjs > /dev/null; fi
           if [ "$PROBE" = "yt" ]; then node eval/keyprobe/yt.mjs > /dev/null; fi
       - name: publish results
         if: always()
