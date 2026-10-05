@@ -99,3 +99,18 @@ test("chat reducer, from a live trial on Gemini: a miscopied word of a quoted te
   const e = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "وردت في الآية سبعة وعشرون من السورة." }), inp);
   assert.equal(e.text, "انظر البطاقات أدناه.");
 });
+
+test("chat reducer, from live trials: a grading the facts carry beside another collection may be said; one no fact carries still may not", () => {
+  const facts = [{ id: "S1", text: "نتيجة بحث في المصادر عن نص السؤال — حديث — مطابق مع فروق — صحيح مسلم — رقم 55a — الدرجة: في صحيح مسلم — وهو أيضًا في: جامع الترمذي 1926 (صحيح — أحمد محمد شاكر و٢ غيره)، سنن النسائي 4200 (حسن صحيح — عبد الفتاح أبو غدة و٢ غيره) — اللفظ المطابق: «الدين النصيحة»" },
+    { id: "S2", text: "نتيجة بحث — حديث — سنن ابن ماجه — رقم 2341 — الدرجة: اختُلف فيه: صحيح لغيره (الألباني و٢ غيره) · ضعيف (زبير علي زئي)" }];
+  const inp = chatInput({ q: "أين ورد حديث الدين النصيحة؟", lang: "ar", facts });
+  const a = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "ورد في صحيح مسلم برقم 55a، وهو أيضًا في جامع الترمذي ودرجته صحيح، وفي سنن النسائي ودرجته حسن صحيح." }), inp);
+  assert.match(a.text, /جامع الترمذي ودرجته صحيح/); assert.match(a.text, /حسن صحيح/);
+  const b = parseChat(JSON.stringify({ type: "answer", ids: ["S2"], text: "اختُلف فيه، فحكم الألباني أنه صحيح لغيره، وحكم زبير علي زئي أنه ضعيف." }), inp);
+  assert.match(b.text, /زبير علي زئي أنه ضعيف/);
+  const c = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "وهو حديث موضوع." }), inp);
+  assert.equal(c.text, "انظر البطاقات أدناه.");
+  const only = chatInput({ q: "ما درجته؟", lang: "ar", facts: [facts[0]] });
+  const d = parseChat(JSON.stringify({ type: "answer", ids: ["S1"], text: "وهو حديث ضعيف عند بعضهم." }), only);
+  assert.equal(d.text, "انظر البطاقات أدناه.", "«ضعيف» stands in no fact given here");
+});

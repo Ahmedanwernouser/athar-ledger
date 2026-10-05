@@ -50,7 +50,7 @@ function repeatsOnItsOwn(sentence, hay) { return REPEATS.test(fold(sentence)) &&
 const REFUSAL = { ar: "هذا خارج عملي: لا أُفتي ولا أشرح من عندي، ويُسأل عنه أهل العلم. أستطيع أن أعرض لك ما استُشهد به، ومصدره، ودرجته المنقولة، وهل طابق لفظُه المصدر.", en: "That is outside what I do: I give no rulings and no explanations of my own; ask the people of knowledge. I can show what was cited, its source, its recorded grading, and whether its wording matched the source." };
 const GRADE = /^(ال)?(صحيح|صحيحه|صحاح|حسن|حسنه|ضعيف|ضعيفه|موضوع|موضوعه|مكذوب|باطل|منكر|واه|ثابت|ثابته|sahih|hasan|daif|weak|authentic|fabricated|sound)$/i;
 /** does this sentence use a grading word that does not stand in the facts with the same word after it (or before it)? */
-function gradesOnItsOwn(sentence, hay) {
+function gradesOnItsOwn(sentence, hay, carried = null) {
   const ws = fold(sentence).split(" ").filter(Boolean);
   for (let i = 0; i < ws.length; i++) {
     if (!GRADE.test(ws[i])) continue;
@@ -59,7 +59,11 @@ function gradesOnItsOwn(sentence, hay) {
     const next = ws[i + 1] ? ws[i] + " " + ws[i + 1] : null, prev = i ? ws[i - 1] + " " + ws[i] : null;
     // … or as the grading itself of some fact («الدرجة: صحيح — …»): "حديث الترمذي 2195 صحيح" says what that fact says
     const asGrade = hay.includes(" الدرجه " + ws[i].replace(/^ال/, "").replace(/ه$/, "")) || hay.includes(" grading " + ws[i]);      // («درجته صحيحة» says «الدرجة: صحيح»)
-    if (!(asGrade || (next && hay.includes(next)) || (prev && hay.includes(prev)))) return true;
+    // … or as a grading the facts carry in their own notation: «(صحيح — الألباني)» beside another collection that holds
+    // the hadith, «اختُلف فيه: صحيح (…) · ضعيف (…)». (Measured 5 Oct on Groq and on Gemini: "where does it stand?" was
+    // answered rightly with each collection's grading, and every such sentence was dropped — only "see the cards" was left.)
+    const base = ws[i].replace(/^ال/, "").replace(/ه$/, "");
+    if (!(asGrade || (carried && carried.has(base)) || (next && hay.includes(next)) || (prev && hay.includes(prev)))) return true;
   }
   return false;
 }
@@ -156,8 +160,11 @@ export function parseChat(text, inp) {
   let out = line(String(typeof j.text === "string" ? j.text : "").replace(/[<>`*_#]/g, " ").replace(/\[?\b[LSMT]\d{1,3}\b\]?/g, " "), ASK.TEXT);
   out = out.replace(/«([^«»]{12,})»|"([^"]{12,})"|“([^“”]{12,})”/g, (m, x, y, z) => (hay.includes(fold(x || y || z)) ? m : "«…»"));
   // a sentence that grades (صحيح، حسن، ضعيف، موضوع …) in words the facts do not carry is dropped: gradings come from the sources' data only
+  // the gradings the facts themselves carry, wherever they write one: after «الدرجة:», after «اختُلف فيه:», after "(" or "·"
+  const carried = new Set();
+  for (const f of inp.facts) for (const m of String(f.text).matchAll(/(?:الدرجة:|اختُلف فيه:|[(·])\s*([^\s()—·،:]+)/g)) { const w = fold(m[1]); if (GRADE.test(w)) carried.add(w.replace(/^ال/, "").replace(/ه$/, "")); }
   out = restoreQuoted(out, inp, hay);
-  out = out.split(/(?<=[.!؟?])\s+/).filter((sent) => !gradesOnItsOwn(sent, hay) && !repeatsOnItsOwn(sent, hay) && !spellsNumber(sent)).join(" ").trim();
+  out = out.split(/(?<=[.!؟?])\s+/).filter((sent) => !gradesOnItsOwn(sent, hay, carried) && !repeatsOnItsOwn(sent, hay) && !spellsNumber(sent)).join(" ").trim();
   if (type === "refuse") return { type, ids, text: REFUSAL[inp.lang === "en" ? "en" : "ar"] };
   if (!out) out = type === "answer" ? (inp.lang === "en" ? "See the cards below." : "انظر البطاقات أدناه.") : "";
   if (!out) return null;
