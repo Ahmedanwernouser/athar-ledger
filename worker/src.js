@@ -20,6 +20,7 @@
 // a stack trace or a key.
 
 import { ASK, checkItems, CHECK_SYSTEM, checkUser, parseCheck, chatInput, CHAT_SYSTEM, chatUser, parseChat } from "./ask.js";
+import { YT_DEF_MODELS, ytUrl, ytBody } from "./yt.js";
 const GROQ_ASR = "https://api.groq.com/openai/v1/audio/transcriptions";
 const GROQ_CHAT = "https://api.groq.com/openai/v1/chat/completions";
 const GEMINI = (m) => `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
@@ -33,6 +34,7 @@ const GEMINI = (m) => `https://generativelanguage.googleapis.com/v1beta/models/$
 const UNIT_SECONDS = 600;
 const DEF_DAILY_CAP = 48;
 const DEF_HOURLY_CAP = 12;
+const DEF_YT_IP_DAILY_CAP = 72;    // /yt: windows of ten minutes one visitor may have transcribed in a day (twelve hours of video)
 const DEF_IP_DAILY_CAP = 24;       // one IP address may use at most half of the day
 // Groq free tier for openai/gpt-oss-20b: about 200,000 tokens per day. One /llm call costs roughly
 // 1,000–1,500 tokens (prompt + up to 5 candidates + a short answer), so 150 calls ≈ 200K tokens.
@@ -69,7 +71,7 @@ function corsHeaders(origin, allowed) {
   const h = {
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-Athar-Key",
-    "Access-Control-Expose-Headers": "X-Athar-Remaining, X-Athar-Remaining-Hour, Retry-After",
+    "Access-Control-Expose-Headers": "X-Athar-Remaining, X-Athar-Remaining-Hour, X-Athar-Yt, Retry-After",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
@@ -102,7 +104,7 @@ export default {
         const asr = asrProviders(env);          // looks at the secrets' presence only; never touches the caps
         if (!asr.available.includes(asr.default)) missing.push(ASR_KEY_NAME[asr.default]);
         if (!allowed.length) missing.push("ALLOWED_ORIGINS");
-        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!(env.GEMINI_API_KEY || env.GEMINI_API_KEYS), ask: askOn(env), embed: embedModels(env) }, 200, cors);
+        return json({ ok: true, configured: missing.length === 0, ...(missing.length ? { missing } : {}), asr, youtube: !!(env.GEMINI_API_KEY || env.GEMINI_API_KEYS), yt: await ytState(env).catch(() => null), ask: askOn(env), embed: embedModels(env) }, 200, cors);
       }
       const route = req.method === "POST" && (path === "/asr" || path === "/llm" || path === "/yt" || path === "/embed" || path === "/ask") ? path : null;
       if (!route) return json({ error: "not_found" }, 404, cors);
@@ -178,24 +180,39 @@ function flush(kv, m, s) {
   p.catch(() => {}).then(() => { if (w.busy === p) w.busy = null; });
   return p;
 }
-/** write the instance's current number for this key; on failure (another instance wrote it this second) wait, re-read, and try once more (then throw) */
+/**
+ * The counter store can refuse writes for reasons that have nothing to do with the visitor: KV's free plan takes 1,000
+ * writes a DAY in all, and one write a second per key. Until 5 Oct 2026 such a refusal stopped the whole service ("busy")
+ * for the rest of the day although every transcriber was free. Now the count lives on in this instance's memory and the
+ * work goes on: the caps become approximate, never the service unavailable. (Nothing here is billed: every provider is
+ * on a free tier with its own hard limit, which is the real guard.) A store that refused is left alone for five minutes.
+ */
+const DOWN = new WeakMap(), KV_DOWN_MS = 300_000;
+const kvDown = (kv) => (DOWN.get(kv) || 0) > Date.now();
+/** write the instance's current number for this key; on failure (another instance wrote it this second) wait, re-read, and try once more. Never throws: false = not written */
 async function putCount(kv, m, s, add) {
-  try { await flush(kv, m, s); return; } catch { /* most likely: same key written less than 1 s ago elsewhere */ }
-  await sleep(KV_RETRY_MS + Math.floor(Math.random() * 300));
-  const cur = count(await kv.get(s.key));
-  m.set(s.key, Math.max(m.get(s.key) || 0, cur + add));
-  await flush(kv, m, s);
+  if (kvDown(kv)) return false;
+  try { await flush(kv, m, s); return true; } catch { /* most likely: same key written less than 1 s ago elsewhere */ }
+  try {
+    await sleep(KV_RETRY_MS + Math.floor(Math.random() * 300));
+    const cur = count(await kv.get(s.key));
+    m.set(s.key, Math.max(m.get(s.key) || 0, cur + add));
+    await flush(kv, m, s); return true;
+  } catch { DOWN.set(kv, Date.now() + KV_DOWN_MS); return false; }
 }
 
 /**
  * specs: [{key, cap, ttl, code, retry, scope}]
- * commit=false: only look.   commit=true: reserve one unit in every counter and write it.
- * returns {over: spec} | {busy: true} | {used: [n, ...]}  (used = value after this request when commit=true)
+ * commit=false:  only look.
+ * commit=true:   reserve one unit in every counter and write it.
+ * commit="hold": reserve one unit in this instance's memory only; the caller then calls settle() when the work was done
+ *                (the unit is written) or release() when it was not (nothing was ever written: a failure costs no write).
+ * returns {over: spec} | {used: [n, ...]}  (used = value after this request when a unit was reserved)
  */
 async function guard(kv, specs, commit) {
   let stored;
   try { stored = await Promise.all(specs.map(async (s) => count(await kv.get(s.key)))); }
-  catch { return { busy: true }; }
+  catch { stored = specs.map(() => 0); }                  // the store cannot be read: this instance's memory decides
   const m = memOf(kv);
   // ---- no `await` between here and the reservation: this block is atomic inside one instance ----
   const used = specs.map((s, i) => Math.max(stored[i], m.get(s.key) || 0));
@@ -204,40 +221,44 @@ async function guard(kv, specs, commit) {
   if (!commit) return { used };
   specs.forEach((s, k) => m.set(s.key, used[k] + 1));
   // -----------------------------------------------------------------------------------------------
-  try { await Promise.all(specs.map((s) => putCount(kv, m, s, 1))); }
-  catch {
-    specs.forEach((s) => m.set(s.key, Math.max((m.get(s.key) || 1) - 1, 0)));
-    return { busy: true };
-  }
+  if (commit !== "hold") await Promise.all(specs.map((s) => putCount(kv, m, s, 1)));
   return { used: used.map((u) => u + 1) };
+}
+/** the work a held unit was reserved for was done: write it (best effort) */
+async function settle(kv, specs) {
+  const m = memOf(kv);
+  await Promise.all(specs.map((s) => putCount(kv, m, s, 1)));
+}
+/** the work a held unit was reserved for was NOT done: the unit goes back, and nothing is written */
+function release(kv, specs) {
+  const m = memOf(kv);
+  specs.forEach((s) => m.set(s.key, Math.max((m.get(s.key) || 1) - 1, 0)));
 }
 
 /** best effort: add `extra` units to every counter (used when the audio was longer than one unit) */
 async function charge(kv, specs, extra) {
   const m = memOf(kv);
   await Promise.all(specs.map(async (s) => {
-    try {
-      const cur = Math.max(count(await kv.get(s.key)), m.get(s.key) || 0);
-      m.set(s.key, cur + extra);
-      await putCount(kv, m, s, extra);
-    } catch { /* approximate by design */ }
+    let cur = m.get(s.key) || 0;
+    try { cur = Math.max(count(await kv.get(s.key)), cur); } catch { /* memory decides */ }
+    m.set(s.key, cur + extra);
+    await putCount(kv, m, s, extra);
   }));
 }
 
 /**
- * best effort: give back the unit a request reserved when the transcriber never did the work (it was busy, or failed).
- * Without this a video that Google keeps answering "busy" for would spend the hour's allowance on nothing.
+ * best effort: give back the unit a request reserved AND wrote when the transcriber never did the work (/asr, /llm).
  */
 async function refund(kv, specs) {
   const m = memOf(kv);
   await Promise.all(specs.map(async (s) => {
     try { const cur = Math.max(count(await kv.get(s.key)), m.get(s.key) || 0); m.set(s.key, Math.max(cur - 1, 0)); } catch { m.set(s.key, Math.max((m.get(s.key) || 1) - 1, 0)); }
-    try { await flush(kv, m, s); } catch { try { await sleep(KV_RETRY_MS); await flush(kv, m, s); } catch { /* approximate by design */ } }
+    if (kvDown(kv)) return;
+    try { await flush(kv, m, s); } catch { /* approximate by design */ }
   }));
 }
 
 function capResponse(g, cors) {
-  if (g.busy) return json({ error: "busy" }, 503, { ...cors, "Retry-After": "2" });
   const s = g.over;
   return json({ error: s.code, scope: s.scope, cap: s.cap }, 429, { ...cors, "Retry-After": String(s.retry) });
 }
@@ -306,7 +327,7 @@ async function asrRoute(req, env, cors, ctx) {
   ];
   if (ipCap < cap) specs.push({ key: "i:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay });
   let g = await guard(env.CAP, specs, false);          // look only: refuse before buffering up to 25 MB
-  if (g.busy || g.over) return capResponse(g, cors);
+  if (g.over) return capResponse(g, cors);
 
   // 3) parse the form and keep ONLY the file, the language and the provider
   let form;
@@ -327,7 +348,7 @@ async function asrRoute(req, env, cors, ctx) {
 
   // 4) count it (the upload may have taken a while, so read the counters again)
   g = await guard(env.CAP, specs, true);
-  if (g.busy || g.over) return capResponse(g, cors);
+  if (g.over) return capResponse(g, cors);
 
   const left = (units) => ({
     "X-Athar-Remaining": String(Math.max(cap - (g.used[0] + units - 1), 0)),
@@ -577,24 +598,14 @@ const YT_MAX_SECONDS = 6 * 3600;
 const YT_AUDIO_TOKENS_PER_SECOND = 32;
 const YT_TIMEOUT_MS = 170_000;
 const YT_COUNT_TIMEOUT_MS = 20_000;
-const YT_DEF_MODELS = "gemini-3.8-flash,gemini-3.5-flash";
+const YT_GIVE_UP_MS = 150_000;          // no new round of questions after this long: the page is told, and it decides
+const YT_HEDGE_MS = 20_000;             // a model that has not answered in this long is no longer waited for alone
 const YT_ROUNDS_WAIT_MS = [0, 4000, 10000];   // "high demand" (503) is common and brief: the models are tried up to three times round
-const ytModels = (env) => { const m = String(env.GEMINI_YT_MODELS || YT_DEF_MODELS).split(",").map((x) => x.trim()).filter((x) => /^gemini-[a-z0-9.-]{1,40}$/.test(x)); return m.length ? m.slice(0, 4) : YT_DEF_MODELS.split(","); };
-const ytUrl = (id) => "https://www.youtube.com/watch?v=" + id;
-const ytClock = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-const ytPrompt = (from, to, lang) =>
-  `Transcribe the speech in this video between ${ytClock(from)} and ${ytClock(to)} verbatim, in the language it is spoken in (mostly ${lang === "en" ? "English; Arabic recitation or quotation is written in Arabic script" : "Arabic"}). ` +
-  "Write exactly what is said, word for word, including repetitions, hesitations and mistakes. Do NOT correct, complete or normalise any quotation of the Qur'an or of hadith: " +
-  "if the speaker misquotes, write the misquotation. No translation, no summary, no commentary, no diacritics, no speaker names. Give each piece of at most 12 words with the time at which it " +
-  "starts, as MM:SS counted from the beginning of the FULL video. If there is no speech in this part, return an empty list.";
-const YT_SCHEMA = { type: "ARRAY", items: { type: "OBJECT", properties: { t: { type: "STRING" }, x: { type: "STRING" } }, required: ["t", "x"] } };
-function ytBody(model, id, from, to, lang) {
-  return { contents: [{ role: "user", parts: [
-      { file_data: { file_uri: ytUrl(id) }, video_metadata: { start_offset: from + "s", end_offset: to + "s", fps: 0.2 } },
-      { text: ytPrompt(from, to, lang) }] }],
-    generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: YT_SCHEMA,
-      ...(/^gemini-3/.test(model) ? { thinkingConfig: { thinkingLevel: "low" } } : {}) } };
-}
+// Measured 5 Oct 2026 (eval/keyprobe/models.mjs, ytmodels.mjs): the free tier counts 20 requests a day PER MODEL and per
+// key, and several general models take a YouTube link. So the models are a chain: the day's allowance of one is not the
+// end of the day, and a model in "high demand" (503, common) gives way at once. Best first; the lite ones are the last resort.
+const YT_MAX_MODELS = 7;
+const ytModels = (env) => { const m = String(env.GEMINI_YT_MODELS || YT_DEF_MODELS).split(",").map((x) => x.trim()).filter((x) => /^gemini-[a-z0-9.-]{1,40}$/.test(x)); return m.length ? m.slice(0, YT_MAX_MODELS) : YT_DEF_MODELS.split(","); };
 /** "MM:SS" | "H:MM:SS" | "123" | 123 -> seconds, or NaN */
 function ytSeconds(v) {
   if (typeof v === "number") return Number.isFinite(v) && v >= 0 ? v : NaN;
@@ -613,7 +624,7 @@ function ytNormalise(j, model, from, to) {
   const parts = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts : null;
   if (!parts) return null;
   let list;
-  try { list = JSON.parse(parts.map((p) => (p && typeof p.text === "string" ? p.text : "")).join("")); } catch { return null; }
+  try { list = JSON.parse(parts.map((p) => (p && !p.thought && typeof p.text === "string" ? p.text : "")).join("")); } catch { return null; }
   if (!Array.isArray(list) || list.length > 4000) return null;
   const pieces = []; let last = from;
   for (const it of list) {
@@ -657,42 +668,63 @@ async function ytTitle(id) {
  * The keys a /yt request may use, in the order to try them.
  *  - the caller's OWN key (header X-Athar-Key): used alone, never stored, never logged, never mixed with the site's keys;
  *    its use is the caller's own quota, so the site's counters are not touched.
- *  - otherwise the site's keys: GEMINI_API_KEYS (several, separated by commas / spaces) or the single GEMINI_API_KEY.
- *    They are tried from the one that answered last; a key that is out of quota or no longer valid gives way to the next.
+ *  - otherwise the site's keys: GEMINI_API_KEYS (several, separated by commas / spaces) together with GEMINI_API_KEY.
+ *    They take turns; a key that is out of quota or no longer valid gives way to the next.
+ * A key is any run of printable characters without a space. (Until 5 Oct 2026 only letters, digits, "_" and "-" were let
+ * through. Google's keys now begin "AQ." — the dot failed that rule, so all seven of the site's keys were silently dropped,
+ * the site lived on one key's 20 requests a day, and a visitor's own key was refused as "not a key". Measured, not guessed:
+ * eval/keyprobe/shape.mjs.)
  */
-const YT_OWN_KEY = /^[A-Za-z0-9_-]{20,200}$/, YT_SITE_KEY = /^[A-Za-z0-9_-]{8,200}$/, YT_MAX_KEYS = 8, YT_CALL_BUDGET = 40;      // (a Worker on the free plan may make 50 requests of its own per request)
-let ytKeyAt = 0;
+const YT_OWN_KEY = /^[\x21-\x7e]{20,400}$/, YT_SITE_KEY = /^[\x21-\x7e]{8,400}$/, YT_MAX_KEYS = 12, YT_CALL_BUDGET = 40;      // (a Worker on the free plan may make 50 requests of its own per request)
+const ytSiteKeys = (env) => [...new Set((String(env.GEMINI_API_KEYS || "") + " " + String(env.GEMINI_API_KEY || "")).split(/[\s,;]+/).filter((k) => YT_SITE_KEY.test(k)))].slice(0, YT_MAX_KEYS);
 function ytKeys(env, req) {
-  const own = (req.headers.get("X-Athar-Key") || "").trim();
+  const own = (req.headers.get("X-Athar-Key") || "").trim().replace(/^["']+|["']+$/g, "");
   if (own) return YT_OWN_KEY.test(own) ? { keys: [own], own: true, at: 0, n: 1 } : { bad: true };
-  const all = [...new Set(String(env.GEMINI_API_KEYS || "").split(/[\s,;]+/).filter((k) => YT_SITE_KEY.test(k)))].slice(0, YT_MAX_KEYS);
-  if (!all.length && env.GEMINI_API_KEY) all.push(env.GEMINI_API_KEY);
-  const at = all.length ? ytKeyAt % all.length : 0;
+  const all = ytSiteKeys(env);
+  // The keys take turns, and the turn passes when a request ARRIVES (not when it is answered): several visitors at the
+  // same instant then start from different keys instead of all leaning on one key's allowance per minute.
+  let at = 0;
+  if (all.length > 1 && env.CAP) { const m = memOf(env.CAP); at = (m.get("ytat") || 0) % all.length; m.set("ytat", (at + 1) % all.length); }
   return { keys: all.slice(at).concat(all.slice(0, at)), own: false, at, n: all.length };
 }
+/** a name for a key that says nothing about it: ten hex digits of a salted SHA-256. Used to remember "out of quota until" */
+async function ytPrint(key) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("athar-ytx|" + key));
+  return [...new Uint8Array(d).slice(0, 5)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 /**
- * What a 429 from Google says about the wait. Measured (5 Oct 2026): the free tier allows 20 requests a DAY per project and
- * model, and says so in the body (quotaId "...PerDay...", retryDelay "42206s"); the per-minute limits name a short delay.
- * The body is read for these two facts only and never forwarded.
+ * What a refusal from Google is about. Its body is read for this one fact and never forwarded.
+ *   429: the wait. Measured (5 Oct 2026): the free tier allows 20 requests a DAY per project and model, and says so in
+ *        the body (quotaId "...PerDay...", retryDelay "42206s"); the per-minute limits name a short delay.
+ *   400 / 403: the KEY (not valid, expired, reported as leaked, its project suspended or without the API), the place the
+ *        request came from, or — neither of these — the video (private, removed) or the question.
+ * -> {kind: "day" | "min" | "key" | "loc" | "perm" | "bad" | "", wait: seconds}
  */
-async function ytQuota(r) {
+const YT_KEY_REFUSED = /API_KEY_INVALID|API key not valid|API key expired|API_KEY_SERVICE_BLOCKED|API_KEY_HTTP_REFERRER_BLOCKED|API_KEY_IP_ADDRESS_BLOCKED|reported as leaked|CONSUMER_SUSPENDED|CONSUMER_INVALID|SERVICE_DISABLED|has been suspended|has not been used in project|BILLING_DISABLED|UNAUTHENTICATED/i;
+async function ytWhy(r) {
+  if (r.status !== 429 && r.status !== 400 && r.status !== 403 && r.status !== 401) { try { await r.body?.cancel(); } catch { /* ignore */ } return { kind: "", wait: 0 }; }
+  let t = ""; try { t = (await r.text()).slice(0, 20000); } catch { /* ignore */ }
+  if (r.status !== 429) return { kind: YT_KEY_REFUSED.test(t) || r.status === 401 ? "key" : /location is not supported/i.test(t) ? "loc" : r.status === 403 ? "perm" : "bad", wait: 0 };
   let wait = Number(retryAfter(r)) || 0, day = false;
   try {
-    const j = JSON.parse((await r.text()).slice(0, 20000));
+    const j = JSON.parse(t);
     for (const d of (j && j.error && j.error.details) || []) {
       if (typeof d.retryDelay === "string") { const x = parseFloat(d.retryDelay); if (x > 0) wait = Math.max(wait, Math.ceil(x)); }
       for (const v of d.violations || []) if (/PerDay/i.test(String(v.quotaId || ""))) day = true;
     }
   } catch { /* no details: the header, or a minute */ }
   if (day && wait < 3600) wait = 3600;
-  return Math.min(Math.max(wait || 60, 5), 86400);
+  wait = Math.min(Math.max(wait || 60, 5), 86400);
+  return { kind: day || wait > 600 ? "day" : "min", wait };
 }
 /**
- * Which (key, model) pairs are known to be out of quota, and until when: {"<key position>|<model>": epoch ms}.
- * Asking such a pair again would spend nothing and gain nothing, and asking every key on every retry is how a day's
- * allowance used to be burnt. Short waits live in this instance's memory; long ones (a day's quota) are also kept in KV.
+ * Which (key, model) pairs are known to be out of quota, and until when: {"<key print>|<model>": epoch ms}; a key Google
+ * refuses altogether is "<key print>|*". Asking such a pair again would spend nothing and gain nothing, and asking every
+ * key on every retry is how a day's allowance used to be burnt. Short waits live in this instance's memory; long ones (a
+ * day's quota) are also kept in KV. The pairs are named by the key's PRINT, not its place in the list: when the owner
+ * replaces a key, the new one does not inherit the old one's "spent until tomorrow".
  */
-const YTX = "ytx";
+const YTX = "ytx2", YT_DEAD_MS = 3600_000, YT_COOL_MS = 45_000;
 async function ytBlocked(kv) {
   const m = memOf(kv), now = Date.now(); let b = m.get(YTX);
   if (!b) { b = {}; try { const j = JSON.parse((await kv.get(YTX)) || "{}"); if (j && typeof j === "object") b = j; } catch { /* start empty */ } m.set(YTX, b); }
@@ -700,15 +732,26 @@ async function ytBlocked(kv) {
   return b;
 }
 async function ytBlockedSave(kv, b) {
+  if (kvDown(kv)) return;
   const now = Date.now(), long = {};
-  for (const k of Object.keys(b)) if (b[k] > now + 120000) long[k] = b[k];
+  try { const j = JSON.parse((await kv.get(YTX)) || "{}"); if (j && typeof j === "object") for (const k of Object.keys(j)) if (j[k] > now + 120000) long[k] = j[k]; } catch { /* ours alone */ }      // what another instance learnt is kept
+  for (const k of Object.keys(b)) if (b[k] > now + 120000) long[k] = Math.max(long[k] || 0, b[k]);
   try { await kv.put(YTX, JSON.stringify(long), { expirationTtl: 86400 }); } catch { /* memory still knows */ }
 }
+/** a model that answered "high demand" a moment ago is not asked first by the next window (this instance's memory only) */
+function ytCool(kv) { const m = memOf(kv); let c = m.get("ytcool"); if (!c) { c = new Map(); m.set("ytcool", c); } return c; }
 
-/** did Google refuse the KEY itself (not the video)? The body is read for this one fact and never forwarded */
-async function ytKeyRefused(r) {
-  let t = ""; try { t = (await r.text()).slice(0, 4000); } catch { /* ignore */ }
-  return /API_KEY_INVALID|API key not valid|API key expired|API_KEY_SERVICE_BLOCKED/i.test(t);
+/** how many of the site's keys could transcribe right now (for GET /yt/state and the page's "how it works") */
+async function ytState(env) {
+  const keys = ytSiteKeys(env), models = ytModels(env), b = env.CAP ? await ytBlocked(env.CAP) : {}, now = Date.now();
+  let free = 0, back = 0;
+  for (const k of keys) {
+    const p = await ytPrint(k);
+    if (b[p + "|*"] > now) continue;
+    const waits = models.map((m) => b[p + "|" + m] || 0);
+    if (waits.some((w) => !(w > now))) free++; else back = back ? Math.min(back, Math.min(...waits)) : Math.min(...waits);
+  }
+  return { keys: keys.length, free, models: models.length, ...(free === 0 && back ? { back_in: Math.max(1, Math.ceil((back - now) / 1000)) } : {}) };
 }
 
 async function ytRoute(req, env, cors) {
@@ -719,116 +762,174 @@ async function ytRoute(req, env, cors) {
   if (/^\d+$/.test(cl) && Number(cl) > 400) return json({ error: "bad_json" }, 400, cors);
   let b;
   try { const t = await req.text(); if (t.length > 400) throw 0; b = JSON.parse(t); } catch { return json({ error: "bad_json" }, 400, cors); }
-  const id = b && typeof b.video === "string" ? b.video : "";
-  if (!YT_ID.test(id)) return json({ error: "bad_video" }, 400, cors);
   const t = clock();
   const { ip, tag } = await ipTag(req, t.day);
   if (await burstLimited(env.RL, "/yt:" + ip)) return json({ error: "rate_limited", scope: "burst" }, 429, { ...cors, "Retry-After": "60" });
-  const models = ytModels(env);
-  const headOf = (key) => ({ "x-goog-api-key": key, "Content-Type": "application/json" });
-  const answered = (i) => { if (!K.own && K.n > 1) ytKeyAt = (K.at + i) % K.n; };
+  // {probe: true} with the caller's own key: does Google accept this key? Asked by the page when the key is saved, so
+  // that a mistyped or revoked key is known at once and not in the middle of a lecture. Listing models spends no quota.
+  if (b && b.probe === true) {
+    if (!K.own) return json({ error: "bad_json" }, 400, cors);
+    try {
+      const r = await fetch(`${GEM_BASE}/v1beta/models?pageSize=1`, { method: "GET", headers: { "x-goog-api-key": K.keys[0] }, signal: AbortSignal.timeout(15000) });
+      if (r.ok) { try { await r.body?.cancel(); } catch { /* ignore */ } return json({ ok: true }, 200, cors); }
+      const w = await ytWhy(r);
+      return w.kind === "key" ? json({ error: "user_key_invalid" }, 400, cors) : json({ ok: null }, 200, cors);      // anything else says nothing about the key
+    } catch { return json({ ok: null }, 200, cors); }
+  }
+  const id = b && typeof b.video === "string" ? b.video : "";
+  if (!YT_ID.test(id)) return json({ error: "bad_video" }, 400, cors);
+  const models = ytModels(env), head = (key) => ({ "x-goog-api-key": key, "Content-Type": "application/json" });
+  const prints = await Promise.all(K.keys.map(ytPrint));
+  const blocked = K.own ? {} : await ytBlocked(env.CAP);
+  // what was asked and what came back, by POSITION only (which key of how many, which model, the status, the kind of
+  // refusal): enough to see from outside why a request failed, and nothing that identifies a key
+  const tried = [], note = (ki, model, status, kind) => { if (tried.length < 24) tried.push({ k: ((K.at + ki) % K.n) + 1, m: model.replace(/^gemini-/, ""), s: status, ...(kind ? { why: kind } : {}) }); };
+  const dead = new Set(), cool = ytCool(env.CAP); let dirty = false, calls = 0, videoRefused = 0;
+  K.keys.forEach((_, ki) => { if (blocked[prints[ki] + "|*"] > Date.now()) dead.add(ki); });
+  if (dead.size === K.keys.length) dead.clear();          // every key is remembered as refused: better to ask again than to answer from memory
+  const keyDied = (ki) => { dead.add(ki); if (!K.own) { blocked[prints[ki] + "|*"] = Date.now() + YT_DEAD_MS; dirty = true; } };
+  const alive = () => K.keys.length - dead.size;
+  const save = async () => { if (dirty && !K.own) await ytBlockedSave(env.CAP, blocked); };
+  const ownBad = () => json({ error: "user_key_invalid" }, 400, cors);
+  // a private, removed or mistyped video answers 403 — but so can a key. It is the video when two keys say so (or the only one does)
+  const isVideo = () => ++videoRefused >= Math.min(2, Math.max(alive(), 1));
 
   // ---- how long is it? (asked before the first window; no cap unit) ----
   if (b.from == null && b.to == null) {
+    // (the length is the same whoever counts it, and the lite models are the least often in high demand: they are asked first)
     let status = 0, ra = null;
-    keys: for (let ki = 0; ki < K.keys.length; ki++) {
-     const head = headOf(K.keys[ki]), lastKey = ki === K.keys.length - 1;
-     for (const model of models) {
-      try {
-        const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:countTokens`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_COUNT_TIMEOUT_MS),
-          body: JSON.stringify({ contents: [{ role: "user", parts: [{ file_data: { file_uri: ytUrl(id) } }] }] }) });
-        if (!r.ok) {
-          status = r.status; if (r.status === 429) ra = retryAfter(r);
-          if (r.status === 403 || r.status === 400) {
-            if (await ytKeyRefused(r)) { if (K.own) return json({ error: "user_key_invalid" }, 400, cors); status = 0; continue keys; }      // this key is no good: the next one
-            return json({ error: "yt_unavailable" }, 404, cors);      // measured: a private, removed or mistyped video answers 403
+    for (const model of [...models.filter((m) => /lite/.test(m)), ...models.filter((m) => !/lite/.test(m))]) {
+      for (let ki = 0; ki < K.keys.length; ki++) {
+        if (dead.has(ki)) continue;
+        if (++calls > 20) break;
+        try {
+          const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:countTokens`, { method: "POST", headers: head(K.keys[ki]), signal: AbortSignal.timeout(YT_COUNT_TIMEOUT_MS),
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ file_data: { file_uri: ytUrl(id) } }] }] }) });
+          if (!r.ok) {
+            status = r.status; if (r.status === 429) ra = retryAfter(r);
+            const w = await ytWhy(r); note(ki, model, r.status, w.kind);
+            if (w.kind === "key") { if (K.own) return ownBad(); keyDied(ki); status = 0; continue; }
+            if (w.kind === "perm") { if (isVideo()) { await save(); return json({ error: "yt_unavailable" }, 404, cors); } continue; }
+            if (r.status === 429) continue;                 // this key is asked too often this minute: the next key
+            break;                                          // 400 / 404 / 5xx: about the model, not the key — the next model
           }
-          try { await r.body?.cancel(); } catch { /* ignore */ }
-          if (r.status === 429 && model === models[models.length - 1]) { if (lastKey) return json({ error: "upstream_busy" }, 429, { ...cors, ...(ra ? { "Retry-After": ra } : {}) }); continue keys; }
-          continue;                                         // 404 = this MODEL is not there; 429 / 5xx: the next model may answer
-        }
-        const j = await r.json();
-        const audio = (Array.isArray(j.promptTokensDetails) ? j.promptTokensDetails : []).find((d) => d && d.modality === "AUDIO");
-        const seconds = audio && Number.isFinite(audio.tokenCount) ? Math.round(audio.tokenCount / YT_AUDIO_TOKENS_PER_SECOND) : 0;
-        if (!(seconds > 0)) return json({ error: "yt_unavailable" }, 404, cors);
-        if (seconds > YT_MAX_SECONDS) return json({ error: "too_long", seconds, max_seconds: YT_MAX_SECONDS }, 413, cors);
-        answered(ki);
-        return json({ seconds, ...(await ytTitle(id)) }, 200, cors);
-      } catch { status = 0; }
-     }
+          const j = await r.json();
+          const audio = (Array.isArray(j.promptTokensDetails) ? j.promptTokensDetails : []).find((d) => d && d.modality === "AUDIO");
+          const seconds = audio && Number.isFinite(audio.tokenCount) ? Math.round(audio.tokenCount / YT_AUDIO_TOKENS_PER_SECOND) : 0;
+          if (!(seconds > 0)) return json({ error: "yt_unavailable" }, 404, cors);
+          if (seconds > YT_MAX_SECONDS) return json({ error: "too_long", seconds, max_seconds: YT_MAX_SECONDS }, 413, cors);
+          await save();
+          return json({ seconds, ...(await ytTitle(id)) }, 200, cors);
+        } catch { status = 0; note(ki, model, 0, ""); break; }
+      }
     }
-    return json({ error: "upstream", ...(status ? { upstream_status: status } : {}), stage: "count" }, 502, cors);
+    await save();
+    if (status === 429) return json({ error: "upstream_busy", tried }, 429, { ...cors, "Retry-After": ra || "30" });
+    return json({ error: "upstream", ...(status ? { upstream_status: status } : {}), stage: "count", tried }, 502, cors);
   }
 
   // ---- one window ----
   const from = b.from, to = b.to;
   if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to <= from || to - from > YT_MAX_WINDOW || to > YT_MAX_SECONDS + YT_MAX_WINDOW) return json({ error: "bad_window" }, 400, cors);
   const lang = b.language === "en" ? "en" : "ar";
-  const cap = posInt(env.DAILY_CAP, DEF_DAILY_CAP), hourCap = posInt(env.HOURLY_CAP, DEF_HOURLY_CAP), ipCap = posInt(env.IP_DAILY_CAP, DEF_IP_DAILY_CAP);
-  const specs = [
-    { key: "d:" + t.day, cap, ttl: 172800, code: "daily_cap", scope: "day", retry: t.nextDay },
-    { key: "y:" + t.hour, cap: hourCap, ttl: 7200, code: "rate_limited", scope: "hour", retry: t.nextHour },      // its own hour: the hourly limit of /asr is Groq's, and Groq does no work here
-  ];
-  if (ipCap < cap) specs.push({ key: "i:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay });
-  // the caller's own key is the caller's own quota: the site's allowance is neither asked nor spent
-  let left = {}, back = {};
+  // The page remembers which models said "high demand" in its last windows and names them here: they are asked LAST this
+  // time. (Measured: such a refusal can take half a minute to arrive, and the next window may land on another instance
+  // that remembers nothing.) It only changes the order among the models this Worker would ask anyway.
+  const short = (m) => m.replace(/^gemini-/, "");
+  const later = new Set((Array.isArray(b.after) ? b.after : []).slice(0, 8).filter((x) => typeof x === "string").map((x) => short(x)).filter((x) => models.some((m) => short(m) === x)));
+  // One counter: what ONE visitor may take in a day, so that nobody empties the keys for everybody else. There is no
+  // counter for the whole site any more: that limit is Google's own (20 requests a day per key and model), it is told
+  // truthfully when it is reached, and a second count of it here only refused people while keys were still free.
+  // The caller's own key is the caller's own quota: nothing is counted.
+  const ipCap = posInt(env.YT_IP_DAILY_CAP, DEF_YT_IP_DAILY_CAP);
+  const specs = [{ key: "yi:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay }];
+  let left = {};
   if (!K.own) {
-    const g = await guard(env.CAP, specs, true);          // the same daily counters as /asr: one unit = up to 10 minutes, whoever transcribes
-    if (g.busy || g.over) return capResponse(g, cors);
-    left = { "X-Athar-Remaining": String(Math.max(cap - g.used[0], 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1], 0)) };
-    back = { "X-Athar-Remaining": String(Math.max(cap - g.used[0] + 1, 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1] + 1, 0)) };      // after a refund
+    const g = await guard(env.CAP, specs, "hold");         // held in memory; written only when a window was transcribed
+    if (g.over) return capResponse(g, cors);
+    left = { "X-Athar-Remaining": String(Math.max(ipCap - g.used[0], 0)) };
   }
-  const giveBack = async () => { if (!K.own) await refund(env.CAP, specs); };
+  const giveBack = () => { if (!K.own) release(env.CAP, specs); };
 
-  let lastStatus = 0, retry = null, calls = 0, dirty = false;
-  const blocked = K.own ? {} : await ytBlocked(env.CAP);
-  rounds: for (const wait of YT_ROUNDS_WAIT_MS) {
-   if (wait) { if (lastStatus !== 503 && lastStatus !== 500 && lastStatus !== 0) break; await sleep(env.YT_NO_WAIT ? 0 : wait); }
-   // a key whose quota is spent (429 from every model) or that Google no longer accepts gives way to the next key
-   keys: for (let ki = 0; ki < K.keys.length; ki++) {
-    const head = headOf(K.keys[ki]), pos = (K.at + ki) % K.n; let busy = 0;
-    for (const model of models) {
-     const tag = pos + "|" + model;
-     if (blocked[tag] > Date.now()) { busy++; continue; }       // known to be out of quota: not asked
-     if (++calls > YT_CALL_BUDGET) break rounds;
-     try {
-      const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:generateContent`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_TIMEOUT_MS),
-        body: JSON.stringify(ytBody(model, id, from, to, lang)) });
-      if (!r.ok) {
-        lastStatus = r.status;
-        if (r.status === 429) {
-          const w = await ytQuota(r); retry = String(w); busy++;
-          if (!K.own) { blocked[tag] = Date.now() + w * 1000; if (w > 120) dirty = true; }
-          continue;
-        }
-        if (r.status === 403 || r.status === 400) {
-          if (await ytKeyRefused(r)) { if (K.own) return json({ error: "user_key_invalid" }, 400, cors); lastStatus = 0; continue keys; }
-          if (r.status === 403) { await giveBack(); return json({ error: "yt_unavailable" }, 404, { ...cors, ...back }); }
-          continue;
-        }
-        try { await r.body?.cancel(); } catch { /* ignore */ }
-        continue;                                          // 404 (this model is not there) / 500 / 503: the next one may answer
+  // Measured 5 Oct 2026 (eval/keyprobe/ytmodels.mjs, ytstream.mjs): a model in "high demand" does not always say so at
+  // once — the refusal took up to 71 s to arrive, and one model accepted the request and then said nothing for four
+  // minutes. Asking the models strictly one after another made a visitor wait minutes while a free model stood by.
+  // So each model is a LANE: it asks its keys one after another, and the next lane starts when this one has ended
+  // without an answer OR has gone YT_HEDGE_MS without one. The first complete answer wins; the others are abandoned.
+  // In a quiet hour the best model answers before any other is asked; in a busy one the wait is seconds, not minutes.
+  const hedgeMs = /^\d+$/.test(String(env.YT_HEDGE_MS ?? "")) ? Number(env.YT_HEDGE_MS) : YT_HEDGE_MS;
+  let lastStatus = 0, round = 0, again = false, done = null; const busyNow = new Set(), began = Date.now();
+  for (const wait of YT_ROUNDS_WAIT_MS) {
+    // another round is worth it only when something may have changed: a model was in "high demand" (waited for a moment)
+    if (round) { if (!again || calls >= YT_CALL_BUDGET || Date.now() - began > YT_GIVE_UP_MS) break; await sleep(env.YT_NO_WAIT ? 0 : wait); }
+    again = false;
+    // best model first; in the first round the ones that have just been in high demand (this instance saw it, or the page says so) go last
+    const held = (m) => !round && (cool.get(m) > Date.now() || later.has(short(m)));
+    const order = [...models.filter((m) => !held(m)), ...models.filter(held)];
+    const ctl = new AbortController(), active = new Set(); let wake; const woke = new Promise((r) => { wake = r; });
+    const finish = (d) => { if (!done) { done = d; ctl.abort(); wake(); } };
+    const lane = async (model) => {
+      for (let ki = 0; ki < K.keys.length; ki++) {
+        if (done) return;
+        if (dead.has(ki)) continue;
+        const tag2 = prints[ki] + "|" + model;
+        if (blocked[tag2] > Date.now()) continue;         // known to be out of quota: not asked
+        if (++calls > YT_CALL_BUDGET) return;
+        // (its own time limit, and abandoned when another lane has answered)
+        const one = new AbortController(), limit = setTimeout(() => one.abort(), YT_TIMEOUT_MS), drop = () => one.abort();
+        ctl.signal.addEventListener("abort", drop, { once: true });
+        try {
+          const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:generateContent`, { method: "POST", headers: head(K.keys[ki]), signal: one.signal,
+            body: JSON.stringify(ytBody(model, id, from, to, lang)) });
+          if (done) { try { await r.body?.cancel(); } catch { /* ignore */ } return; }
+          if (!r.ok) {
+            lastStatus = r.status;
+            const w = await ytWhy(r); note(ki, model, r.status, w.kind);
+            if (r.status === 429) { blocked[tag2] = Date.now() + w.wait * 1000; if (w.wait > 120 && !K.own) dirty = true; continue; }      // this key's allowance for this model: the next key
+            if (w.kind === "key") { if (K.own) return finish({ resp: ownBad() }); keyDied(ki); lastStatus = 0; continue; }
+            if (w.kind === "perm") { if (isVideo()) return finish({ resp: json({ error: "yt_unavailable" }, 404, cors) }); continue; }
+            if (r.status >= 500) { cool.set(model, Date.now() + YT_COOL_MS); busyNow.add(short(model)); again = true; }
+            return;                                         // 400 / 404 (this model is not there) / 500 / 503 (high demand): about the model, not the key
+          }
+          const j = await r.json(); if (done) return;
+          const out = ytNormalise(j, model, from, to);
+          if (!out) { lastStatus = 0; again = true; note(ki, model, 200, "form"); return; }      // not the list that was asked for
+          return finish({ out, ki, model });
+        } catch {
+          if (done) return;                                 // abandoned because another lane answered
+          lastStatus = 0; again = true; busyNow.add(short(model)); note(ki, model, 0, "time"); return;      // no answer in time: treated like high demand
+        } finally { clearTimeout(limit); ctl.signal.removeEventListener("abort", drop); }
       }
-      const out = ytNormalise(await r.json(), model, from, to);
-      if (!out) { lastStatus = 0; continue; }
-      answered(ki);
-      if (dirty) await ytBlockedSave(env.CAP, blocked);
-      return new Response(JSON.stringify(out), { status: 200, headers: { ...cors, ...left, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
-     } catch { lastStatus = 0; }
+    };
+    for (const model of order) {
+      if (done) break;
+      const p = lane(model).catch(() => {}); active.add(p); p.then(() => active.delete(p));
+      let timer; await Promise.race([p, woke, new Promise((r) => { timer = setTimeout(r, hedgeMs); })]); clearTimeout(timer);
     }
-    if (!busy) break;                                      // this key was not out of quota: another key would not answer differently
-   }
+    while (!done && active.size) await Promise.race([...active, woke]);
+    if (done) {
+      if (done.resp) { giveBack(); await save(); return done.resp; }
+      const { out, ki, model } = done;
+      if (!K.own) await settle(env.CAP, specs);
+      await save();
+      // for the page to name in its next window: the models that refused, and the ones that were still silent when the answer came
+      for (const m of order) if (m !== model && order.indexOf(m) < order.indexOf(model) && !tried.some((x) => x.m === short(m) && x.s === 429)) busyNow.add(short(m));
+      busyNow.delete(short(model)); if (busyNow.size) out.busy = [...busyNow];
+      return new Response(JSON.stringify(out), { status: 200, headers: { ...cors, ...left, "X-Athar-Yt": `key ${((K.at + ki) % K.n) + 1}/${K.n}; calls ${calls}`, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+    }
+    round++;
   }
-  // never forward the upstream body. No work was done: the unit goes back
-  await giveBack();
-  if (dirty) await ytBlockedSave(env.CAP, blocked);
-  if (!K.own) {
-    // every key and model is out of quota: say when the first of them comes back (a day's quota names hours, and the site then offers the reader's own key)
-    const now = Date.now(), tags = []; for (let i = 0; i < K.n; i++) for (const model of models) tags.push(i + "|" + model);
-    if (tags.every((x) => blocked[x] > now)) { lastStatus = 429; retry = String(Math.max(1, Math.ceil((Math.min(...tags.map((x) => blocked[x])) - now) / 1000))); }
-  }
-  if (lastStatus === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...back, ...(retry ? { "Retry-After": retry } : {}) });
-  return json({ error: "upstream", ...(lastStatus ? { upstream_status: lastStatus } : {}), stage: "youtube" }, 502, { ...cors, ...back });
+  // never forward the upstream body. No work was done: the unit goes back (it was never written)
+  giveBack(); await save();
+  // is every key out of quota on every model? Then say when the first of them comes back: a day's quota names hours,
+  // and the site then offers the reader's own key. Otherwise it was a busy moment.
+  const now = Date.now(), waits = [];
+  for (let ki = 0; ki < K.keys.length; ki++) if (!dead.has(ki)) for (const model of models) waits.push(blocked[prints[ki] + "|" + model] || 0);
+  const busy = busyNow.size ? { busy: [...busyNow] } : {};
+  if (waits.length && waits.every((x) => x > now)) return json({ error: "upstream_busy", tried }, 429, { ...cors, "Retry-After": String(Math.max(1, Math.ceil((Math.min(...waits) - now) / 1000))) });
+  if (K.own && !waits.length) return ownBad();
+  if (lastStatus === 429) return json({ error: "upstream_busy", tried, ...busy }, 429, { ...cors, "Retry-After": "30" });
+  return json({ error: "upstream", ...(lastStatus ? { upstream_status: lastStatus } : {}), stage: "youtube", tried, ...busy }, 502, cors);
 }
 
 // =====================================================================================================
@@ -885,8 +986,8 @@ async function askRoute(req, env, cors) {
   const cap = posInt(env.ASK_DAILY_CAP, DEF_ASK_DAILY_CAP), ipCap = posInt(env.ASK_IP_DAILY_CAP, DEF_ASK_IP_DAILY_CAP);
   const specs = [{ key: "k:" + t.day, cap, ttl: 172800, code: "daily_cap", scope: "day", retry: t.nextDay }];
   if (ipCap < cap) specs.push({ key: "m:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay });
-  const g = await guard(env.CAP, specs, true);
-  if (g.busy || g.over) return capResponse(g, cors);
+  const g = await guard(env.CAP, specs, "hold");      // written only when a model answered: a failure costs no write
+  if (g.over) return capResponse(g, cors);
 
   const models = askModels(env, !!items); let last = 0, retry = null;
   const note = (x) => { last = x.status || 0; if (x.status === 429 && x.retry) retry = x.retry; };
@@ -897,7 +998,7 @@ async function askRoute(req, env, cors) {
       const x = await askOne(env, models[i], "check", CHECK_SYSTEM, checkUser(items));
       if (x.text != null) { first = parseCheck(x.text, items.length); if (first) by = i; else last = 0; } else note(x);
     }
-    if (!first) { await refund(env.CAP, specs); return last === 429 ? json({ error: "upstream_busy" }, 429, retry ? { ...cors, "Retry-After": retry } : cors) : json({ verdicts: null }, 200, cors); }
+    if (!first) { release(env.CAP, specs); return last === 429 ? json({ error: "upstream_busy" }, 429, retry ? { ...cors, "Retry-After": retry } : cors) : json({ verdicts: null }, 200, cors); }
     // what it called a coincidence is put to another model: dismissed only when that one agrees
     const zero = [...first].map((c, k) => (c === "0" ? k : -1)).filter((k) => k >= 0), out = [...first];
     if (zero.length) {
@@ -909,16 +1010,17 @@ async function askRoute(req, env, cors) {
       }
       zero.forEach((k, n) => { out[k] = second && second[n] === "0" ? "0" : "?"; });
     }
+    await settle(env.CAP, specs);
     return json({ verdicts: out.join("") }, 200, cors);
   }
   for (const model of models) {
     const x = await askOne(env, model, "chat", CHAT_SYSTEM(inp.lang), chatUser(inp));
     if (x.text == null) { note(x); continue; }                // busy, or this model is not there: the next one
-    const a = parseChat(x.text, inp); if (a) return json(a, 200, cors);
+    const a = parseChat(x.text, inp); if (a) { await settle(env.CAP, specs); return json(a, 200, cors); }
     last = 0;                                                 // not the object asked for: the next model
   }
   // nobody answered in the form asked for: the unit goes back, and nothing of the model's words leaves
-  await refund(env.CAP, specs);
+  release(env.CAP, specs);
   if (last === 429) return json({ error: "upstream_busy" }, 429, retry ? { ...cors, "Retry-After": retry } : cors);
   return json({ error: "upstream", ...(last ? { upstream_status: last } : {}) }, 502, cors);
 }
@@ -1119,7 +1221,7 @@ async function llmRoute(req, env, cors) {
   const specs = [{ key: "l:" + t.day, cap, ttl: 172800, code: "daily_cap", scope: "day", retry: t.nextDay }];
   if (ipCap < cap) specs.push({ key: "j:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay });
   const g = await guard(env.CAP, specs, true);
-  if (g.busy || g.over) return capResponse(g, cors);
+  if (g.over) return capResponse(g, cors);
 
   let text = "";
   try {

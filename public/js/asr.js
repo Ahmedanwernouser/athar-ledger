@@ -83,7 +83,10 @@ export async function asrProviders(cfg, timeout = 4000) {
     if (!a || typeof a !== "object" || !Array.isArray(a.available)) return null;
     const available = PROVIDERS.filter(p => a.available.includes(p));
     if (!available.length) return null;
-    return { default: available.includes(a.default) ? a.default : available[0], available, youtube: j.youtube === true, ask: j.ask === true, embed: Array.isArray(j.embed) ? j.embed.filter(x => typeof x === "string") : [] };
+    const n = x => (Number.isInteger(x) && x >= 0 ? x : null), y = j.yt && typeof j.yt === "object" ? j.yt : null;
+    // how many keys the site transcribes links with, and how many of them still have some of today's allowance
+    const yt = y && n(y.keys) != null && n(y.free) != null ? { keys: y.keys, free: y.free, models: n(y.models) || 0, backIn: n(y.back_in) } : null;
+    return { default: available.includes(a.default) ? a.default : available[0], available, youtube: j.youtube === true, yt, ask: j.ask === true, embed: Array.isArray(j.embed) ? j.embed.filter(x => typeof x === "string") : [] };
   } catch { return null; }
   finally { clearTimeout(timer); }
 }
@@ -267,13 +270,20 @@ export async function transcribe(file, cfg, onProgress = () => {}, signal = null
 
 // ---------------- a YouTube video from its link (the Worker's /yt, Gemini) ----------------
 const YT_WINDOW = 600, YT_OVERLAP = 8;
+// Models that answered "high demand" (or nothing at all) in the last five minutes: named to the Worker so that it asks them last. (Measured:
+// such an answer can take half a minute to come, and nothing on the Worker's side remembers it from one window to the next.)
+const ytBusy = new Map(), YT_BUSY_MS = 300000;
+const ytNoteBusy = j => { if (j && Array.isArray(j.busy)) for (const m of j.busy.slice(0, 8)) if (typeof m === "string" && /^[a-z0-9.-]{1,40}$/.test(m)) ytBusy.set(m, Date.now() + YT_BUSY_MS); };
+const ytAfter = () => { const now = Date.now(), out = []; for (const [m, until] of ytBusy) { if (until > now) out.push(m); else ytBusy.delete(m); } return out.slice(0, 6); };
 const plainWord = w => String(w).normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, "").replace(/[\u064B-\u0652\u0670\u0640]/g, "").toLowerCase();
 async function ytPost(cfg, body, signal, onWait = null) {
   const post = async () => {
     let r;
-    try { r = await fetch(endpoint(cfg, "/yt"), { method: "POST", headers: { "Content-Type": "application/json", ...(cfg.userKey ? { "X-Athar-Key": cfg.userKey } : {}) }, body: JSON.stringify(body), signal }); }      // the reader's own Gemini key, when one was entered
+    const after = body.from != null ? ytAfter() : [];
+    try { r = await fetch(endpoint(cfg, "/yt"), { method: "POST", headers: { "Content-Type": "application/json", ...(cfg.userKey ? { "X-Athar-Key": cfg.userKey } : {}) }, body: JSON.stringify(after.length ? { ...body, after } : body), signal }); }      // the reader's own Gemini key, when one was entered
     catch { throw new AsrError(signal && signal.aborted ? "aborted" : "network"); }
     let j = null; try { j = await r.json(); } catch { /* not json */ }
+    ytNoteBusy(j);
     return { r, j };
   };
   let { r, j } = await post();
@@ -284,16 +294,31 @@ async function ytPost(cfg, body, signal, onWait = null) {
     const busy = r.status === 429 && j && j.error === "upstream_busy";
     if (!(r.status === 503 || busy || (r.status === 502 && j && j.error === "upstream")) || (!busy && tries >= 2)) break;
     const ra = Number(r.headers.get("Retry-After"));
-    if (busy && ra > 600) throw new AsrError("yt_quota", String(r.status), "", ra);       // the free quota of the DAY is spent on every key: waiting a minute changes nothing
+    if (busy && ra > 600) throw new AsrError("yt_quota", String(r.status), cfg.userKey ? "own" : "", ra);       // the free quota of the DAY is spent on every key: waiting a minute changes nothing
     const wait = cfg.ytRetryMs ?? (r.status === 503 ? 2000 : busy ? Math.min(Math.max(Number.isFinite(ra) ? ra * 1000 : 0, 20000 + 15000 * tries), 65000) : 15000);
     if (onWait && wait >= 5000) onWait(wait);
     await sleep(wait, signal);
     ({ r, j } = await post());
   }
-  if (r.status === 429 && j && j.error === "upstream_busy" && Number(r.headers.get("Retry-After")) > 600) throw new AsrError("yt_quota", String(r.status), "", Number(r.headers.get("Retry-After")));
+  if (r.status === 429 && j && j.error === "upstream_busy" && Number(r.headers.get("Retry-After")) > 600) throw new AsrError("yt_quota", String(r.status), cfg.userKey ? "own" : "", Number(r.headers.get("Retry-After")));
   if (!r.ok) throw errorOf(r, j);
   if (!j || typeof j !== "object") throw new AsrError("bad_response");
   return j;
+}
+/**
+ * Does Google accept this key? Asked when the reader saves his own key. -> "ok" | "bad" | "unknown" (no answer, or an
+ * answer that says nothing about the key: the key is then kept, and the first link will tell).
+ */
+export async function checkOwnKey(cfg, key, timeout = 20000) {
+  if (!cfg.asrUrl || !key) return "unknown";
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), timeout);
+  try {
+    const r = await fetch(endpoint(cfg, "/yt"), { method: "POST", headers: { "Content-Type": "application/json", "X-Athar-Key": key }, body: JSON.stringify({ probe: true }), signal: ctl.signal });
+    let j = null; try { j = await r.json(); } catch { /* not json */ }
+    if (r.ok && j && j.ok === true) return "ok";
+    return r.status === 400 && j && j.error === "user_key_invalid" ? "bad" : "unknown";
+  } catch { return "unknown"; }
+  finally { clearTimeout(timer); }
 }
 /** the windows a video of `seconds` is asked for in: each begins a little before the previous one ended */
 export function ytPlan(seconds) {

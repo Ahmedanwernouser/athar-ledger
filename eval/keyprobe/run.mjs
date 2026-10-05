@@ -6,7 +6,7 @@ const keys = [...new Set(String(process.env.GEMINI_API_KEYS || "").split(/[\s,;]
 const MODELS = ["gemini-3.8-flash", "gemini-3.5-flash"], VIDEO = process.env.PROBE_VIDEO || "jQEJVtKnshk";
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models/", uri = "https://www.youtube.com/watch?v=" + VIDEO;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const clean = (s, key) => String(s || "").split(key).join("<key>").replace(/projects\/[\w-]+/g, "projects/<p>").replace(/\b\d{6,}\b/g, "<n>").replace(/AIza[\w-]+/g, "<key>").slice(0, 260);
+const clean = (s, key) => String(s || "").split(key).join("<key>").replace(/projects\/[\w-]+/g, "projects/<p>").replace(/\b\d{6,}\b/g, "<n>").replace(/AIza[\w-]+|AQ\.[\w-]+/g, "<key>").slice(0, 260);
 async function ask(key, model, op, body) {
   const t0 = Date.now();
   try {

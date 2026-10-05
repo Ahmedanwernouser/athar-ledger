@@ -61,7 +61,7 @@ const llm = (body, o = {}) => new Request("https://w.dev/llm", { method: "POST",
   headers: { Origin: OK, "Content-Type": "application/json", ...(o.headers || {}) }, body: typeof body === "string" ? body : JSON.stringify(body) });
 
 // ---- every response in this file goes through here: no secret, no stack, CORS exactly when the origin is allowed ----
-const SECRET_RE = /gsk_|AIza|SECRET|org_01|Invalid API Key|internal-host|at .*\.js|Error:/;
+const SECRET_RE = /gsk_|AIza|AQ\.[A-Za-z0-9_-]{16}|SECRET|org_01|Invalid API Key|internal-host|at .*\.js|Error:/;
 async function call(req, env, ctx) {
   const origin = req.headers.get("Origin");
   let r;
@@ -203,16 +203,21 @@ sec("caps");
   r = await call(await asr(), env); eq(env.CAP.m.get("d:2026-10-02"), "7", "without a duration field the last segment end is used (1,250 s -> 3 units)");
   up.impl = asrOK; r = await call(await asr(), env); eq(env.CAP.m.get("d:2026-10-02"), "8", "a short clip is 1 unit"); }
 
-sec("KV failures");
-{ up.calls = [];
-  let r = await call(await asr(), baseEnv({ CAP: kv({ getThrows: true }) })); ok(r.status === 503 && r.j.error === "busy" && r.h.get("Retry-After") === "2", "KV get throws -> 503 busy with Retry-After 2 and CORS");
-  let t0 = RealDate.now(); r = await call(await asr(), baseEnv({ CAP: kv({ putThrows: true }) }));
-  ok(r.status === 503 && r.j.error === "busy" && RealDate.now() - t0 >= 1000, "KV put throws (e.g. 1,000 writes/day used up) -> one retry after ~1.1 s, then 503 busy");
-  r = await call(llm({ spoken: SP }), L({ CAP: kv({ getThrows: true }) })); ok(r.status === 503 && r.j.error === "busy", "/llm: KV get throws -> 503 busy");
-  r = await call(llm({ spoken: SP }), L({ CAP: kv({ putThrows: true }) })); ok(r.status === 503 && r.j.error === "busy", "/llm: KV put throws -> 503 busy");
-  eq(up.calls.length, 0, "  nothing reaches the provider when the counter cannot be written (fail closed)");
-  const env = baseEnv({ CAP: kv({ putThrows: true }), DAILY_CAP: "2", HOURLY_CAP: "2" }); const st = [];
-  for (let i = 0; i < 3; i++) st.push((await call(await asr(), env)).status); eq(st.join(" "), "503 503 503", "a KV outage keeps answering 503 (it is not mistaken for a reached cap)"); }
+sec("KV failures: the counter store refusing is not a reason to refuse the visitor");
+{ up.calls = []; up.impl = asrOK;
+  let r = await call(await asr(), baseEnv({ CAP: kv({ getThrows: true }) })); ok(r.status === 200 && up.calls.length === 1, "KV get throws -> the recording is still transcribed (this instance's memory counts)");
+  let env = baseEnv({ CAP: kv({ putThrows: true }) }), t0 = RealDate.now(); r = await call(await asr(), env);
+  ok(r.status === 200 && RealDate.now() - t0 >= 1000 && up.calls.length === 2, "KV put throws (e.g. 1,000 writes/day used up) -> one retry after ~1.1 s, then the work goes on");
+  t0 = RealDate.now(); r = await call(await asr(), env);
+  ok(r.status === 200 && RealDate.now() - t0 < 600, "  ... and a store that refused is left alone for a while: the next visitor does not wait for it");
+  up.impl = chat("ليس الشديد بالصرعة");
+  r = await call(llm({ spoken: SP, kind: "hadith" }), L({ CAP: kv({ getThrows: true }) })); ok(r.status === 200, "/llm: KV get throws -> answered");
+  r = await call(llm({ spoken: SP, kind: "hadith" }), L({ CAP: kv({ putThrows: true }) })); ok(r.status === 200, "/llm: KV put throws -> answered");
+  up.impl = asrOK;
+  env = baseEnv({ CAP: kv({ putThrows: true }), DAILY_CAP: "2", HOURLY_CAP: "2" }); const st = [];
+  for (let i = 0; i < 3; i++) st.push((await call(await asr(), env)).status); eq(st.join(" "), "200 200 429", "a store that takes no writes: the cap still holds, counted in memory");
+  env = baseEnv({ CAP: kv({ getThrows: true, putThrows: true }), DAILY_CAP: "2", HOURLY_CAP: "2" }); st.length = 0;
+  for (let i = 0; i < 3; i++) st.push((await call(await asr(), env)).status); eq(st.join(" "), "200 200 429", "a store that is down altogether: the cap still holds, counted in memory"); }
 { const env = baseEnv({ CAP: kv({ oneWritePerSec: true }) }); up.calls = [];
   let r = await call(await asr(), env); eq(r.status, 200, "KV with the real '1 write per key per second' rule: request #1 -> 200");
   const t0 = RealDate.now(); r = await call(await asr(), env);
@@ -234,10 +239,13 @@ sec("several visitors at the same instant (a counter store that takes one write 
   env = baseEnv({ CAP: kv({ oneWritePerSec: true }), KV_GAP_MS: undefined, IP_DAILY_CAP: "48" });
   up.calls = []; rs = await Promise.all(Array.from({ length: 20 }, async () => (await call(await asr(), env)).status));
   ok(rs.filter((x) => x === 200).length === 12 && rs.filter((x) => x === 429).length === 8 && up.calls.length === 12, "20 simultaneous uploads against an hourly limit of 12: exactly 12 reach the transcriber");
-  // a store that is down is still seen by every one of them
+  // a store that is down turns nobody away, and the limit is still kept by this instance
   env = baseEnv({ CAP: kv({ putThrows: true }), KV_GAP_MS: undefined }); up.calls = [];
   rs = await Promise.all(Array.from({ length: 5 }, async () => (await call(await asr(), env)).status));
-  ok(rs.every((x) => x === 503) && up.calls.length === 0, "5 simultaneous uploads while the counter store is down: all refused, none reaches the transcriber");
+  ok(rs.every((x) => x === 200) && up.calls.length === 5, "5 simultaneous uploads while the counter store takes no writes: all are served");
+  env = baseEnv({ CAP: kv({ putThrows: true }), KV_GAP_MS: undefined, IP_DAILY_CAP: "48" }); up.calls = [];
+  rs = await Promise.all(Array.from({ length: 20 }, async () => (await call(await asr(), env)).status));
+  ok(rs.filter((x) => x === 200).length === 12 && up.calls.length === 12, "... and 20 at once against an hourly limit of 12: still exactly 12 reach the transcriber");
 }
 
 sec("optional per-IP burst limiter (RL binding)");
@@ -338,7 +346,7 @@ sec("/asr provider: selection, default, availability");
   h = await H(baseEnv({ GROQ_API_KEY: "", GEMINI_API_KEY: GKEY, ASR_PROVIDER: "gemini" })); ok(h.j.configured === true && JSON.stringify(h.j.asr) === '{"default":"gemini","available":["gemini"]}', "/health: Gemini alone is a complete configuration when it is the default");
   h = await H(baseEnv({ ASR_PROVIDER: "gemini" })); ok(h.j.configured === false && h.j.missing.join() === "GEMINI_API_KEY" && h.j.asr.default === "gemini" && h.j.asr.available.join() === "groq", "/health: default provider without its key -> configured:false, missing names the key");
   h = await H(baseEnv({ GROQ_API_KEY: "" })); ok(h.j.asr.available.length === 0 && h.j.asr.default === "groq", "/health: no key -> available: []");
-  env = G(); await H(env); ok(env.CAP.reads === 0 && env.CAP.writes === 0 && up.calls.length === 0, "/health touches neither the caps nor the providers"); }
+  env = G(); await H(env); await H(env); ok(env.CAP.reads <= 1 && env.CAP.writes === 0 && up.calls.length === 0, "/health writes nothing and asks no provider (one read: which keys are known to be out of quota)"); }
 
 sec("/asr gemini: the exact upstream calls");
 { const env = G(); up.impl = gstub({ state: "PROCESSING", activeAfter: 2 }); up.calls = []; pollWaits = 0;
@@ -583,8 +591,9 @@ sec("/llm caps");
 
 sec("/yt: a YouTube video from its link (Gemini)");
 { const yt = (body, o = {}) => new Request("https://w.dev/yt", { method: "POST", headers: { Origin: OK, "Content-Type": "application/json", ...(o.headers || {}) }, body: typeof body === "string" ? body : JSON.stringify(body) });
-  const Y = (o = {}) => baseEnv({ GEMINI_API_KEY: GKEY, YT_NO_WAIT: "1", ...o });
-  const VID = "1foxMsRygJg";
+  // (two models unless a test says otherwise: the chain of six is tested on its own below)
+  const Y = (o = {}) => baseEnv({ GEMINI_API_KEY: GKEY, YT_NO_WAIT: "1", GEMINI_YT_MODELS: "gemini-3.8-flash,gemini-3.5-flash", ...o });
+  const VID = "1foxMsRygJg", mine = (env) => { const k = [...env.CAP.m.keys()].find((x) => x.startsWith("yi:")); return k ? env.CAP.m.get(k) : undefined; };
   const count = (audio) => () => new Response(JSON.stringify({ totalTokens: 1, promptTokensDetails: [{ modality: "VIDEO", tokenCount: 999 }, { modality: "AUDIO", tokenCount: audio }] }), { status: 200 });
   const pieces = (list, extra = {}) => () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(list) }] }, finishReason: "STOP", ...extra }] }), { status: 200 });
 
@@ -632,7 +641,7 @@ sec("/yt: a YouTube video from its link (Gemini)");
     const b = JSON.parse(up.calls[0].init.body), part = b.contents[0].parts[0];
     ok(part.video_metadata.start_offset === "60s" && part.video_metadata.end_offset === "120s" && part.file_data.file_uri.endsWith("v=" + VID), "/yt the window is clipped upstream");
     ok(/Do NOT correct/.test(b.contents[0].parts[1].text) && b.generationConfig.temperature === 0 && b.generationConfig.responseSchema, "/yt the prompt forbids correcting quotations; temperature 0; a fixed answer shape");
-    eq(env.CAP.m.get("d:2026-10-02"), "1", "/yt one window = one cap unit (the same counter as /asr)"); }
+    ok(mine(env) === "1" && env.CAP.writes === 1 && !env.CAP.m.has("d:2026-10-02"), "/yt one window = one unit of the visitor's own day, one write; the counters of /asr are not touched"); }
   { up.calls = []; let n = 0;
     up.impl = (url) => (++n === 1 ? new Response("overloaded " + GKEY, { status: 503 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
     const r = await call(yt({ video: VID, from: 0, to: 600 }), Y());
@@ -642,19 +651,19 @@ sec("/yt: a YouTube video from its link (Gemini)");
   { // a window the transcriber never did costs nothing: twenty busy answers in a row, and the hour's allowance is whole
     up.impl = () => new Response("quota", { status: 429, headers: { "Retry-After": "30" } }); const env = Y(); let last;
     for (let i = 0; i < 20; i++) last = await call(yt({ video: VID, from: 0, to: 600 }), env);
-    ok(last.status === 429 && last.j.error === "upstream_busy" && last.h.get("X-Athar-Remaining-Hour") === "12" && last.h.get("X-Athar-Remaining") === "48", "/yt a busy answer gives the unit back (20 in a row leave 12 / 48)");
-    up.impl = pieces([{ t: "00:01", x: "بسم الله" }]); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y());
-    ok(r.status === 200 && r.h.get("X-Athar-Remaining-Hour") === "11" && r.h.get("X-Athar-Remaining") === "47", "/yt ... and a window that was transcribed costs one"); }
+    ok(last.status === 429 && last.j.error === "upstream_busy" && env.CAP.writes === 0 && mine(env) === undefined, "/yt a busy answer costs nothing: 20 in a row, and not one write to the counter store");
+    up.impl = pieces([{ t: "00:01", x: "بسم الله" }]); const e2 = Y(), r = await call(yt({ video: VID, from: 0, to: 600 }), e2);
+    ok(r.status === 200 && r.h.get("X-Athar-Remaining") === "71" && e2.CAP.writes === 1, "/yt ... and a window that was transcribed costs one (of the 72 a visitor has in a day)"); }
   { // several keys: one that is out of quota gives way to the next, and the next request starts from the key that answered
     const K1 = "AIzaKEY_ONE_111", K2 = "AIzaKEY_TWO_222", keyOf = (init) => init.headers["x-goog-api-key"];
     up.calls = []; up.impl = (url, init) => (keyOf(init) === K1 ? new Response("quota", { status: 429, headers: { "Retry-After": "30" } }) : pieces([{ t: "00:01", x: "بسم الله" }])());
-    const env = Y({ GEMINI_API_KEYS: `${K1}, ${K2}` });
+    const env = Y({ GEMINI_API_KEY: K1, GEMINI_API_KEYS: `${K1}, ${K2}` });
     let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
     ok(r.status === 200 && keyOf(up.calls[0].init) === K1 && keyOf(up.calls[up.calls.length - 1].init) === K2 && !JSON.stringify(r.j).includes("AIza"), "/yt a key out of quota gives way to the next key");
     up.calls = []; r = await call(yt({ video: VID, from: 600, to: 1200 }), env);
-    ok(r.status === 200 && up.calls.length === 1 && keyOf(up.calls[0].init) === K2, "/yt the next request starts from the key that answered");
+    ok(r.status === 200 && up.calls.length === 1 && keyOf(up.calls[0].init) === K2, "/yt the next request asks only the key that still has an allowance");
     up.calls = []; up.impl = (url, init) => (keyOf(init) === K2 ? new Response('{"error":{"status":"INVALID_ARGUMENT","message":"API key not valid. Please pass a valid API key.","details":[{"reason":"API_KEY_INVALID"}]}}', { status: 400 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
-    r = await call(yt({ video: VID, from: 0, to: 600 }), Y({ GEMINI_API_KEYS: `${K1}, ${K2}` }));
+    r = await call(yt({ video: VID, from: 0, to: 600 }), Y({ GEMINI_API_KEY: K1, GEMINI_API_KEYS: `${K1}, ${K2}` }));
     ok(r.status === 200 && keyOf(up.calls[up.calls.length - 1].init) === K1, "/yt a key Google no longer accepts is skipped");
     // a key that is out of quota is remembered: it is not asked again while its wait lasts
     up.calls = []; up.impl = (url, init) => (keyOf(init) === K1 ? new Response("quota", { status: 429, headers: { "Retry-After": "30" } }) : pieces([{ t: "00:01", x: "بسم الله" }])());
@@ -662,18 +671,18 @@ sec("/yt: a YouTube video from its link (Gemini)");
     ok(r.status === 200 && up.calls.every((c) => keyOf(c.init) === K2), "/yt a key known to be out of quota is not asked again");
     // the day's quota of every key and model is spent (Google's own words): one round of questions, then none, and the wait is the day's
     const dayOut = () => new Response(JSON.stringify({ error: { code: 429, status: "RESOURCE_EXHAUSTED", details: [{ "@type": "type.googleapis.com/google.rpc.QuotaFailure", violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier", quotaValue: "20" }] }, { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "42206s" }] } }), { status: 429 });
-    const env2 = Y({ GEMINI_API_KEYS: `${K1}, ${K2}` }); up.calls = []; up.impl = dayOut;
+    const env2 = Y({ GEMINI_API_KEY: K1, GEMINI_API_KEYS: `${K1}, ${K2}` }); up.calls = []; up.impl = dayOut;
     r = await call(yt({ video: VID, from: 0, to: 600 }), env2); const asked = up.calls.length;
     ok(r.status === 429 && r.j.error === "upstream_busy" && Number(r.h.get("Retry-After")) > 40000 && asked === 4, "/yt every key out of the day's quota -> upstream_busy with the day's wait (2 keys x 2 models asked once)");
     r = await call(yt({ video: VID, from: 0, to: 600 }), env2);
-    ok(r.status === 429 && up.calls.length === asked && r.h.get("X-Athar-Remaining") === "48", "/yt ... and nobody is asked again, and nothing is spent"); }
+    ok(r.status === 429 && up.calls.length === asked && mine(env2) === undefined, "/yt ... and nobody is asked again, and nothing is spent"); }
   { // the caller's own key: used alone, the site's allowance untouched, never echoed
-    const OWN = "AIzaOWN_KEY_of_the_caller_0123456789", keyOf = (init) => init.headers["x-goog-api-key"];
+    const OWN = "AIzaOWN_KEY_of_caller_0123", keyOf = (init) => init.headers["x-goog-api-key"];
     up.calls = []; up.impl = pieces([{ t: "00:01", x: "بسم الله" }]); const env = Y();
     let r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": OWN } }), env);
     ok(r.status === 200 && up.calls.every((c) => keyOf(c.init) === OWN) && !r.h.has("X-Athar-Remaining") && !r.t.includes(OWN), "/yt the caller's own key is the only key used, and is not echoed");
     r = await call(yt({ video: VID, from: 0, to: 600 }), env);
-    ok(r.h.get("X-Athar-Remaining") === "47" && r.h.get("X-Athar-Remaining-Hour") === "11", "/yt ... and it spent nothing of the site's allowance");
+    ok(r.h.get("X-Athar-Remaining") === "71", "/yt ... and it spent nothing of the visitor's allowance on the site's keys");
     up.calls = []; r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": "short key!" } }), env);
     ok(r.status === 400 && r.j.error === "user_key_invalid" && up.calls.length === 0, "/yt a malformed own key is refused before Google is asked");
     up.impl = () => new Response('{"error":{"message":"API key not valid. Please pass a valid API key."}}', { status: 400 });
@@ -685,7 +694,7 @@ sec("/yt: a YouTube video from its link (Gemini)");
   { up.impl = () => new Response("boom " + GKEY, { status: 500 }); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 502 && r.j.error === "upstream" && r.j.upstream_status === 500, "/yt upstream failure: status only, never the body"); }
   { up.calls = []; let n = 0; up.impl = () => (++n <= 4 ? new Response("high demand " + GKEY, { status: 503 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
     const env = Y(); const r = await call(yt({ video: VID, from: 0, to: 600 }), env);
-    ok(r.status === 200 && up.calls.length === 5 && env.CAP.m.get("d:2026-10-02") === "1", "/yt every model overloaded once: a second round answers, and the window is still one cap unit"); }
+    ok(r.status === 200 && up.calls.length === 5 && mine(env) === "1", "/yt every model overloaded twice: a third round answers, and the window is still one unit"); }
   { up.calls = []; up.impl = () => new Response("high demand", { status: 503 }); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y());
     ok(r.status === 502 && up.calls.length === 6 && r.j.upstream_status === 503, "/yt three rounds over the models, then it gives up with the status"); }
   { up.calls = []; up.impl = () => new Response("quota", { status: 429 }); await call(yt({ video: VID, from: 0, to: 600 }), Y()); eq(up.calls.length, 2, "/yt a quota answer is not retried round after round"); }
@@ -696,9 +705,123 @@ sec("/yt: a YouTube video from its link (Gemini)");
   { up.impl = () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "not a list" }] } }] }), { status: 200 }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.error, "upstream", "/yt an answer that is not the list -> upstream"); }
   { up.impl = pieces([]); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y()); ok(r.status === 200 && r.j.words.length === 0 && r.j.text === "", "/yt a window without speech is an empty transcript, not an error"); }
   { up.impl = pieces([{ t: "00:01", x: "كلام" }], { finishReason: "MAX_TOKENS" }); eq((await call(yt({ video: VID, from: 0, to: 600 }), Y())).j.truncated, true, "/yt a cut-off answer says so"); }
-  { const env = Y({ DAILY_CAP: "1" }); up.impl = pieces([{ t: "00:01", x: "كلام" }]); up.calls = [];
+  { const env = Y({ YT_IP_DAILY_CAP: "1", DAILY_CAP: "1" }); up.impl = pieces([{ t: "00:01", x: "كلام" }]); up.calls = [];
     const a = await call(yt({ video: VID, from: 0, to: 600 }), env), b2 = await call(yt({ video: VID, from: 600, to: 1200 }), env);
-    ok(a.status === 200 && b2.status === 429 && b2.j.error === "daily_cap" && up.calls.length === 1, "/yt the daily cap stops the second window before Google"); }
+    ok(a.status === 200 && b2.status === 429 && b2.j.error === "daily_cap" && b2.j.scope === "ip" && up.calls.length === 1, "/yt one visitor's daily allowance stops the next window before Google");
+    up.impl = asrOK; const c2 = await call(await asr(), env); eq(c2.status, 200, "/yt ... and what was transcribed from links took nothing from the allowance of uploaded recordings"); }
+  { // Google's keys of 2026 begin "AQ." — the dot must not make a key disappear (it did: all seven of the site's keys were dropped)
+    const A = "AQ.made-up-key-ONE-0000000000", B = "AQ.made-up-key-TWO-0000000000", keyOf = (init) => init.headers["x-goog-api-key"];
+    const env = Y({ GEMINI_API_KEY: A, GEMINI_API_KEYS: `${A},${B}` }); up.calls = [];
+    up.impl = (url, init) => (keyOf(init) === A ? new Response("quota", { status: 429, headers: { "Retry-After": "30" } }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && keyOf(up.calls[0].init) === A && keyOf(up.calls[1].init) === B && /^key 2\/2; calls 2$/.test(r.h.get("X-Athar-Yt")), "/yt keys of the form AQ.… are all in use: the second answers when the first is out of quota");
+    const h = await call(await asr({ method: "GET", path: "/health" }), env);
+    ok(h.j.yt && h.j.yt.keys === 2 && h.j.yt.free === 2 && h.j.yt.models === 2 && !h.t.includes("AQ."), "/health says how many keys there are and how many can transcribe now, and nothing about them");
+    up.calls = []; up.impl = pieces([{ t: "00:01", x: "بسم الله" }]);
+    r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": A } }), Y());
+    ok(r.status === 200 && keyOf(up.calls[0].init) === A, "/yt a visitor's own key of the form AQ.… is accepted");
+    up.calls = []; r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": `"${A}"` } }), Y());
+    ok(r.status === 200 && keyOf(up.calls[0].init) === A, "/yt ... also when it was pasted with its quotation marks");
+    for (const bad of ["AQ.with a space inside it 0123456789", "AQ.short", "x".repeat(401)]) {
+      up.calls = []; r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": bad } }), Y());
+      ok(r.status === 400 && r.j.error === "user_key_invalid" && up.calls.length === 0, "/yt an own key that cannot be a key is refused before Google is asked (" + bad.length + " characters)"); } }
+  { // the best model is asked on every key before the next model is; "high demand" is about the model, so no other key is asked for it
+    const K1 = "AQ.key-one-0000000000", K2 = "AQ.key-two-0000000000", keyOf = (init) => init.headers["x-goog-api-key"], modelOf = (url) => /models\/([^:]+):/.exec(String(url))[1];
+    const dayOut = () => new Response(JSON.stringify({ error: { code: 429, status: "RESOURCE_EXHAUSTED", details: [{ violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier", quotaValue: "20" }] }, { retryDelay: "42206s" }] } }), { status: 429 });
+    const seen = () => up.calls.map((c) => (keyOf(c.init) === K1 ? "1" : "2") + ":" + modelOf(c.url).replace("gemini-", "")).join(" ");
+    let env = Y({ GEMINI_API_KEY: K1, GEMINI_API_KEYS: `${K1} ${K2}`, GEMINI_YT_MODELS: undefined }); up.calls = [];
+    up.impl = (url) => (modelOf(url) === "gemini-3.6-flash" ? pieces([{ t: "00:01", x: "بسم الله" }])() : modelOf(url) === "gemini-3.8-flash" ? new Response("high demand", { status: 503 }) : dayOut());
+    let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && r.j.model === "gemini-3.6-flash", "/yt the chain of models: the one that still has an allowance answers  (asked: " + seen() + ")");
+    eq(seen(), "1:3.8-flash 1:3.5-flash 2:3.5-flash 1:3.7-flash 2:3.7-flash 1:3.5-flash-lite 2:3.5-flash-lite 1:3.6-flash", "/yt order: a busy model is left at once; a model out of quota is asked on the next key; then the next model");
+    up.calls = []; r = await call(yt({ video: VID, from: 600, to: 1200 }), env);
+    eq(seen(), "2:3.6-flash", "/yt the next window asks nobody who is known to be busy or out of quota, and it is the other key's turn");
+    // the day's quota is remembered for the KEY, not for its place in the list: a new key in the same place is asked
+    const K3 = "AQ.key-three-00000000"; env.GEMINI_API_KEY = K3; env.GEMINI_API_KEYS = `${K3} ${K2}`; up.calls = [];
+    up.impl = (url, init) => (modelOf(url) === "gemini-3.5-flash" && keyOf(init) === K3 ? pieces([{ t: "00:01", x: "بسم الله" }])() : new Response("high demand", { status: 503 }));
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && r.j.model === "gemini-3.5-flash" && keyOf(up.calls.find((c) => modelOf(c.url) === "gemini-3.5-flash").init) === K3, "/yt a key that replaced another does not inherit the old key's 'spent until tomorrow'");
+    // seven models by default
+    env = Y({ GEMINI_YT_MODELS: undefined }); up.calls = []; up.impl = () => new Response("not found", { status: 404 });
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(up.calls.length === 7 && new Set(up.calls.map((c) => modelOf(c.url))).size === 7, "/yt seven models are in the chain by default"); }
+  { // a 403 is the video only when a second key says so too; a key that is refused (leaked, suspended) is left out for an hour
+    const K1 = "AQ.key-one-0000000000", K2 = "AQ.key-two-0000000000", keyOf = (init) => init.headers["x-goog-api-key"];
+    const E = () => Y({ GEMINI_API_KEY: K1, GEMINI_API_KEYS: `${K1} ${K2}` });
+    const denied = () => new Response('{"error":{"code":403,"status":"PERMISSION_DENIED","message":"The caller does not have permission"}}', { status: 403 });
+    const leaked = () => new Response('{"error":{"code":403,"status":"PERMISSION_DENIED","message":"Your API key was reported as leaked. Please use another API key."}}', { status: 403 });
+    up.impl = (url, init) => (keyOf(init) === K1 ? denied() : pieces([{ t: "00:01", x: "بسم الله" }])());
+    let r = await call(yt({ video: VID, from: 0, to: 600 }), E()); eq(r.status, 200, "/yt one key answering 403 is not taken for a private video: the next key transcribes it");
+    up.impl = denied; let env = E(); r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 404 && r.j.error === "yt_unavailable" && env.CAP.writes === 0, "/yt two keys answering 403 -> the video is private or gone (and nothing is counted)");
+    r = await call(yt({ video: VID }), E()); ok(r.status === 404 && r.j.error === "yt_unavailable", "/yt ... the same when its length is asked");
+    env = E(); up.calls = []; up.impl = (url, init) => (keyOf(init) === K1 ? leaked() : pieces([{ t: "00:01", x: "بسم الله" }])());
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env); const n1 = up.calls.filter((c) => keyOf(c.init) === K1).length;
+    await call(yt({ video: VID, from: 600, to: 1200 }), env);
+    ok(r.status === 200 && n1 === 1 && up.calls.filter((c) => keyOf(c.init) === K1).length === 1, "/yt a key reported as leaked is asked once and then left out");
+    const h = await call(await asr({ method: "GET", path: "/health" }), env); ok(h.j.yt.keys === 2 && h.j.yt.free === 1, "/health counts it out");
+    up.impl = leaked; r = await call(yt({ video: VID, from: 0, to: 600 }, { headers: { "X-Athar-Key": K1 } }), E());
+    ok(r.status === 400 && r.j.error === "user_key_invalid" && !r.t.includes("leaked"), "/yt an own key that Google reports as leaked -> user_key_invalid"); }
+  { // the keys take turns; six visitors at the same instant are spread over them, and each is counted
+    const KS = ["AQ.key-one-0000000000", "AQ.key-two-0000000000", "AQ.key-three-00000000"], keyOf = (init) => init.headers["x-goog-api-key"];
+    const env = Y({ GEMINI_API_KEY: KS[0], GEMINI_API_KEYS: KS.join(","), CAP: kv({ oneWritePerSec: true }), KV_GAP_MS: undefined }); up.calls = [];
+    up.impl = async () => { await new Promise((r) => setTimeout(r, 20)); return pieces([{ t: "00:01", x: "بسم الله" }])(); };
+    const rs = await Promise.all(Array.from({ length: 6 }, (_, i) => call(yt({ video: VID, from: i * 600, to: i * 600 + 600 }, { headers: { "CF-Connecting-IP": "10.0.0." + i } }), env)));
+    const per = KS.map((k) => up.calls.filter((c) => keyOf(c.init) === k).length);
+    ok(rs.every((r) => r.status === 200) && per.join(" ") === "2 2 2", "/yt six windows at the same instant: all transcribed, two by each of the three keys  (got " + rs.map((r) => r.status).join(" ") + " / " + per.join(" ") + ")");
+    eq([...env.CAP.m.keys()].filter((k) => k.startsWith("yi:")).length, 6, "/yt ... and each visitor is counted on his own");
+    // one visitor, six windows at once (two tabs): nobody refused by the store's one-write-a-second rule, all six counted
+    const e2 = Y({ GEMINI_API_KEY: KS[0], GEMINI_API_KEYS: KS.join(","), CAP: kv({ oneWritePerSec: true }), KV_GAP_MS: undefined });
+    const r2 = await Promise.all(Array.from({ length: 6 }, (_, i) => call(yt({ video: VID, from: i * 600, to: i * 600 + 600 }), e2)));
+    ok(r2.every((r) => r.status === 200) && mine(e2) === "6", "/yt six windows of ONE visitor at the same instant: all transcribed, all six counted  (counter " + mine(e2) + ")"); }
+  { // the page asks whether Google accepts a visitor's key when he saves it; nothing is spent and nothing is echoed
+    const OWN = "AQ.own-key-of-a-visitor-000000000000000";
+    up.calls = []; up.impl = () => new Response('{"models":[{"name":"models/x"}]}', { status: 200 });
+    let r = await call(yt({ probe: true }, { headers: { "X-Athar-Key": OWN } }), Y());
+    ok(r.status === 200 && r.j.ok === true && up.calls.length === 1 && /\/v1beta\/models\?pageSize=1$/.test(up.calls[0].url) && up.calls[0].init.headers["x-goog-api-key"] === OWN && !up.calls[0].url.includes(OWN) && !r.t.includes(OWN), "/yt probe: a key Google accepts -> ok (the models are listed: no quota is spent)");
+    up.impl = () => new Response('{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","details":[{"reason":"API_KEY_INVALID"}]}}', { status: 400 });
+    r = await call(yt({ probe: true }, { headers: { "X-Athar-Key": OWN } }), Y()); ok(r.status === 400 && r.j.error === "user_key_invalid" && !r.t.includes("API key"), "/yt probe: a key Google refuses -> user_key_invalid");
+    up.impl = () => new Response("high demand", { status: 503 });
+    r = await call(yt({ probe: true }, { headers: { "X-Athar-Key": OWN } }), Y()); ok(r.status === 200 && r.j.ok === null, "/yt probe: an answer that says nothing about the key -> unknown, not 'refused'");
+    up.calls = []; r = await call(yt({ probe: true }), Y()); ok(r.status === 400 && up.calls.length === 0, "/yt probe: only for a visitor's own key (the site's keys are never probed from outside)"); }
+  { // the page names the models that were in high demand a moment ago: they are asked last, and the answer names the busy ones
+    const modelOf = (url) => /models\/([^:]+):/.exec(String(url))[1].replace("gemini-", ""); const env = Y({ GEMINI_YT_MODELS: undefined }); up.calls = [];
+    up.impl = (url) => (/3\.[5-8]-flash$/.test(modelOf(url)) ? new Response("high demand", { status: 503 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    let r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && r.j.model === "gemini-3.5-flash-lite" && JSON.stringify(r.j.busy) === '["3.8-flash","3.5-flash","3.7-flash"]', "/yt the answer names the models that were in high demand  (" + JSON.stringify(r.j.busy) + ")");
+    up.calls = []; r = await call(yt({ video: VID, from: 600, to: 1200, after: r.j.busy }), Y({ GEMINI_YT_MODELS: undefined }));      // (another instance: it remembers nothing)
+    ok(r.status === 200 && up.calls.length === 1 && modelOf(up.calls[0].url) === "3.5-flash-lite" && r.j.busy === undefined, "/yt ... and the next window, told so, asks the free model first: one question instead of four");
+    up.calls = []; up.impl = (url) => (modelOf(url) === "3.8-flash" ? pieces([{ t: "00:01", x: "بسم الله" }])() : new Response("high demand", { status: 503 }));
+    r = await call(yt({ video: VID, from: 0, to: 600, after: ["3.8-flash", "3.5-flash", "3.7-flash", "3.6-flash", "3-flash-preview", "3.5-flash-lite", "3.1-flash-lite", "evil/../x"] }), Y({ GEMINI_YT_MODELS: undefined }));
+    ok(r.status === 200 && r.j.model === "gemini-3.8-flash", "/yt a model named as busy is still asked when nothing else answers (and a name that is not a model of the chain is ignored)"); }
+  { // a model that is silent is not waited for alone: after a while the next one is asked as well, and the first complete answer wins
+    const modelOf = (url) => /models\/([^:]+):/.exec(String(url))[1].replace("gemini-", ""); const aborted = [];
+    const hang = (url, init) => new Promise((_, rej) => { init.signal.addEventListener("abort", () => { aborted.push(modelOf(url)); rej(new DOMException("aborted", "AbortError")); }); });
+    const late = (ms, f) => (url, init) => new Promise((res, rej) => { let over = false; const id = setTimeout(() => { over = true; res(f()); }, ms); init.signal.addEventListener("abort", () => { if (over) return; clearTimeout(id); aborted.push(modelOf(url)); rej(new DOMException("aborted", "AbortError")); }); });
+    const good = pieces([{ t: "00:01", x: "بسم الله" }]);
+    let env = Y({ YT_HEDGE_MS: "40" }); up.calls = []; up.impl = (url, init) => (modelOf(url) === "3.8-flash" ? hang(url, init) : good());
+    let t0 = RealDate.now(), r = await call(yt({ video: VID, from: 0, to: 600 }), env), took = RealDate.now() - t0;
+    ok(r.status === 200 && r.j.model === "gemini-3.5-flash" && took < 1500 && up.calls.length === 2, "/yt a model that says nothing: the next one is asked after the wait and answers  (" + took + " ms)");
+    ok(aborted.join() === "3.8-flash" && JSON.stringify(r.j.busy) === '["3.8-flash"]' && mine(env) === "1", "/yt ... the silent one is abandoned, named to the page, and the window is counted once");
+    // the better model was only slow: it still wins when it finishes first, and the other is abandoned
+    env = Y({ YT_HEDGE_MS: "40" }); up.calls = []; aborted.length = 0;
+    up.impl = (url, init) => (modelOf(url) === "3.8-flash" ? late(120, good)(url, init) : late(2000, good)(url, init));
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 200 && r.j.model === "gemini-3.8-flash" && up.calls.length === 2 && aborted.join() === "3.5-flash", "/yt a better model that was only slow still wins when it is the first to finish");
+    // every model silent, then everything refused: the request ends, with what happened
+    env = Y({ YT_HEDGE_MS: "20" }); up.calls = []; up.impl = (url, init) => late(60, () => new Response("high demand", { status: 503 }))(url, init);
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    ok(r.status === 502 && r.j.upstream_status === 503 && up.calls.length === 6 && env.CAP.writes === 0, "/yt lanes that all end in a refusal: three rounds, then the status, and nothing counted"); }
+  { // why a request failed can be seen from outside — by position, never by key
+    const K1 = "AQ.key-one-0000000000", K2 = "AQ.key-two-0000000000";
+    up.impl = () => new Response(JSON.stringify({ error: { code: 429, message: "quota for " + K1, details: [{ violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier" }] }, { retryDelay: "30000s" }] } }), { status: 429 });
+    const r = await call(yt({ video: VID, from: 0, to: 600 }), Y({ GEMINI_API_KEY: K1, GEMINI_API_KEYS: `${K1} ${K2}` }));
+    ok(r.status === 429 && Array.isArray(r.j.tried) && r.j.tried.length === 4 && r.j.tried.every((x) => x.s === 429 && x.why === "day" && (x.k === 1 || x.k === 2)) && !r.t.includes("AQ.") && !r.t.includes("quota for"), "/yt a failure lists what was asked (key by position, model, status, kind of refusal) and nothing of Google's words"); }
+  { // a model in high demand is not asked first by the next window of the same instance
+    const modelOf = (url) => /models\/([^:]+):/.exec(String(url))[1]; const env = Y(); up.calls = [];
+    up.impl = (url) => (modelOf(url) === "gemini-3.8-flash" ? new Response("high demand", { status: 503 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    await call(yt({ video: VID, from: 0, to: 600 }), env); const first = up.calls.length; await call(yt({ video: VID, from: 600, to: 1200 }), env);
+    ok(first === 2 && up.calls.length === 3 && modelOf(up.calls[2].url) === "gemini-3.5-flash", "/yt a model that has just said 'high demand' is not asked again by the next window"); }
   { const h = await call(await asr({ method: "GET", path: "/health" }), Y()); eq(h.j.youtube, true, "/health says the link path is available"); const h2 = await call(await asr({ method: "GET", path: "/health" }), baseEnv()); eq(h2.j.youtube, false, "/health: no Gemini key, no link path"); }
 }
 
@@ -730,7 +853,9 @@ sec("/ask: the checker and the chat (Groq)");
   ok(r.status === 200 && r.j.verdicts === null && !r.t.includes(KEY) && !r.t.includes("months"), "/ask check: an answer that is not the digits asked for -> nothing, and none of its words leave");
   { const env = baseEnv(); up.impl = () => new Response("quota " + KEY, { status: 429, headers: { "Retry-After": "9" } }); r = await call(ask({ mode: "check", items: IT }), env);
     ok(r.status === 429 && r.j.error === "upstream_busy" && r.h.get("Retry-After") === "9" && !r.t.includes(KEY), "/ask every model busy -> upstream_busy");
-    eq(env.CAP.m.get([...env.CAP.m.keys()].find((k) => k.startsWith("k:"))), "0", "/ask ... and the unit went back"); }
+    ok(env.CAP.writes === 0, "/ask ... and it cost nothing: not one write to the counter store");
+    up.impl = said("11"); r = await call(ask({ mode: "check", items: IT }), env);
+    ok(r.status === 200 && env.CAP.m.get([...env.CAP.m.keys()].find((k) => k.startsWith("k:"))) === "1", "/ask ... and the question that is answered is the first one counted"); }
   // chat
   up.calls = []; up.impl = said('{"type":"answer","ids":["L2","L9","L1"],"text":"ذكر الشيخ حديث النية [L1]. وهو حديث ضعيف جدًّا. «نص مخترع طويل ليس في الوقائع إطلاقًا». والحديث في صحيح البخاري."}');
   r = await call(ask({ mode: "chat", q: "ما الأحاديث؟", facts: FACTS }), baseEnv());
@@ -811,7 +936,7 @@ sec("secret scan over a matrix of situations");
   ok(n === 150, "150 env × upstream × request combinations scanned by call() for keys, stacks and CORS"); }
 { const src = readFileSync(new URL("./src.js", import.meta.url), "utf8");
   ok(!/console\./.test(src), "src.js logs nothing (no console.*)");
-  ok(!/gsk_[A-Za-z0-9]{8}|AIza[A-Za-z0-9_-]{8}/.test(src), "src.js contains no key");
+  ok(!/gsk_[A-Za-z0-9]{8}|AIza[A-Za-z0-9_-]{8}|AQ\.[A-Za-z0-9_-]{20}/.test(src) && !/AQ\.[A-Za-z0-9_-]{20}/.test(readFileSync(new URL("./yt.js", import.meta.url), "utf8")), "src.js and yt.js contain no key");
   const toml = readFileSync(new URL("./wrangler.toml", import.meta.url), "utf8");
   ok(/^\[\[kv_namespaces\]\]\s*\nbinding = "CAP"/m.test(toml) && /^keep_vars = true/m.test(toml) && /^DAILY_CAP = "48"/m.test(toml) && /^HOURLY_CAP = "12"/m.test(toml) && /^LLM_DAILY_CAP = "150"/m.test(toml) && !/localhost/.test(toml.split("\n").filter((l) => !l.trim().startsWith("#")).join("\n")),
     "wrangler.toml: KV block is active, keep_vars on, caps 48/12/150, no localhost origin by default");

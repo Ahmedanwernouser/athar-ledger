@@ -1,7 +1,7 @@
 // A YouTube video from its link: the windows that are asked for, and how two neighbouring windows are joined.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ytPlan, ytStitch, transcribeYoutube, AsrError } from "../public/js/asr.js";
+import { ytPlan, ytStitch, transcribeYoutube, checkOwnKey, AsrError } from "../public/js/asr.js";
 
 const W = (text, t0, step = 0.5) => text.split(" ").map((w, i) => ({ w, start: t0 + i * step, end: t0 + (i + 1) * step }));
 const said = ws => ws.map(w => w.w).join(" ");
@@ -93,5 +93,43 @@ test("a transcription that stopped half way goes on from its window, without ask
     const r = await transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example", ytRetryMs: 0 }, () => {}, null, first);
     assert.deepEqual(calls, [{ video: "1foxMsRygJg", from: 592, to: 700, language: "ar" }], "only the window that failed is asked for");
     assert.equal(said(r.words), "واحد اثنان ثلاثة"); assert.equal(r.title, "T"); assert.ok(!r.partial);
+  } finally { globalThis.fetch = real; }
+});
+
+test("the models that were in high demand are named to the next window; a key's quota being spent says whose key it was", async () => {
+  const real = globalThis.fetch, calls = [];
+  const reply = (o, status = 200, h = {}) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json", ...h } });
+  const words = (text, t0) => text.split(" ").map((w, i) => ({ word: w, start: t0 + i, end: t0 + i + 1 }));
+  globalThis.fetch = async (url, init) => {
+    const b = JSON.parse(init.body); calls.push(b);
+    if (b.from == null) return reply({ seconds: 700 });
+    return reply({ words: words(b.from === 0 ? "واحد اثنان ثلاثة أربعة خمسة" : "ثلاثة أربعة خمسة ستة سبعة", b.from === 0 ? 593 : 595), model: "gemini-3.5-flash-lite", provider: "gemini", approx: true,
+      ...(b.from === 0 ? { busy: ["3.8-flash", "3.5-flash", "<script>", 7] } : {}) });
+  };
+  try {
+    await transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example" });
+    assert.equal(calls[0].after, undefined, "asking the length names nothing");
+    assert.equal(calls[1].after, undefined, "the first window has nothing to name");
+    assert.deepEqual(calls[2].after, ["3.8-flash", "3.5-flash"], "the second window names the busy models, and only what looks like a model name");
+    // the day's allowance spent on every key -> yt_quota at once (no waiting); with the reader's own key the message is about that key
+    globalThis.fetch = async (url, init) => (JSON.parse(init.body).from == null ? reply({ seconds: 100 }) : reply({ error: "upstream_busy" }, 429, { "Retry-After": "30000" }));
+    await assert.rejects(transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example" }), e => e instanceof AsrError && e.code === "yt_quota" && e.scope === "");
+    await assert.rejects(transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example", userKey: "AQ.a-key-of-the-reader-0000000000" }), e => e instanceof AsrError && e.code === "yt_quota" && e.scope === "own");
+  } finally { globalThis.fetch = real; }
+});
+
+test("a reader's own key is checked with Google when it is saved: accepted, refused, or not known", async () => {
+  const real = globalThis.fetch, calls = [];
+  const reply = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
+  const KEY = "AQ.a-key-of-the-reader-0000000000", cfg = { asrUrl: "https://w.example/" };
+  try {
+    globalThis.fetch = async (url, init) => { calls.push({ url, init }); return reply({ ok: true }); };
+    assert.equal(await checkOwnKey(cfg, KEY), "ok");
+    assert.ok(calls[0].url === "https://w.example/yt" && calls[0].init.headers["X-Athar-Key"] === KEY && calls[0].init.body === '{"probe":true}' && !calls[0].url.includes(KEY), "the key travels in a header to the Worker's /yt, never in the address");
+    globalThis.fetch = async () => reply({ error: "user_key_invalid" }, 400); assert.equal(await checkOwnKey(cfg, KEY), "bad");
+    globalThis.fetch = async () => reply({ ok: null }); assert.equal(await checkOwnKey(cfg, KEY), "unknown");
+    globalThis.fetch = async () => reply({ error: "bad_json" }, 400); assert.equal(await checkOwnKey(cfg, KEY), "unknown", "an older Worker that does not know the question is not taken for a refusal");
+    globalThis.fetch = async () => { throw new TypeError("network"); }; assert.equal(await checkOwnKey(cfg, KEY), "unknown");
+    assert.equal(await checkOwnKey({}, KEY), "unknown");
   } finally { globalThis.fetch = real; }
 });

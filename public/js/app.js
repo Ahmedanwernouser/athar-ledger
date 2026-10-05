@@ -1,6 +1,6 @@
 // app.js — the page. All matching runs in js/worker.js; this file only draws and listens.
 import { fmtTime, fnv1a, wordsFromText } from "./text.js";
-import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, transcribeYoutube, AsrError, llmStops, askPost } from "./asr.js";
+import { prepare, transcribeWith, transcribePrepared, wordsFromWhisper, asrProviders, transcribeYoutube, checkOwnKey, AsrError, llmStops, askPost } from "./asr.js";
 import { compareLedgers, applyAgreement, marksOf, statusOf, timeTolerance } from "./agree.js";
 import { flagsOf } from "./flags.js";
 import { gradeSummary } from "./grade.js";
@@ -10,7 +10,7 @@ import { citedDocx, toSession, fromSession, parseStampedText, youtubeId, cleanMa
 import { t, tOpt, has, num, setLang, getLang, srcLabel, transcriberLabel, LANGS } from "./i18n.js";
 
 const CFG = window.ATHAR_CONFIG || {};
-const OWN_KEY = /^[A-Za-z0-9_-]{20,200}$/;
+const OWN_KEY = /^[\x21-\x7e]{20,400}$/;      // any run of printable characters without a space (Google's keys of 2026 begin "AQ.": the dot must pass)
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const HAS_AR = /[ء-ي]/;
@@ -137,16 +137,33 @@ function drawAsk() {
 /** a link can be transcribed when the site has a Gemini key, or the reader entered his own */
 const canYt = () => !!(CFG.asrUrl && ((S.asr && S.asr.youtube) || CFG.userKey));
 // ---------------- the reader's own Gemini key: kept in this browser only, sent with a link's transcription and nothing else ----------------
+function siteKeysLine() {
+  const y = S.asr && S.asr.yt; if (!y || !y.keys) return "";
+  return y.free > 0 ? t("key.site", num(y.keys), num(y.free)) : t("key.site.none", num(y.keys));
+}
 function openKey() {
   $("keyInput").value = ""; $("keyMsg").textContent = t(CFG.userKey ? "key.state.on" : "key.state.off"); $("keyForget").hidden = !CFG.userKey;
+  $("keySite").textContent = siteKeysLine(); $("keySite").hidden = !$("keySite").textContent;
   const d = $("keyDlg"); if (!d.open) d.showModal(); $("keyInput").focus();
+  // (the count is asked again: it changes as the day goes on)
+  asrProviders(CFG).then(a => { if (a && S.asr) { S.asr.yt = a.yt; if (d.open) { $("keySite").textContent = siteKeysLine(); $("keySite").hidden = !$("keySite").textContent; } } });
 }
-function saveKey(v) {
-  v = String(v || "").trim();
-  if (v && !OWN_KEY.test(v)) { $("keyMsg").textContent = t("key.bad"); return; }
-  if (v) { CFG.userKey = v; store.set("athar:gemkey", v); } else { delete CFG.userKey; try { localStorage.removeItem("athar:gemkey"); } catch { /* nothing kept */ } }
-  $("keyInput").value = ""; $("keyMsg").textContent = t(v ? "key.saved" : "key.forgotten"); $("keyForget").hidden = !v;
-  drawAsk(); if (S.err) showError(S.err);
+let keyCheck = 0;
+async function saveKey(v) {
+  // as it was copied: the blanks and quotation marks around it are not part of it
+  v = String(v || "").replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, "").trim().replace(/^["'`«»]+|["'`«»]+$/g, "").trim();
+  const mine = ++keyCheck;
+  if (v && !OWN_KEY.test(v)) { $("keyMsg").textContent = t(/\s/.test(v) ? "key.bad.space" : "key.bad"); return; }
+  if (!v) { delete CFG.userKey; try { localStorage.removeItem("athar:gemkey"); } catch { /* nothing kept */ } $("keyInput").value = ""; $("keyMsg").textContent = t("key.forgotten"); $("keyForget").hidden = true; drawAsk(); if (S.err) showError(S.err); return; }
+  // Google is asked whether it accepts the key BEFORE it is kept: a mistyped or revoked key is known now, not in the middle of a lecture
+  $("keyMsg").textContent = t("key.checking"); $("keySave").disabled = true;
+  const res = await checkOwnKey(CFG, v);
+  if (mine !== keyCheck) return;
+  $("keySave").disabled = false;
+  if (res === "bad") { $("keyMsg").textContent = t("key.refused"); return; }
+  CFG.userKey = v; store.set("athar:gemkey", v);
+  $("keyInput").value = ""; $("keyMsg").textContent = t(res === "ok" ? "key.saved" : "key.saved.unchecked"); $("keyForget").hidden = false;
+  drawAsk(); if (S.err && QUOTA_ERR.test(S.err.key || "")) clearError();      // the allowance that was spent is no longer the one in use
 }
 function openOptions(on) { $("options").hidden = !on; $("btnOptions").setAttribute("aria-expanded", String(on)); }
 function setTheme(th) { document.documentElement.dataset.theme = th === "light" ? "light" : "dark"; store.set("athar:theme", document.documentElement.dataset.theme); drawTheme(); }
