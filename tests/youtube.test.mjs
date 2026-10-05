@@ -74,3 +74,24 @@ test("a later window that fails after one more try: the part already transcribed
     await assert.rejects(transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example", ytRetryMs: 0 }), e => e.code === "upstream");
   } finally { globalThis.fetch = real; }
 });
+
+test("a transcription that stopped half way goes on from its window, without asking for the beginning again", async () => {
+  const real = globalThis.fetch; const calls = []; let fail = true;
+  const reply = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
+  globalThis.fetch = async (url, init) => {
+    const b = JSON.parse(init.body); calls.push(b);
+    if (b.from == null) return reply({ seconds: 700, title: "T" });
+    if (b.from === 0) return reply({ words: [{ word: "واحد", start: 1, end: 2 }, { word: "اثنان", start: 590, end: 591 }], model: "gemini-x" });
+    return fail ? reply({ error: "upstream_busy" }, 429) : reply({ words: [{ word: "ثلاثة", start: 601, end: 602 }], model: "gemini-x" });
+  };
+  try {
+    const waits = [];
+    const first = await transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example", ytRetryMs: 0 }, (f, m) => { if (m.code === "yt.wait") waits.push(m.args[0]); });
+    assert.equal(first.partial.k, 1); assert.equal(first.partial.why.code, "upstream_busy");
+    assert.equal(calls.filter(c => c.from === 592).length, 5, "a busy service is waited for four times");
+    fail = false; calls.length = 0;
+    const r = await transcribeYoutube("1foxMsRygJg", "ar", { asrUrl: "https://w.example", ytRetryMs: 0 }, () => {}, null, first);
+    assert.deepEqual(calls, [{ video: "1foxMsRygJg", from: 592, to: 700, language: "ar" }], "only the window that failed is asked for");
+    assert.equal(said(r.words), "واحد اثنان ثلاثة"); assert.equal(r.title, "T"); assert.ok(!r.partial);
+  } finally { globalThis.fetch = real; }
+});

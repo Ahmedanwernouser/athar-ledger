@@ -268,7 +268,7 @@ export async function transcribe(file, cfg, onProgress = () => {}, signal = null
 // ---------------- a YouTube video from its link (the Worker's /yt, Gemini) ----------------
 const YT_WINDOW = 600, YT_OVERLAP = 8;
 const plainWord = w => String(w).normalize("NFKD").replace(/[^\p{L}\p{N}]/gu, "").replace(/[\u064B-\u0652\u0670\u0640]/g, "").toLowerCase();
-async function ytPost(cfg, body, signal) {
+async function ytPost(cfg, body, signal, onWait = null) {
   const post = async () => {
     let r;
     try { r = await fetch(endpoint(cfg, "/yt"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal }); }
@@ -279,11 +279,14 @@ async function ytPost(cfg, body, signal) {
   let { r, j } = await post();
   // patience, twice at most: the Worker's counter takes one write a second (503), a model is busy for a moment (502),
   // or the free quota per minute is spent (429 upstream_busy: the wait it names, at most a minute)
-  for (let tries = 0; tries < 2; tries++) {
+  // (the quota per minute is the usual reason a long video stops half way, so that one is waited for four times)
+  for (let tries = 0; tries < 4; tries++) {
     const busy = r.status === 429 && j && j.error === "upstream_busy";
-    if (!(r.status === 503 || busy || (r.status === 502 && j && j.error === "upstream"))) break;
+    if (!(r.status === 503 || busy || (r.status === 502 && j && j.error === "upstream")) || (!busy && tries >= 2)) break;
     const ra = Number(r.headers.get("Retry-After"));
-    await sleep(cfg.ytRetryMs ?? (r.status === 503 ? 2000 : busy ? Math.min(Math.max(Number.isFinite(ra) ? ra * 1000 : 0, 20000), 60000) : 15000), signal);
+    const wait = cfg.ytRetryMs ?? (r.status === 503 ? 2000 : busy ? Math.min(Math.max(Number.isFinite(ra) ? ra * 1000 : 0, 20000 + 15000 * tries), 65000) : 15000);
+    if (onWait && wait >= 5000) onWait(wait);
+    await sleep(wait, signal);
     ({ r, j } = await post());
   }
   if (!r.ok) throw errorOf(r, j);
@@ -316,22 +319,29 @@ export function ytStitch(A, B, cut) {
 /**
  * @returns {words, provider, model, seconds, approx: true, truncated}  — word times are estimated inside each short piece
  */
-export async function transcribeYoutube(video, language, cfg, onProgress = () => {}, signal = null) {
+/** `resume`: what an earlier call returned as partial ({words, seconds, title, author, model, truncated, partial: {k}}): the work goes on from its window k */
+export async function transcribeYoutube(video, language, cfg, onProgress = () => {}, signal = null, resume = null) {
   if (!cfg.asrUrl) throw new AsrError("disabled");
-  onProgress(0.02, { code: "yt.length" });
-  const head = await ytPost(cfg, { video }, signal), seconds = head.seconds;
-  if (!(seconds > 0)) throw new AsrError("yt_unavailable");
-  const about = { title: typeof head.title === "string" ? head.title.slice(0, 200) : "", author: typeof head.author === "string" ? head.author.slice(0, 100) : "" };
-  const plan = ytPlan(seconds); let words = [], model = "", truncated = false;
-  for (let k = 0; k < plan.length; k++) {
-    onProgress(0.05 + 0.95 * (k / plan.length), { code: "yt.part", args: [k + 1, plan.length] });
+  const again = resume && resume.partial && resume.partial.k > 0 && Array.isArray(resume.words) && resume.words.length && resume.seconds > 0 ? resume : null;
+  let seconds, about;
+  if (again) { seconds = again.seconds; about = { title: again.title || "", author: again.author || "" }; }
+  else {
+    onProgress(0.02, { code: "yt.length" });
+    const head = await ytPost(cfg, { video }, signal); seconds = head.seconds;
+    if (!(seconds > 0)) throw new AsrError("yt_unavailable");
+    about = { title: typeof head.title === "string" ? head.title.slice(0, 200) : "", author: typeof head.author === "string" ? head.author.slice(0, 100) : "" };
+  }
+  const plan = ytPlan(seconds); let words = again ? again.words : [], model = again ? again.model || "" : "", truncated = !!(again && again.truncated);
+  for (let k = again ? Math.min(again.partial.k, plan.length - 1) : 0; k < plan.length; k++) {
+    const at = 0.05 + 0.95 * (k / plan.length);
+    onProgress(at, { code: "yt.part", args: [k + 1, plan.length] });
     if (k) await sleep(1100, signal);                       // the Worker's counter cannot take two writes within a second
     let j;
-    try { j = await ytPost(cfg, { video, from: plan[k].from, to: plan[k].to, language: language === "en" ? "en" : "ar" }, signal); }
+    try { j = await ytPost(cfg, { video, from: plan[k].from, to: plan[k].to, language: language === "en" ? "en" : "ar" }, signal, ms => onProgress(at, { code: "yt.wait", args: [Math.round(ms / 1000)] })); }
     catch (e) {
       // a later window failed: what was transcribed so far is kept and said to be partial, not thrown away
       if (!k || !words.length || (e instanceof AsrError && e.code === "aborted")) throw e;
-      return { words, provider: "gemini", model, seconds, ...about, approx: true, truncated, partial: { upTo: plan[k].cut, why: e instanceof AsrError ? e : new AsrError("unknown") } };
+      return { words, provider: "gemini", model, seconds, ...about, approx: true, truncated, partial: { upTo: plan[k].cut, k, why: e instanceof AsrError ? e : new AsrError("unknown") } };
     }
     if (typeof j.model === "string" && j.model) model = j.model.slice(0, 80);
     if (j.truncated) truncated = true;

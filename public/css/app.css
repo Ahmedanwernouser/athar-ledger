@@ -1501,3 +1501,10 @@ html[data-theme="dark"] .start { background: var(--page); }
   .demo-status { margin-inline-start: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .ask, .d-w, .d-m, .d-late, .d-later, .demo-wave i { animation: none !important; } .d-m { background: var(--mark-bg); box-shadow: inset 0 -2px 0 #C9A455; } }
+
+/* fixes after the first look at the dark theme on the live site */
+.btn.gold, .btn.gold:hover:not(:disabled) { color: #1B1403; }
+html[data-theme="dark"] .tools .chip[aria-pressed="true"], html[data-theme="dark"] .chip.open[aria-pressed="true"] { background: var(--indigo); color: var(--on-primary); }
+html[data-theme="dark"] .tools .chip.flagchip[aria-pressed="true"] { background: var(--gold); color: #1B1403; }
+.notices li .quiet-btn { margin-inline-start: 8px; background: var(--sheet); box-shadow: var(--shadow-s); }
+html[data-theme="dark"] .notices li .quiet-btn { background: var(--gold); color: #1B1403; box-shadow: none; font-weight: 600; }

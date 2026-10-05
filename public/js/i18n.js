@@ -61,6 +61,8 @@ const D = {
   "err.yt.off": ["التحليل من رابط يوتيوب غير متاح الآن. الصق النص المكتوب للفيديو، أو ارفع الملف.", "Analysing from a YouTube link is not available right now. Paste the video's transcript, or upload the file."],
   "theme.light": ["فاتح", "Light"], "theme.dark": ["داكن", "Dark"], "theme.to.light": ["حوِّل إلى الوضع الفاتح", "Switch to the light theme"], "theme.to.dark": ["حوِّل إلى الوضع الداكن", "Switch to the dark theme"],
   "e.ext.dorar": ["الدرر السنية", "al-Durar al-Saniyya"], "e.open.dorar": ["ابحث عن هذا اللفظ في الموسوعة الحديثية للدرر السنية (فيها أحكام المحدّثين)", "Search these words in the hadith encyclopaedia of al-Durar al-Saniyya (it lists the scholars' gradings)"],
+  "yt.wait": ["خدمة التفريغ مشغولة؛ تُعاد المحاولة تلقائيًّا بعد {0} ثانية…", "The transcription service is busy; trying again by itself in {0} seconds…"],
+  "yt.resume": ["أكمل التفريغ من {0}", "Continue transcribing from {0}"], "yt.resuming": ["يُكمَل تفريغ الفيديو من حيث توقّف…", "Continuing the transcription from where it stopped…"],
   "drop.fmt": ["mp3 أو m4a أو wav أو mp4", "mp3, m4a, wav or mp4"],
   "stat.texts.none": ["لا شيء", "None"], "stat.h.1": ["حديث", "1 hadith"], "stat.h.2": ["حديثان", "{0} hadith"], "stat.h.few": ["{0} أحاديث", "{0} hadith"], "stat.h.many": ["{0} حديثًا", "{0} hadith"],
   "stat.q.1": ["موضع من القرآن", "1 Qur'an passage"], "stat.q.2": ["موضعان من القرآن", "{0} Qur'an passages"], "stat.q.few": ["{0} مواضع من القرآن", "{0} Qur'an passages"], "stat.q.many": ["{0} موضعًا من القرآن", "{0} Qur'an passages"],

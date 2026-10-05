@@ -498,12 +498,13 @@ async function runAudio(file) {
 }
 
 /** a public YouTube video, from its link alone: the Worker asks Gemini to write what is said, ten minutes at a time */
-async function runYoutube(id) {
-  const run = beginRun(), signal = run.ctl.signal, lang = $("recLang").value === "ar" ? "ar" : "en";
-  busy(0.02, msg("yt.length"));
+/** `resume`: {lang, res, review} of a transcription of this link that stopped half way; it goes on from where it stopped */
+async function runYoutube(id, resume = null) {
+  const run = beginRun(), signal = run.ctl.signal, lang = resume ? resume.lang : $("recLang").value === "ar" ? "ar" : "en";
+  busy(0.02, msg(resume ? "yt.resuming" : "yt.length"));
   let res;
   try {
-    res = await transcribeYoutube(id, lang, CFG, (f, m) => { if (live(run)) busy(0.02 + 0.7 * f, m && m.code ? msg(m.code, ...(m.args || []).map(num)) : null); }, signal);
+    res = await transcribeYoutube(id, lang, CFG, (f, m) => { if (live(run)) busy(0.02 + 0.7 * f, m && m.code ? msg(m.code, ...(m.args || []).map(num)) : null); }, signal, resume ? resume.res : null);
     if (!res.words.length) throw new AsrError("empty");
   } catch (e) { return fail(run, asrMsg(e)); }
   if (!live(run)) return;
@@ -511,7 +512,8 @@ async function runYoutube(id) {
   if (res.truncated) warnings.push(msg("warn.yt.cut"));
   if (res.partial) { const why = asrMsg(res.partial.why), upTo = res.partial.upTo; warnings.push(msg("warn.yt.partial", () => fmtTime(upTo), () => fmtTime(res.seconds), () => say(why))); }
   const title = res.title ? (res.author ? `${res.title} — ${res.author}` : res.title) : t("yt.title", id);
-  await runWords(run, res.words, { title, video: id, warnings, transcribers: [who], fromLink: true });
+  await runWords(run, res.words, { title, video: id, warnings, transcribers: [who], fromLink: true, review: resume ? resume.review : null });
+  if (live(run) && res.partial) { S.ytResume = { id, lang, res }; drawNotices(); }
 }
 
 class InputError extends Error { constructor(key) { super(key); this.key = key; } }
@@ -789,7 +791,7 @@ async function runWords(run, words, { title = "", titleKey = null, audioFile = n
   } catch (e) { return fail(run, msg("err.analysis", () => detail(e))); }
 
   // ---- from here on this run owns the screen
-  stopAudio();
+  stopAudio(); S.ytResume = null;
   S.words = words; S.title = title; S.titleKey = titleKey; S.only = new Set(); S.onlyFlag = false; S.openState = new Map(); S.sel = null;
   S.hasTimes = words.some(w => w.start != null);
   let dur = 0; if (S.hasTimes) for (const w of words) { const x = w.end ?? w.start; if (x > dur) dur = x; }      // (no spread: transcripts can be very long)
@@ -909,7 +911,15 @@ function drawTranscribers() {
 }
 function drawNotices() {
   const box = $("notices"); box.textContent = "";
-  for (const w of S.warnings) box.append(el("li", null, say(w)));
+  for (const w of S.warnings) {
+    const li = el("li", null, say(w));
+    if (w.key === "warn.yt.partial" && S.ytResume) {      // what stopped can go on from where it stopped, without transcribing the beginning again
+      const y = S.ytResume, b = el("button", "quiet-btn", t("yt.resume", fmtTime(y.res.partial.upTo))); b.type = "button";
+      b.onclick = () => runYoutube(y.id, { lang: y.lang, res: y.res, review: { ...S.review } });
+      li.append(" ", b);
+    }
+    box.append(li);
+  }
   box.hidden = !S.warnings.length;
 }
 
