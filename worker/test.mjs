@@ -625,7 +625,7 @@ sec("/yt: a YouTube video from its link (Gemini)");
     up.impl = () => new Response("quota", { status: 429, headers: { "Retry-After": "30" } }); const env = Y(); let last;
     for (let i = 0; i < 20; i++) last = await call(yt({ video: VID, from: 0, to: 600 }), env);
     ok(last.status === 429 && last.j.error === "upstream_busy" && last.h.get("X-Athar-Remaining-Hour") === "12" && last.h.get("X-Athar-Remaining") === "48", "/yt a busy answer gives the unit back (20 in a row leave 12 / 48)");
-    up.impl = pieces([{ t: "00:01", x: "بسم الله" }]); const r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    up.impl = pieces([{ t: "00:01", x: "بسم الله" }]); const r = await call(yt({ video: VID, from: 0, to: 600 }), Y());
     ok(r.status === 200 && r.h.get("X-Athar-Remaining-Hour") === "11" && r.h.get("X-Athar-Remaining") === "47", "/yt ... and a window that was transcribed costs one"); }
   { // several keys: one that is out of quota gives way to the next, and the next request starts from the key that answered
     const K1 = "AIzaKEY_ONE_111", K2 = "AIzaKEY_TWO_222", keyOf = (init) => init.headers["x-goog-api-key"];
@@ -636,10 +636,19 @@ sec("/yt: a YouTube video from its link (Gemini)");
     up.calls = []; r = await call(yt({ video: VID, from: 600, to: 1200 }), env);
     ok(r.status === 200 && up.calls.length === 1 && keyOf(up.calls[0].init) === K2, "/yt the next request starts from the key that answered");
     up.calls = []; up.impl = (url, init) => (keyOf(init) === K2 ? new Response('{"error":{"status":"INVALID_ARGUMENT","message":"API key not valid. Please pass a valid API key.","details":[{"reason":"API_KEY_INVALID"}]}}', { status: 400 }) : pieces([{ t: "00:01", x: "بسم الله" }])());
-    r = await call(yt({ video: VID, from: 0, to: 600 }), env);
+    r = await call(yt({ video: VID, from: 0, to: 600 }), Y({ GEMINI_API_KEYS: `${K1}, ${K2}` }));
     ok(r.status === 200 && keyOf(up.calls[up.calls.length - 1].init) === K1, "/yt a key Google no longer accepts is skipped");
-    up.impl = () => new Response("quota", { status: 429 }); r = await call(yt({ video: VID, from: 0, to: 600 }), env);
-    ok(r.status === 429 && r.j.error === "upstream_busy", "/yt every key out of quota -> upstream_busy"); }
+    // a key that is out of quota is remembered: it is not asked again while its wait lasts
+    up.calls = []; up.impl = (url, init) => (keyOf(init) === K1 ? new Response("quota", { status: 429, headers: { "Retry-After": "30" } }) : pieces([{ t: "00:01", x: "بسم الله" }])());
+    r = await call(yt({ video: VID, from: 600, to: 1200 }), env);
+    ok(r.status === 200 && up.calls.every((c) => keyOf(c.init) === K2), "/yt a key known to be out of quota is not asked again");
+    // the day's quota of every key and model is spent (Google's own words): one round of questions, then none, and the wait is the day's
+    const dayOut = () => new Response(JSON.stringify({ error: { code: 429, status: "RESOURCE_EXHAUSTED", details: [{ "@type": "type.googleapis.com/google.rpc.QuotaFailure", violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier", quotaValue: "20" }] }, { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "42206s" }] } }), { status: 429 });
+    const env2 = Y({ GEMINI_API_KEYS: `${K1}, ${K2}` }); up.calls = []; up.impl = dayOut;
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env2); const asked = up.calls.length;
+    ok(r.status === 429 && r.j.error === "upstream_busy" && Number(r.h.get("Retry-After")) > 40000 && asked === 4, "/yt every key out of the day's quota -> upstream_busy with the day's wait (2 keys x 2 models asked once)");
+    r = await call(yt({ video: VID, from: 0, to: 600 }), env2);
+    ok(r.status === 429 && up.calls.length === asked && r.h.get("X-Athar-Remaining") === "48", "/yt ... and nobody is asked again, and nothing is spent"); }
   { // the caller's own key: used alone, the site's allowance untouched, never echoed
     const OWN = "AIzaOWN_KEY_of_the_caller_0123456789", keyOf = (init) => init.headers["x-goog-api-key"];
     up.calls = []; up.impl = pieces([{ t: "00:01", x: "بسم الله" }]); const env = Y();

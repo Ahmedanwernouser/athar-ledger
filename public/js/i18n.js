@@ -67,6 +67,7 @@ const D = {
   "key.state.on": ["في هذا المتصفح مفتاح محفوظ، وروابط يوتيوب تُفرَّغ به.", "A key is saved in this browser, and YouTube links are transcribed with it."], "key.state.off": ["لا مفتاح محفوظ: تُستعمل حصة الموقع المجانية.", "No key saved: the site's free allowance is used."],
   "key.saved": ["حُفظ المفتاح في هذا المتصفح. جرّب الرابط الآن.", "The key is saved in this browser. Try the link now."], "key.forgotten": ["حُذف المفتاح من هذا المتصفح.", "The key was removed from this browser."],
   "key.bad": ["هذا لا يشبه مفتاح Gemini: انسخه كاملًا بلا مسافات.", "That does not look like a Gemini key: copy all of it, without spaces."],
+  "asr.err.yt_quota": ["انتهت اليوم الحصة المجانية لتفريغ الروابط (Gemini يسمح بعدد قليل من الطلبات في اليوم). استخدم مفتاحك الخاص، أو ارفع ملف التسجيل، أو الصق النص المكتوب للفيديو.", "Today's free allowance for transcribing links is spent (Gemini allows few requests a day). Use your own key, upload the recording, or paste the video's transcript."],
   "asr.err.user_key_invalid": ["Gemini لم يقبل مفتاحك الخاص. تأكد أنك نسخته كاملًا وأنه لم يُلغَ.", "Gemini did not accept your own key. Check that you copied all of it and that it was not revoked."],
   "drop.fmt": ["mp3 أو m4a أو wav أو mp4", "mp3, m4a, wav or mp4"],
   "stat.texts.none": ["لا شيء", "None"], "stat.h.1": ["حديث", "1 hadith"], "stat.h.2": ["حديثان", "{0} hadith"], "stat.h.few": ["{0} أحاديث", "{0} hadith"], "stat.h.many": ["{0} حديثًا", "{0} hadith"],

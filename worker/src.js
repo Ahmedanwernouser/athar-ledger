@@ -632,7 +632,7 @@ async function ytTitle(id) {
  *  - otherwise the site's keys: GEMINI_API_KEYS (several, separated by commas / spaces) or the single GEMINI_API_KEY.
  *    They are tried from the one that answered last; a key that is out of quota or no longer valid gives way to the next.
  */
-const YT_OWN_KEY = /^[A-Za-z0-9_-]{20,200}$/, YT_SITE_KEY = /^[A-Za-z0-9_-]{8,200}$/, YT_MAX_KEYS = 4;
+const YT_OWN_KEY = /^[A-Za-z0-9_-]{20,200}$/, YT_SITE_KEY = /^[A-Za-z0-9_-]{8,200}$/, YT_MAX_KEYS = 8, YT_CALL_BUDGET = 40;      // (a Worker on the free plan may make 50 requests of its own per request)
 let ytKeyAt = 0;
 function ytKeys(env, req) {
   const own = (req.headers.get("X-Athar-Key") || "").trim();
@@ -642,6 +642,41 @@ function ytKeys(env, req) {
   const at = all.length ? ytKeyAt % all.length : 0;
   return { keys: all.slice(at).concat(all.slice(0, at)), own: false, at, n: all.length };
 }
+/**
+ * What a 429 from Google says about the wait. Measured (5 Oct 2026): the free tier allows 20 requests a DAY per project and
+ * model, and says so in the body (quotaId "...PerDay...", retryDelay "42206s"); the per-minute limits name a short delay.
+ * The body is read for these two facts only and never forwarded.
+ */
+async function ytQuota(r) {
+  let wait = Number(retryAfter(r)) || 0, day = false;
+  try {
+    const j = JSON.parse((await r.text()).slice(0, 20000));
+    for (const d of (j && j.error && j.error.details) || []) {
+      if (typeof d.retryDelay === "string") { const x = parseFloat(d.retryDelay); if (x > 0) wait = Math.max(wait, Math.ceil(x)); }
+      for (const v of d.violations || []) if (/PerDay/i.test(String(v.quotaId || ""))) day = true;
+    }
+  } catch { /* no details: the header, or a minute */ }
+  if (day && wait < 3600) wait = 3600;
+  return Math.min(Math.max(wait || 60, 5), 86400);
+}
+/**
+ * Which (key, model) pairs are known to be out of quota, and until when: {"<key position>|<model>": epoch ms}.
+ * Asking such a pair again would spend nothing and gain nothing, and asking every key on every retry is how a day's
+ * allowance used to be burnt. Short waits live in this instance's memory; long ones (a day's quota) are also kept in KV.
+ */
+const YTX = "ytx";
+async function ytBlocked(kv) {
+  const m = memOf(kv), now = Date.now(); let b = m.get(YTX);
+  if (!b) { b = {}; try { const j = JSON.parse((await kv.get(YTX)) || "{}"); if (j && typeof j === "object") b = j; } catch { /* start empty */ } m.set(YTX, b); }
+  for (const k of Object.keys(b)) if (!(b[k] > now)) delete b[k];
+  return b;
+}
+async function ytBlockedSave(kv, b) {
+  const now = Date.now(), long = {};
+  for (const k of Object.keys(b)) if (b[k] > now + 120000) long[k] = b[k];
+  try { await kv.put(YTX, JSON.stringify(long), { expirationTtl: 86400 }); } catch { /* memory still knows */ }
+}
+
 /** did Google refuse the KEY itself (not the video)? The body is read for this one fact and never forwarded */
 async function ytKeyRefused(r) {
   let t = ""; try { t = (await r.text()).slice(0, 4000); } catch { /* ignore */ }
@@ -717,29 +752,39 @@ async function ytRoute(req, env, cors) {
   }
   const giveBack = async () => { if (!K.own) await refund(env.CAP, specs); };
 
-  let lastStatus = 0, retry = null;
-  for (const wait of YT_ROUNDS_WAIT_MS) {
+  let lastStatus = 0, retry = null, calls = 0, dirty = false;
+  const blocked = K.own ? {} : await ytBlocked(env.CAP);
+  rounds: for (const wait of YT_ROUNDS_WAIT_MS) {
    if (wait) { if (lastStatus !== 503 && lastStatus !== 500 && lastStatus !== 0) break; await sleep(env.YT_NO_WAIT ? 0 : wait); }
    // a key whose quota is spent (429 from every model) or that Google no longer accepts gives way to the next key
    keys: for (let ki = 0; ki < K.keys.length; ki++) {
-    const head = headOf(K.keys[ki]); let busy = 0;
+    const head = headOf(K.keys[ki]), pos = (K.at + ki) % K.n; let busy = 0;
     for (const model of models) {
+     const tag = pos + "|" + model;
+     if (blocked[tag] > Date.now()) { busy++; continue; }       // known to be out of quota: not asked
+     if (++calls > YT_CALL_BUDGET) break rounds;
      try {
       const r = await fetch(`${GEM_BASE}/v1beta/models/${model}:generateContent`, { method: "POST", headers: head, signal: AbortSignal.timeout(YT_TIMEOUT_MS),
         body: JSON.stringify(ytBody(model, id, from, to, lang)) });
       if (!r.ok) {
-        lastStatus = r.status; if (r.status === 429) { retry = retryAfter(r); busy++; }
+        lastStatus = r.status;
+        if (r.status === 429) {
+          const w = await ytQuota(r); retry = String(w); busy++;
+          if (!K.own) { blocked[tag] = Date.now() + w * 1000; if (w > 120) dirty = true; }
+          continue;
+        }
         if (r.status === 403 || r.status === 400) {
           if (await ytKeyRefused(r)) { if (K.own) return json({ error: "user_key_invalid" }, 400, cors); lastStatus = 0; continue keys; }
           if (r.status === 403) { await giveBack(); return json({ error: "yt_unavailable" }, 404, { ...cors, ...back }); }
           continue;
         }
         try { await r.body?.cancel(); } catch { /* ignore */ }
-        continue;                                          // 404 (this model is not there) / 429 / 500 / 503: the next one may answer
+        continue;                                          // 404 (this model is not there) / 500 / 503: the next one may answer
       }
       const out = ytNormalise(await r.json(), model, from, to);
       if (!out) { lastStatus = 0; continue; }
       answered(ki);
+      if (dirty) await ytBlockedSave(env.CAP, blocked);
       return new Response(JSON.stringify(out), { status: 200, headers: { ...cors, ...left, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
      } catch { lastStatus = 0; }
     }
@@ -748,6 +793,12 @@ async function ytRoute(req, env, cors) {
   }
   // never forward the upstream body. No work was done: the unit goes back
   await giveBack();
+  if (dirty) await ytBlockedSave(env.CAP, blocked);
+  if (!K.own) {
+    // every key and model is out of quota: say when the first of them comes back (a day's quota names hours, and the site then offers the reader's own key)
+    const now = Date.now(), tags = []; for (let i = 0; i < K.n; i++) for (const model of models) tags.push(i + "|" + model);
+    if (tags.every((x) => blocked[x] > now)) { lastStatus = 429; retry = String(Math.max(1, Math.ceil((Math.min(...tags.map((x) => blocked[x])) - now) / 1000))); }
+  }
   if (lastStatus === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...back, ...(retry ? { "Retry-After": retry } : {}) });
   return json({ error: "upstream", ...(lastStatus ? { upstream_status: lastStatus } : {}), stage: "youtube" }, 502, { ...cors, ...back });
 }

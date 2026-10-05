@@ -284,11 +284,13 @@ async function ytPost(cfg, body, signal, onWait = null) {
     const busy = r.status === 429 && j && j.error === "upstream_busy";
     if (!(r.status === 503 || busy || (r.status === 502 && j && j.error === "upstream")) || (!busy && tries >= 2)) break;
     const ra = Number(r.headers.get("Retry-After"));
+    if (busy && ra > 600) throw new AsrError("yt_quota", String(r.status), "", ra);       // the free quota of the DAY is spent on every key: waiting a minute changes nothing
     const wait = cfg.ytRetryMs ?? (r.status === 503 ? 2000 : busy ? Math.min(Math.max(Number.isFinite(ra) ? ra * 1000 : 0, 20000 + 15000 * tries), 65000) : 15000);
     if (onWait && wait >= 5000) onWait(wait);
     await sleep(wait, signal);
     ({ r, j } = await post());
   }
+  if (r.status === 429 && j && j.error === "upstream_busy" && Number(r.headers.get("Retry-After")) > 600) throw new AsrError("yt_quota", String(r.status), "", Number(r.headers.get("Retry-After")));
   if (!r.ok) throw errorOf(r, j);
   if (!j || typeof j !== "object") throw new AsrError("bad_response");
   return j;

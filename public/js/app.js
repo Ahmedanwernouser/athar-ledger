@@ -82,7 +82,7 @@ function asrMsg(e) {
 }
 
 /** an error that says a free allowance is spent comes with the way round it: the reader's own key */
-const QUOTA_ERR = /^(asr\.err\.(rate_limited\.hour|daily_cap|upstream_busy|user_key_invalid)|err\.yt\.off)/;
+const QUOTA_ERR = /^(asr\.err\.(rate_limited\.hour|daily_cap|upstream_busy|user_key_invalid|yt_quota)|err\.yt\.off)/;
 function showError(m) {
   S.err = m; const e = $("startErr"); e.textContent = say(m); e.hidden = false;
   if (CFG.asrUrl && QUOTA_ERR.test(m.key || "")) { const b = el("button", "quiet-btn", t(CFG.userKey ? "key.change" : "key.use")); b.type = "button"; b.onclick = openKey; e.append(" ", b); }
