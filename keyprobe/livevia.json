@@ -1,0 +1,135 @@
+{
+ "at": "2026-10-05T21:42:47.319Z",
+ "steps": [
+  {
+   "what": "probe groq, made-up key (want 400 user_key_invalid)",
+   "http": 400,
+   "ms": 56,
+   "j": {
+    "error": "user_key_invalid"
+   }
+  },
+  {
+   "what": "probe gemini, made-up key (want 400)",
+   "http": 400,
+   "ms": 115,
+   "j": {
+    "error": "user_key_invalid"
+   }
+  },
+  {
+   "what": "probe openrouter, made-up key (want 400)",
+   "http": 400,
+   "ms": 27,
+   "j": {
+    "error": "user_key_invalid"
+   }
+  },
+  {
+   "what": "probe groq, a real key (want ok)",
+   "http": 200,
+   "ms": 62,
+   "j": {
+    "ok": true
+   }
+  },
+  {
+   "what": "probe gemini, a real key (want ok)",
+   "http": 200,
+   "ms": 129,
+   "j": {
+    "ok": true
+   }
+  },
+  {
+   "what": "chat via gemini without a key (want 400 key_needed)",
+   "http": 400,
+   "ms": 17,
+   "j": {
+    "error": "key_needed",
+    "via": "gemini"
+   }
+  },
+  {
+   "what": "chat via gemini, own key",
+   "http": 200,
+   "ms": 756,
+   "j": {
+    "type": "answer",
+    "ids": [
+     "S1"
+    ],
+    "text": "ورد الحديث في صحيح مسلم برقم 55a، وهو أيضًا في جامع الترمذي برقم 1926، وفي سنن النسائي برقم 4200.",
+    "via": "gemini",
+    "model": "gemini-3.5-flash-lite"
+   }
+  },
+  {
+   "what": "chat via gemini, own key: a ruling (want refuse)",
+   "http": 200,
+   "ms": 524,
+   "j": {
+    "type": "notfound",
+    "ids": [],
+    "text": "لم يُعثر في الوقائع المتاحة على حكم من ترك النصيحة.",
+    "via": "gemini",
+    "model": "gemini-3.5-flash-lite"
+   }
+  },
+  {
+   "what": "chat via groq, own key",
+   "http": 200,
+   "ms": 342,
+   "j": {
+    "type": "answer",
+    "ids": [
+     "S1"
+    ],
+    "text": "ورد حديث «الدين النصيحة» في صحيح مسلم، وهو أيضًا في جامع الترمذي ودرجة الحديث فيه صحيح، وفي سنن النسائي ودرجته حسن صحيح.",
+    "via": "groq",
+    "model": "qwen/qwen3.8-27b"
+   }
+  },
+  {
+   "what": "chat via openrouter, made-up key (want 400 user_key_invalid)",
+   "http": 400,
+   "ms": 27,
+   "j": {
+    "error": "user_key_invalid",
+    "via": "openrouter"
+   }
+  },
+  {
+   "what": "chat via gemini, made-up key (want 400 user_key_invalid)",
+   "http": 400,
+   "ms": 70,
+   "j": {
+    "error": "user_key_invalid",
+    "via": "gemini"
+   }
+  },
+  {
+   "what": "chat, the site's own way (want answer, via groq)",
+   "http": 200,
+   "ms": 695,
+   "j": {
+    "type": "answer",
+    "ids": [
+     "S1"
+    ],
+    "text": "ورد حديث «الدين النصيحة» في صحيح مسلم، وهو أيضًا في جامع الترمذي ودرجة الحديث فيه صحيح، وفي سنن النسائي ودرجته حسن صحيح.",
+    "via": "groq",
+    "model": "qwen/qwen3.8-27b"
+   }
+  }
+ ],
+ "health": {
+  "http": 200,
+  "ask": true,
+  "ask_via": [
+   "groq",
+   "gemini",
+   "openrouter"
+  ]
+ }
+}
