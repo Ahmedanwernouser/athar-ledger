@@ -5,11 +5,8 @@ on:
   workflow_dispatch:
     inputs:
       what:
-        description: "ask (the prompts against Groq) | live (the deployed Worker's /ask) | gemini (the Gemini keys) | shape (the keys' form and whether each answers now)"
+        description: "ask (the prompts against Groq) | live (the deployed Worker's /ask) | gemini (the Gemini keys) | shape (the keys' form and whether each answers now) | models (which models take a YouTube link) | yt (the deployed Worker's /yt, end to end)"
         default: live
-  push:
-    branches: [main]
-    paths: ["eval/keyprobe/**", "worker/ask.js", ".github/workflows/key-probe.yml"]
 permissions:
   contents: write
 jobs:
@@ -24,7 +21,7 @@ jobs:
         env:
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          PROBE: ${{ inputs.what || 'shape' }}
+          PROBE: ${{ inputs.what || 'none' }}
           LIVE_WORKER: https://athar-asr.athar-7399079d.workers.dev
           LIVE_ORIGIN: https://athar-ledger.pages.dev
         run: |
@@ -32,6 +29,8 @@ jobs:
           if [ "$PROBE" = "ask" ]; then node eval/keyprobe/ask.mjs > /dev/null; fi
           if [ "$PROBE" = "live" ]; then node eval/keyprobe/live.mjs > /dev/null; fi
           if [ "$PROBE" = "shape" ]; then node eval/keyprobe/shape.mjs > /dev/null; fi
+          if [ "$PROBE" = "models" ]; then node eval/keyprobe/models.mjs > /dev/null; fi
+          if [ "$PROBE" = "yt" ]; then node eval/keyprobe/yt.mjs > /dev/null; fi
       - name: publish results
         if: always()
         run: |
