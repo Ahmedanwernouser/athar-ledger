@@ -196,6 +196,18 @@ async function charge(kv, specs, extra) {
   }));
 }
 
+/**
+ * best effort: give back the unit a request reserved when the transcriber never did the work (it was busy, or failed).
+ * Without this a video that Google keeps answering "busy" for would spend the hour's allowance on nothing.
+ */
+async function refund(kv, specs) {
+  const m = memOf(kv);
+  await Promise.all(specs.map(async (s) => {
+    const write = async () => { const cur = Math.max(count(await kv.get(s.key)), m.get(s.key) || 0); m.set(s.key, Math.max(cur - 1, 0)); await kv.put(s.key, String(m.get(s.key)), { expirationTtl: s.ttl }); };
+    try { await write(); } catch { try { await sleep(KV_RETRY_MS); m.set(s.key, (m.get(s.key) || 0) + 1); await write(); } catch { /* approximate by design */ } }
+  }));
+}
+
 function capResponse(g, cors) {
   if (g.busy) return json({ error: "busy" }, 503, { ...cors, "Retry-After": "2" });
   const s = g.over;
@@ -660,12 +672,13 @@ async function ytRoute(req, env, cors) {
   const cap = posInt(env.DAILY_CAP, DEF_DAILY_CAP), hourCap = posInt(env.HOURLY_CAP, DEF_HOURLY_CAP), ipCap = posInt(env.IP_DAILY_CAP, DEF_IP_DAILY_CAP);
   const specs = [
     { key: "d:" + t.day, cap, ttl: 172800, code: "daily_cap", scope: "day", retry: t.nextDay },
-    { key: "a:" + t.hour, cap: hourCap, ttl: 7200, code: "rate_limited", scope: "hour", retry: t.nextHour },
+    { key: "y:" + t.hour, cap: hourCap, ttl: 7200, code: "rate_limited", scope: "hour", retry: t.nextHour },      // its own hour: the hourly limit of /asr is Groq's, and Groq does no work here
   ];
   if (ipCap < cap) specs.push({ key: "i:" + t.day + ":" + tag, cap: ipCap, ttl: 172800, code: "daily_cap", scope: "ip", retry: t.nextDay });
-  const g = await guard(env.CAP, specs, true);          // the same counters as /asr: one unit = up to 10 minutes, whoever transcribes
+  const g = await guard(env.CAP, specs, true);          // the same daily counters as /asr: one unit = up to 10 minutes, whoever transcribes
   if (g.busy || g.over) return capResponse(g, cors);
   const left = { "X-Athar-Remaining": String(Math.max(cap - g.used[0], 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1], 0)) };
+  const back = { "X-Athar-Remaining": String(Math.max(cap - g.used[0] + 1, 0)), "X-Athar-Remaining-Hour": String(Math.max(hourCap - g.used[1] + 1, 0)) };      // after a refund
 
   let lastStatus = 0, retry = null;
   for (const wait of YT_ROUNDS_WAIT_MS) {
@@ -677,7 +690,7 @@ async function ytRoute(req, env, cors) {
       if (!r.ok) {
         lastStatus = r.status; if (r.status === 429) retry = retryAfter(r);
         try { await r.body?.cancel(); } catch { /* ignore */ }
-        if (r.status === 403) return json({ error: "yt_unavailable" }, 404, { ...cors, ...left });
+        if (r.status === 403) { await refund(env.CAP, specs); return json({ error: "yt_unavailable" }, 404, { ...cors, ...back }); }
         continue;                                          // 404 (this model is not there) / 429 / 500 / 503 / 400: the next one may answer
       }
       const out = ytNormalise(await r.json(), model, from, to);
@@ -686,9 +699,10 @@ async function ytRoute(req, env, cors) {
     } catch { lastStatus = 0; }
    }
   }
-  // never forward the upstream body
-  if (lastStatus === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...left, ...(retry ? { "Retry-After": retry } : {}) });
-  return json({ error: "upstream", ...(lastStatus ? { upstream_status: lastStatus } : {}), stage: "youtube" }, 502, { ...cors, ...left });
+  // never forward the upstream body. No work was done: the unit goes back
+  await refund(env.CAP, specs);
+  if (lastStatus === 429) return json({ error: "upstream_busy" }, 429, { ...cors, ...back, ...(retry ? { "Retry-After": retry } : {}) });
+  return json({ error: "upstream", ...(lastStatus ? { upstream_status: lastStatus } : {}), stage: "youtube" }, 502, { ...cors, ...back });
 }
 
 // =====================================================================================================

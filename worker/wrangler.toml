@@ -21,6 +21,8 @@ ALLOWED_ORIGINS = "https://REPLACE-WITH-YOUR-PROJECT.pages.dev"
 #   28,800 / 600 = 48 per day        7,200 / 600 = 12 per hour
 DAILY_CAP = "48"
 HOURLY_CAP = "12"
+# /yt (a video from its link, transcribed by Gemini) counts in the same DAILY counters and in an hourly counter of its
+# own with this same number; a window Google answered "busy" or failed for is given back, so waiting costs nothing.
 IP_DAILY_CAP = "24"        # one IP address may use at most this much of the day (set it equal to DAILY_CAP to switch it off)
 MAX_BYTES = "25000000"     # Groq free tier upload limit (25 MB)
 ASR_MODEL = "whisper-large-v3"   # Groq's model
