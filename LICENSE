@@ -1,24 +1,43 @@
-MIT License
+Copyright (c) 2026 Ahmed Anwer and the Athar team
+(Ahmed Anwer, Ahmed Halim, Mohamed Omar, Ammar Yasser, Amr Kamal).
+All rights reserved.
 
-Copyright (c) 2026 ATHAR team
+This repository is published so that the work can be read, run and evaluated.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+You MAY, without asking:
+  - view and read the source code and documentation;
+  - clone the repository and run it, unmodified, on your own machine, for the
+    purpose of evaluating, reviewing or judging the project (including by the
+    organisers and judges of the competition it is submitted to).
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+You may NOT, without prior written permission from the copyright holders:
+  - copy, modify, merge, publish, distribute, sublicense or sell the code or
+    documentation, in whole or in part;
+  - deploy it, or a modified version of it, as a service or a product;
+  - present it, or any substantial part of it, as your own work.
+
+Versions of this repository published before 6 October 2026 were released under
+the MIT licence; this notice applies to this version and to all later ones.
+
+THIRD-PARTY MATERIAL. This notice covers the team's own code and documentation
+only. The texts and data under public/data/ (the Qur'an text, the hadith
+collections, the book packs, the translations), the fonts under public/fonts/,
+and the models and services the project calls belong to their own owners and
+keep their own terms, which this notice neither changes nor restricts:
+see docs/SOURCES_AND_LICENSES.md.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
 
-This licence covers the CODE in this repository. The texts in public/data/ come from
-third-party sources with their own terms: see docs/SOURCES_AND_LICENSES.md.
+Contact for permissions: ahmed.a.n.27122014@gmail.com
+
+------------------------------------------------------------------------------
+
+حقوق النشر © ٢٠٢٦ أحمد أنور وفريق أثَر. جميع الحقوق محفوظة.
+
+المستودع منشور للاطلاع والتشغيل والتقييم. يجوز لأي أحد قراءة الكود وتشغيله كما
+هو على جهازه لأغراض المراجعة والتحكيم. ولا يجوز نسخه أو تعديله أو إعادة نشره أو
+تشغيله خدمةً أو منتجًا أو نسبته إلى غير أصحابه إلا بإذن كتابي من أصحاب الحقوق.
+النصوص والبيانات والخطوط والنماذج التابعة لجهات أخرى تبقى على شروط أصحابها
+(docs/SOURCES_AND_LICENSES.md).

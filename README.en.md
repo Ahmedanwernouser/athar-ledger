@@ -132,7 +132,7 @@ Every text Athar shows is taken from a published source listed here; details and
 
 ## Licence
 
-Code: MIT. Texts follow the terms of their sources (the table above and `docs/SOURCES_AND_LICENSES.md`). The starting point and what was done inside the challenge window are in `BASELINE.md`, and the tools used are in `docs/AI_TOOLS.md`.
+Code and documentation: **all rights reserved** by Ahmed Anwer and the Athar team — published to be read, run and evaluated; not to be copied or reused without written permission (`LICENSE`). Texts follow the terms of their sources (the table above and `docs/SOURCES_AND_LICENSES.md`). The starting point and what was done inside the challenge window are in `BASELINE.md`, and the tools used are in `docs/AI_TOOLS.md`.
 
 ## Team
 
