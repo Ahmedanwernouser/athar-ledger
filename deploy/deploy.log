@@ -1,0 +1,12 @@
+site address: https://athar-ledger.pages.dev
+KV namespace ready
+Worker address: https://athar-asr.athar-7399079d.workers.dev
+Worker deployed (with the Workers AI binding)
+secret GROQ_API_KEY set
+secret GEMINI_API_KEY set
+secret GEMINI_API_KEYS set (7 keys)
+site deployed
+site HTTP 200  config:  asrUrl: "https://athar-asr.athar-7399079d.workers.dev",
+core data HTTP 200 11256 bytes
+Worker /health: {"ok":true,"configured":true,"asr":{"default":"groq","available":["groq","gemini"]},"youtube":true,"yt":{"keys":7,"free":7,"models":7},"ask":true,"ask_via":["groq","gemini","openrouter"],"embed":["bge-m3"]}
+Worker refuses another origin: {"error":"origin"}
