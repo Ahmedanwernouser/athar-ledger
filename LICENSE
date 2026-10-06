@@ -1,6 +1,4 @@
-Copyright (c) 2026 Ahmed Anwer and the Athar team
-(Ahmed Anwer, Ahmed Halim, Mohamed Omar, Ammar Yasser, Amr Kamal).
-All rights reserved.
+Copyright (c) 2026 Ahmed Anwer. All rights reserved.
 
 This repository is published so that the work can be read, run and evaluated.
 
@@ -10,16 +8,13 @@ You MAY, without asking:
     purpose of evaluating, reviewing or judging the project (including by the
     organisers and judges of the competition it is submitted to).
 
-You may NOT, without prior written permission from the copyright holders:
+You may NOT, without prior written permission from the copyright holder:
   - copy, modify, merge, publish, distribute, sublicense or sell the code or
     documentation, in whole or in part;
   - deploy it, or a modified version of it, as a service or a product;
   - present it, or any substantial part of it, as your own work.
 
-Versions of this repository published before 6 October 2026 were released under
-the MIT licence; this notice applies to this version and to all later ones.
-
-THIRD-PARTY MATERIAL. This notice covers the team's own code and documentation
+THIRD-PARTY MATERIAL. This notice covers the project's own code and documentation
 only. The texts and data under public/data/ (the Qur'an text, the hadith
 collections, the book packs, the translations), the fonts under public/fonts/,
 and the models and services the project calls belong to their own owners and
@@ -27,17 +22,17 @@ keep their own terms, which this notice neither changes nor restricts:
 see docs/SOURCES_AND_LICENSES.md.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM,
 DAMAGES OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
 
 Contact for permissions: ahmed.a.n.27122014@gmail.com
 
 ------------------------------------------------------------------------------
 
-حقوق النشر © ٢٠٢٦ أحمد أنور وفريق أثَر. جميع الحقوق محفوظة.
+حقوق النشر © ٢٠٢٦ أحمد أنور. جميع الحقوق محفوظة.
 
 المستودع منشور للاطلاع والتشغيل والتقييم. يجوز لأي أحد قراءة الكود وتشغيله كما
 هو على جهازه لأغراض المراجعة والتحكيم. ولا يجوز نسخه أو تعديله أو إعادة نشره أو
-تشغيله خدمةً أو منتجًا أو نسبته إلى غير أصحابه إلا بإذن كتابي من أصحاب الحقوق.
+تشغيله خدمةً أو منتجًا أو نسبته إلى غير أصحابه إلا بإذن كتابي من صاحب الحقوق.
 النصوص والبيانات والخطوط والنماذج التابعة لجهات أخرى تبقى على شروط أصحابها
 (docs/SOURCES_AND_LICENSES.md).
