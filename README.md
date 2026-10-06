@@ -7,7 +7,7 @@
 <p>
 <a href="https://athar-ledger.pages.dev"><b>🌐 افتح الموقع وجرّبه الآن</b></a>
 &nbsp;&nbsp;•&nbsp;&nbsp;
-<a href="README.en.md"><b>🇬🇧 Read this page in English</b></a>
+<a href="README.en.md"><b>📖 Read this page in English</b></a>
 </p>
 
 <p>مجاني • بدون تسجيل • عربي وإنجليزي</p>
