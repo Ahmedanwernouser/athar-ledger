@@ -50,7 +50,7 @@ WORKER="https://athar-asr.$wsub.workers.dev"; say "Worker address: $WORKER"
 # ---- 4. Worker: copy, fill the two placeholders, deploy, then the secrets ----
 cp -r "$ROOT/worker" "$WORK/worker"; cd "$WORK/worker"
 GEM="$(printf '%s' "${GEMINI_API_KEYS:-}" | tr ',;\n\t' '    ' | awk '{print $1}')"
-sed -i "s#^ALLOWED_ORIGINS = .*#ALLOWED_ORIGINS = \"$SITE\"#; s#REPLACE_WITH_KV_NAMESPACE_ID#$KV#" wrangler.toml
+sed -i "s#^ALLOWED_ORIGINS = .*#ALLOWED_ORIGINS = \"$SITE,http://localhost:8788,http://127.0.0.1:8788\"#; s#REPLACE_WITH_KV_NAMESPACE_ID#$KV#" wrangler.toml
 if [ -z "${GROQ_API_KEY:-}" ] && [ -n "$GEM" ]; then sed -i 's#^ASR_PROVIDER = .*#ASR_PROVIDER = "gemini"#' wrangler.toml; say "no Groq key: Gemini is the default transcriber"; fi
 if $WR deploy >"$WORK/w.out" 2>&1; then say "Worker deployed (with the Workers AI binding)"
 else

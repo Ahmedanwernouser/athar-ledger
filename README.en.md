@@ -98,7 +98,7 @@ npm test          # 244 tests + 639 checks (about 4 minutes)
 npm run eval      # reproduces the evaluation figures (about 4 minutes)
 ```
 
-Pasting text, the samples, searching the sources and "Ask Athar" questions about a particular text work locally at once. Uploading audio, YouTube links and model wording need the proxy in `worker/` to be deployed; the steps are in `docs/SETUP_FREE_ACCOUNTS.md`.
+The local copy has every feature of the live site: detection and matching run in the browser, and audio upload, YouTube links and the chat go through the project's proxy (an internet connection is needed). To deploy a proxy of your own, see `docs/SETUP_FREE_ACCOUNTS.md`.
 
 ## Repository layout
 
