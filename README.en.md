@@ -1,12 +1,20 @@
-# Athar — a ledger of spoken citations
+<div align="center">
 
-[العربية](README.md) · **English**
+<h1>Athar — a ledger of spoken citations</h1>
 
-**What did the speaker cite, where, and in what words?**
+<p><b>Finds the Qur'an verses and hadith cited in a lecture and compares each to its source, word by word</b></p>
 
-**Try it now: https://athar-ledger.pages.dev** — free, no sign-up, in Arabic and English.
+<p>
+<a href="https://athar-ledger.pages.dev"><b>🌐 Open the live site</b></a>
+&nbsp;&nbsp;•&nbsp;&nbsp;
+<a href="README.md"><b>🇸🇦 اقرأ هذه الصفحة بالعربية</b></a>
+</p>
 
-Track 4: knowledge and verification tools.
+<p>Free • No sign-up • Arabic and English</p>
+
+<p>AI Challenge: Serving Islamic Content — Track 4: knowledge and verification tools</p>
+
+</div>
 
 ## The idea
 
@@ -136,14 +144,14 @@ Code and documentation: **all rights reserved** by Ahmed Anwer — published to 
 
 ## Team
 
-The project belongs to the five of us, and each looks after a part of it:
-
-| | Role | Looks after |
+| Name | Role | Responsibility |
 |---|---|---|
-| **Ahmed Anwer** | AI and data science engineer | System architecture and the detection and matching engine (`public/js/`), the scholarly-integrity rules of "Ask Athar", and the proxy and deployment (`worker/`, Cloudflare). MSc in Artificial Intelligence and Data Science, Queen's University, Canada. |
-| **Ahmed Halim** | AI and data science engineer | The library and sources: the Qur'an, the hadith collections, the book packs and the books of fabricated and famous sayings, and their licences (`data/`, `tools/`, `docs/SOURCES_AND_LICENSES.md`); searching the sources inside "Ask Athar" (a text by its reference, takhrij, "is this a hadith?"), reference links, and evaluation (`eval/`). |
-| **Mohamed Omar** | AI and data science engineer | Transcribing audio and video: experiments with transcription models and voice separation (`Athr_audio&vido .ipynb`). MSc in Artificial Intelligence and Data Science, Queen's University, Canada. |
-| **Ammar Yasser** | AI and data science engineer | The interface and the reviewer's experience: summary, ledger and report (Word), and Arabic and English. |
-| **Amr Essam** | AI and data science engineer | The "Ask Athar" interface and the home page, and usability testing on real lectures. |
+| **Ahmed Anwer** | AI and data science engineer | System architecture, the detection and matching engine, the scholarly-integrity rules of "Ask Athar", the proxy and deployment |
+| **Ahmed Halim** | AI and data science engineer | The library, its sources and licences; source search inside "Ask Athar"; reference links; evaluation |
+| **Mohamed Omar** | AI and data science engineer | Audio and video transcription: experiments with transcription models and voice separation |
+| **Ammar Yasser** | AI and data science engineer | The interface and the reviewer's experience: summary, ledger, Word report, Arabic and English |
+| **Amr Essam** | AI and data science engineer | The "Ask Athar" interface and the home page; usability testing on real lectures |
+
+Ahmed Anwer and Mohamed Omar hold an MSc in Artificial Intelligence and Data Science from Queen's University, Canada.
 
 **Contact:** Ahmed Anwer — ahmed.a.n.27122014@gmail.com
