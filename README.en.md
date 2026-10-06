@@ -142,7 +142,7 @@ The project belongs to the five of us, and each looks after a part of it:
 |---|---|---|
 | **Ahmed Anwer** | AI and data science engineer | System architecture and the detection and matching engine (`public/js/`), the scholarly-integrity rules of "Ask Athar", and the proxy and deployment (`worker/`, Cloudflare). MSc in Artificial Intelligence and Data Science, Queen's University, Canada. |
 | **Ahmed Halim** | AI and data science engineer | The library and sources: the Qur'an, the hadith collections, the book packs and the books of fabricated and famous sayings, and their licences (`data/`, `tools/`, `docs/SOURCES_AND_LICENSES.md`); searching the sources inside "Ask Athar" (a text by its reference, takhrij, "is this a hadith?"), reference links, and evaluation (`eval/`). |
-| **Mohamed Omar** | AI and data science engineer | Transcribing audio and video: experiments with transcription models and voice separation (`Athr_audio&vido .ipynb`). |
+| **Mohamed Omar** | AI and data science engineer | Transcribing audio and video: experiments with transcription models and voice separation (`Athr_audio&vido .ipynb`). MSc in Artificial Intelligence and Data Science, Queen's University, Canada. |
 | **Ammar Yasser** | AI and data science engineer | The interface and the reviewer's experience: summary, ledger and report (Word), and Arabic and English. |
 | **Amr Kamal** | AI and data science engineer | The "Ask Athar" interface and the home page, and usability testing on real lectures. |
 
