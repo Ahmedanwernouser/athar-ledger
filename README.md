@@ -1,10 +1,12 @@
 # أثَر — سجلّ الاستشهادات المنطوقة
 
+**العربية** · [English](README.en.md)
+
 **ما الذي استشهد به المتحدث، وأين، وبأي لفظ؟**
 
 **جرّبه الآن: https://athar-ledger.pages.dev** — مجاني، بلا تسجيل، بالعربية والإنجليزية.
 
-> **English.** Athar is a free web tool. Give it a lecture — a YouTube link, an audio file, or pasted text — and it finds the Qur'an verses and hadith cited in it, compares each one to its source word by word, and shows the differences, the source, and the grading recorded by hadith scholars. A human reviewer confirms, and a Word report with footnotes comes out. It never issues rulings and never grades a hadith itself.
+> **English:** the full README is in [README.en.md](README.en.md).
 
 المسار الرابع: أدوات المعرفة والتحقق.
 
