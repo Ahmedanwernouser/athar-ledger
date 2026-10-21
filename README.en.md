@@ -76,7 +76,7 @@ Anyone who wants a larger allowance enters their own key on the page; the key st
 
 ## In numbers
 
-- **Library:** 6,236 verses and 36,063 hadith from nine collections, and 15 books in packs; 163,048 passages in all (about 9.6 million words).
+- **Library:** 6,236 verses and 36,063 numbered hadith entries (repetitions included, not all of them authentic: each is shown with its recorded grading) from nine collections, and 15 books in packs; 163,048 passages in all (about 9.6 million words).
 - **Tests:** 244 tests of the engine and interface and 639 checks of the proxy, run before every deployment.
 - **Detecting verses:** 100% on clean text and 95% when 20% of the words carry transcription errors, against 91.7% and 83.3% for a reference fuzzy search.
 - **Detecting verbatim hadith:** 99.4%, then 97.8%.
